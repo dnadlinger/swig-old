@@ -18,25 +18,29 @@ Point *point_create(int x, int y) {
   return p;
 }
 
-/* this function will be wrapped by jswig */
+static char *point_toString(char *format, Point *p) {
+  static char buf[80];
+
+  sprintf(buf, format, p->x, p->y);
+
+  return buf;
+}
+
+/* this function will be wrapped by SWIG */
 char *point_toString1(Point *p) {
-  char buf[80];
-
-  sprintf(buf, "(%d,%d)", p->x, p->y);
-
-  return strdup(buf); /* memory leak */
+  return point_toString("(%d,%d)", p);
 }
 
 /* this one we wrapped manually*/
-JNIEXPORT jstring JNICALL Java_example_point_1toString2(JNIEnv *jenv, jclass jcls, jlong jpoint) {
+JNIEXPORT jstring JNICALL Java_exampleJNI_point_1toString2(JNIEnv *jenv, jclass jcls, jlong jpoint) {
     Point * p;
-    char buf[80];
     jstring result;
 
-    p = *(Point **)&jpoint;
-    sprintf(buf, "[%d,%d]", p->x, p->y);
+    (void)jcls;
 
-    result = (*jenv)->NewStringUTF(jenv, buf);
+    p = *(Point **)&jpoint;
+
+    result = (*jenv)->NewStringUTF(jenv, point_toString("[%d,%d]", p));
 
     return result;
 }
@@ -45,10 +49,8 @@ JNIEXPORT jstring JNICALL Java_example_point_1toString2(JNIEnv *jenv, jclass jcl
 
 Point *point_create(int x, int y);
 char *point_toString1(Point *p);
-/*
-  Use %new to free the memory returned by point_toString1
 
-  %new char *point_toString1(Point *p);
-*/
+/* give access to free() for memory cleanup of the malloc'd Point */
+extern void free(void *memblock);
 
 %native(point_toString2) char *point_toString2(Point *p);

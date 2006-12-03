@@ -1,8 +1,11 @@
-/* ports.i --- Guile typemaps for handling ports -*- c -*-
-   Copyright (C) 2000 Matthias Koeppe <mkoeppe@mail.math.uni-magdeburg.de>
-
-   $Header$
-*/
+/* -----------------------------------------------------------------------------
+ * See the LICENSE file for information on copyright, usage and redistribution
+ * of SWIG, and the README file for authors - http://www.swig.org/release.html.
+ *
+ * ports.i
+ *
+ * Guile typemaps for handling ports
+ * ----------------------------------------------------------------------------- */
 
 %{
   #ifndef _POSIX_SOURCE
@@ -11,34 +14,43 @@
   #endif
   #include <stdio.h>
   #include <errno.h>
+  #include <unistd.h>
 %}
 
-/* Feed FILE * arguments from file ports */
+/* This typemap for FILE * accepts
+   (1) FILE * pointer objects,
+   (2) Scheme file ports.  In this case, it creates a temporary C stream
+       which reads or writes from a dup'ed file descriptor.
+ */
 
-%typemap(guile, in) FILE *
+%typemap(in, doc="$NAME is a file port or a FILE * pointer") FILE *
+  ( int closep )
 {
-  if(!(SCM_FPORTP($source)))
-    scm_wrong_type_arg("$name", $argnum, $source);
+  if (SWIG_ConvertPtr($input, (void**) &($1), $1_descriptor, 0) == 0) {
+    closep = 0;
+  }
+  else if(!(SCM_FPORTP($input)))
+    scm_wrong_type_arg("$name", $argnum, $input);
   else {
     int fd;
-    if (SCM_OUTPUT_PORT_P($source))
-      scm_force_output($source);
-    fd=dup(SCM_FPORT_FDES($source));
+    if (SCM_OUTPUT_PORT_P($input))
+      scm_force_output($input);
+    fd=dup(SCM_FPORT_FDES($input));
     if(fd==-1) 
       scm_misc_error("$name", strerror(errno), SCM_EOL);
-    $target=fdopen(fd,
-		   SCM_OUTPUT_PORT_P($source)
-		   ? (SCM_INPUT_PORT_P($source)
-		      ? "rw" : "w")
+    $1=fdopen(fd,
+		   SCM_OUTPUT_PORT_P($input)
+		   ? (SCM_INPUT_PORT_P($input)
+		      ? "r+" : "w")
 		   : "r");
-    if($target==NULL)
+    if($1==NULL)
       scm_misc_error("$name", strerror(errno), SCM_EOL);
+    closep = 1;
   }
 }
 
-%typemap(guile, indoc) FILE * "($arg <port>)";
-
-%typemap(guile, freearg) FILE* {
-  fclose($target);
+%typemap(freearg) FILE*  {
+  if (closep$argnum)
+    fclose($1);
 }
 

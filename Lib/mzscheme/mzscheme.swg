@@ -1,29 +1,58 @@
-#include <escheme.h>
+/* -----------------------------------------------------------------------------
+ * See the LICENSE file for information on copyright, usage and redistribution
+ * of SWIG, and the README file for authors - http://www.swig.org/release.html.
+ *
+ * mzscheme.swg
+ *
+ * SWIG Configuration File for MzScheme.
+ * This file is parsed by SWIG before reading any other interface file.
+ * ----------------------------------------------------------------------------- */
 
-typedef struct swig_proxy {
-    Scheme_Type type;
-    void *object;
-} swig_proxy;
+/* Include headers */
+%runtime "swigrun.swg"     // Common C API type-checking code
+%runtime "mzrun.swg"
 
-static Scheme_Object *swig_make_c_pointer(void *c_pointer, char *type_name) {
-    swig_proxy *new_proxy;
-    new_proxy = (swig_proxy *) scheme_malloc(sizeof(swig_proxy));
-    new_proxy->type = scheme_make_type(type_name);
-    new_proxy->object = (void *) c_pointer;
+%define SWIG_APPEND_VALUE(value)
+   values[lenv++] = value
+%enddef
 
-    return (Scheme_Object *) new_proxy;
-}
+/* Definitions */
+#define SWIG_malloc(size) swig_malloc(size, FUNC_NAME)
+#define SWIG_free(mem) free(mem)
 
-/* returns 1 on success, 0 otherwise */
-static int swig_get_c_pointer(Scheme_Object *so, char *c_type, void **c_ptr) {
-    Scheme_Type st = SCHEME_TYPE(so);
-    char *type_name = scheme_get_type_name(st);
-    int err = 1;
-    if(strcmp(type_name, c_type))
-	err = 0;
-    else
-	*c_ptr = ((swig_proxy *) so)->object;
+#define SWIG_convert_short(o)					\
+  SWIG_convert_integer(o, - (1 << (8 * sizeof(short) - 1)),	\
+		       (1 << (8 * sizeof(short) - 1)) - 1,	\
+		       FUNC_NAME, $argnum-1, argc, argv)
+#define SWIG_convert_int(o)					\
+  SWIG_convert_integer(o, INT_MIN, INT_MAX,			\
+		       FUNC_NAME, $argnum-1, argc, argv)
+#define SWIG_convert_long(o)					\
+  SWIG_convert_integer(o, LONG_MIN, LONG_MAX,			\
+		       FUNC_NAME, $argnum-1, argc, argv)
+#define SWIG_convert_unsigned_short(o)				\
+  SWIG_convert_unsigned_integer(o, 0,				\
+		       (1 << (8 * sizeof(short))) - 1,		\
+		       FUNC_NAME, $argnum-1, argc, argv)
+#define SWIG_convert_unsigned_int(o)				\
+  SWIG_convert_unsigned_integer(o, 0, UINT_MAX,			\
+		       FUNC_NAME, $argnum-1, argc, argv)
+#define SWIG_convert_unsigned_long(o)				\
+  SWIG_convert_unsigned_integer(o, 0, ULONG_MAX,		\
+		       FUNC_NAME, $argnum-1, argc, argv)
 
-    return err;
-}
+/* Guile compatibility kludges */
+#define SCM_VALIDATE_VECTOR(argnum, value) (void)0
+#define SCM_VALIDATE_LIST(argnum, value) (void)0
 
+/* Read in standard typemaps. */
+%include <typemaps.i>
+
+%insert(init) "swiginit.swg"
+
+%init %{
+Scheme_Object *scheme_reload(Scheme_Env *env) {
+  Scheme_Env *menv = SWIG_MZSCHEME_CREATE_MENV(env);
+
+  SWIG_InitializeModule((void *) env);
+%}

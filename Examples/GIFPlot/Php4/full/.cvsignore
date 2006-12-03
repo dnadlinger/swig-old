@@ -1,0 +1,14 @@
+php_gifplot.h
+gifplot.php
+*_wrap.c
+*_wrap.cxx
+*_wrap.cpp
+*.dll
+*.dsw
+*.exp
+*.lib
+*.ncb
+*.opt
+*.plg
+Release
+Debug

@@ -1,43 +1,60 @@
 /* ----------------------------------------------------------------------------- 
+ * See the LICENSE file for information on copyright, usage and redistribution
+ * of SWIG, and the README file for authors - http://www.swig.org/release.html.
+ *
  * wrapfunc.c
  *
- *     This file defines a object for creating wrapper functions.  Primarily
- *     this is used for convenience since it allows pieces of a wrapper function
- *     to be created in a piecemeal manner.
- * 
- * Author(s) : David Beazley (beazley@cs.uchicago.edu)
- *
- * Copyright (C) 1998-2000.  The University of Chicago
- * Copyright (C) 1995-1998.  The University of Utah and The Regents of the
- *                           University of California.
- *
- * See the file LICENSE for information on usage and redistribution.	
+ * This file defines a object for creating wrapper functions.  Primarily
+ * this is used for convenience since it allows pieces of a wrapper function
+ * to be created in a piecemeal manner.
  * ----------------------------------------------------------------------------- */
 
-static char cvsroot[] = "$Header$";
+char cvsroot_wrapfunc_c[] = "$Header$";
 
 #include "swig.h"
 #include <ctype.h>
 
-#include "dohobj.h"
+static int Compact_mode = 0;	/* set to 0 on default */
+static int Max_line_size = 128;
 
-typedef struct {
-  Hash      *attr;        /* Attributes */
-  Hash      *localh;      /* Hash of local variable names */
-  String    *code;        /* Code string */
-} WrapObj;
+/* -----------------------------------------------------------------------------
+ * NewWrapper()
+ *
+ * Create a new wrapper function object.
+ * ----------------------------------------------------------------------------- */
+
+Wrapper *NewWrapper() {
+  Wrapper *w;
+  w = (Wrapper *) malloc(sizeof(Wrapper));
+  w->localh = NewHash();
+  w->locals = NewStringEmpty();
+  w->code = NewStringEmpty();
+  w->def = NewStringEmpty();
+  return w;
+}
 
 /* -----------------------------------------------------------------------------
  * DelWrapper()
+ *
+ * Delete a wrapper function object.
  * ----------------------------------------------------------------------------- */
 
-static void
-DelWrapper(DOH *wo) {
-  WrapObj *w = (WrapObj *) ObjData(wo);
+void DelWrapper(Wrapper *w) {
   Delete(w->localh);
+  Delete(w->locals);
   Delete(w->code);
-  Delete(w->attr);
-  DohFree(w);
+  Delete(w->def);
+  free(w);
+}
+
+/* -----------------------------------------------------------------------------
+ * Wrapper_compact_print_mode_set()
+ *
+ * Set compact_mode.
+ * ----------------------------------------------------------------------------- */
+
+void Wrapper_compact_print_mode_set(int flag) {
+  Compact_mode = flag;
 }
 
 /* -----------------------------------------------------------------------------
@@ -46,115 +63,340 @@ DelWrapper(DOH *wo) {
  * Formats a wrapper function and fixes up the indentation.
  * ----------------------------------------------------------------------------- */
 
-void 
-Wrapper_pretty_print(String *str, File *f) {
+void Wrapper_pretty_print(String *str, File *f) {
   String *ts;
   int level = 0;
   int c, i;
   int empty = 1;
+  int indent = 2;
+  int plevel = 0;
+  int label = 0;
 
-  ts = NewString("");
-  Seek(str,0, SEEK_SET);
-  Clear(ts);
+  ts = NewStringEmpty();
+  Seek(str, 0, SEEK_SET);
   while ((c = Getc(str)) != EOF) {
     if (c == '\"') {
-      Putc(c,ts);
+      Putc(c, ts);
       while ((c = Getc(str)) != EOF) {
 	if (c == '\\') {
-	  Putc(c,ts);
+	  Putc(c, ts);
 	  c = Getc(str);
 	}
-	Putc(c,ts);
-	if (c == '\"') break;
+	Putc(c, ts);
+	if (c == '\"')
+	  break;
       }
+      empty = 0;
     } else if (c == '\'') {
-      Putc(c,ts);
+      Putc(c, ts);
       while ((c = Getc(str)) != EOF) {
 	if (c == '\\') {
-	  Putc(c,ts);
+	  Putc(c, ts);
 	  c = Getc(str);
 	}
-	Putc(c,ts);
-	if (c == '\'') break;
+	Putc(c, ts);
+	if (c == '\'')
+	  break;
       }
+      empty = 0;
+    } else if (c == ':') {
+      Putc(c, ts);
+      if ((c = Getc(str)) == '\n') {
+	if (!empty && !strchr(Char(ts), '?'))
+	  label = 1;
+      }
+      Ungetc(c, str);
+    } else if (c == '(') {
+      Putc(c, ts);
+      plevel += indent;
+      empty = 0;
+    } else if (c == ')') {
+      Putc(c, ts);
+      plevel -= indent;
+      empty = 0;
     } else if (c == '{') {
-      Putc(c,ts);
-      Putc('\n',ts);
-      for (i = 0; i < level; i++) 
-	Putc(' ',f);
-      Printf(f,"%s", ts);
+      Putc(c, ts);
+      Putc('\n', ts);
+      for (i = 0; i < level; i++)
+	Putc(' ', f);
+      Printf(f, "%s", ts);
       Clear(ts);
-      level+=4;
+      level += indent;
       while ((c = Getc(str)) != EOF) {
 	if (!isspace(c)) {
-	  Ungetc(c,str);
+	  Ungetc(c, str);
 	  break;
 	}
       }
+      empty = 0;
     } else if (c == '}') {
       if (!empty) {
-	Putc('\n',ts);
+	Putc('\n', ts);
 	for (i = 0; i < level; i++)
-	  Putc(' ',f);
-	Printf(f,"%s",ts);
+	  Putc(' ', f);
+	Printf(f, "%s", ts);
 	Clear(ts);
       }
-      level-=4;
-      Putc(c,ts);
+      level -= indent;
+      Putc(c, ts);
+      empty = 0;
     } else if (c == '\n') {
-      Putc(c,ts);
-      for (i = 0; i < level; i++)
-	Putc(' ',f);
-      Printf(f,"%s",ts);
+      Putc(c, ts);
+      empty = 0;
+      if (!empty) {
+	int slevel = level;
+	if (label && (slevel >= indent))
+	  slevel -= indent;
+	if ((Char(ts))[0] != '#') {
+	  for (i = 0; i < slevel; i++)
+	    Putc(' ', f);
+	}
+	Printf(f, "%s", ts);
+	for (i = 0; i < plevel; i++)
+	  Putc(' ', f);
+      }
       Clear(ts);
+      label = 0;
       empty = 1;
+    } else if (c == '/') {
+      empty = 0;
+      Putc(c, ts);
+      c = Getc(str);
+      if (c != EOF) {
+	Putc(c, ts);
+	if (c == '/') {		/* C++ comment */
+	  while ((c = Getc(str)) != EOF) {
+	    if (c == '\n') {
+	      Ungetc(c, str);
+	      break;
+	    }
+	    Putc(c, ts);
+	  }
+	} else if (c == '*') {	/* C comment */
+	  int endstar = 0;
+	  while ((c = Getc(str)) != EOF) {
+	    if (endstar && c == '/') {	/* end of C comment */
+	      Putc(c, ts);
+	      break;
+	    }
+	    endstar = (c == '*');
+	    Putc(c, ts);
+	    if (c == '\n') {	/* multi-line C comment. Could be improved slightly. */
+	      for (i = 0; i < level; i++)
+		Putc(' ', ts);
+	    }
+	  }
+	}
+      }
     } else {
       if (!empty || !isspace(c)) {
-	Putc(c,ts);
+	Putc(c, ts);
 	empty = 0;
       }
     }
   }
-  if (!empty) Printf(f,"%s",ts);
+  if (!empty)
+    Printf(f, "%s", ts);
   Delete(ts);
-  Printf(f,"\n");
+  Printf(f, "\n");
 }
 
-
 /* -----------------------------------------------------------------------------
- * Wrapper_str()
+ * Wrapper_compact_print()
  *
- * Create a string representation of the wrapper function.
+ * Formats a wrapper function and fixes up the indentation.
+ * Print out in compact format, with Compact enabled.
  * ----------------------------------------------------------------------------- */
 
-static String *
-Wrapper_str(DOH *wo) {
-  String *s, *s1;
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  s = NewString(w->code);
-  s1 = NewString("");
+void Wrapper_compact_print(String *str, File *f) {
+  String *ts, *tf;		/*temp string & temp file */
+  int level = 0;
+  int c, i;
+  int empty = 1;
+  int indent = 2;
 
-  /* Replace the first '{' with a brace followed by local variable definitions */
-  Replace(s,"{", Getattr(w->attr,"locals"), DOH_REPLACE_FIRST);
-  Wrapper_pretty_print(s,s1);
-  Delete(s);
-  return s1;
+  ts = NewStringEmpty();
+  tf = NewStringEmpty();
+  Seek(str, 0, SEEK_SET);
+
+  while ((c = Getc(str)) != EOF) {
+    if (c == '\"') {		/* string 1 */
+      empty = 0;
+      Putc(c, ts);
+      while ((c = Getc(str)) != EOF) {
+	if (c == '\\') {
+	  Putc(c, ts);
+	  c = Getc(str);
+	}
+	Putc(c, ts);
+	if (c == '\"')
+	  break;
+      }
+    } else if (c == '\'') {	/* string 2 */
+      empty = 0;
+      Putc(c, ts);
+      while ((c = Getc(str)) != EOF) {
+	if (c == '\\') {
+	  Putc(c, ts);
+	  c = Getc(str);
+	}
+	Putc(c, ts);
+	if (c == '\'')
+	  break;
+      }
+    } else if (c == '{') {	/* start of {...} */
+      empty = 0;
+      Putc(c, ts);
+      if (Len(tf) == 0) {
+	for (i = 0; i < level; i++)
+	  Putc(' ', tf);
+      } else if ((Len(tf) + Len(ts)) < Max_line_size) {
+	Putc(' ', tf);
+      } else {
+	Putc('\n', tf);
+	Printf(f, "%s", tf);
+	Clear(tf);
+	for (i = 0; i < level; i++)
+	  Putc(' ', tf);
+      }
+      Append(tf, ts);
+      Clear(ts);
+      level += indent;
+      while ((c = Getc(str)) != EOF) {
+	if (!isspace(c)) {
+	  Ungetc(c, str);
+	  break;
+	}
+      }
+    } else if (c == '}') {	/* end of {...} */
+      empty = 0;
+      if (Len(tf) == 0) {
+	for (i = 0; i < level; i++)
+	  Putc(' ', tf);
+      } else if ((Len(tf) + Len(ts)) < Max_line_size) {
+	Putc(' ', tf);
+      } else {
+	Putc('\n', tf);
+	Printf(f, "%s", tf);
+	Clear(tf);
+	for (i = 0; i < level; i++)
+	  Putc(' ', tf);
+      }
+      Append(tf, ts);
+      Putc(c, tf);
+      Clear(ts);
+      level -= indent;
+    } else if (c == '\n') {	/* line end */
+      while ((c = Getc(str)) != EOF) {
+	if (!isspace(c))
+	  break;
+      }
+      if (c == '#') {
+	Putc('\n', ts);
+      } else if (c == '}') {
+	Putc(' ', ts);
+      } else if ((c != EOF) || (Len(ts) != 0)) {
+	if (Len(tf) == 0) {
+	  for (i = 0; i < level; i++)
+	    Putc(' ', tf);
+	} else if ((Len(tf) + Len(ts)) < Max_line_size) {
+	  Putc(' ', tf);
+	} else {
+	  Putc('\n', tf);
+	  Printf(f, "%s", tf);
+	  Clear(tf);
+	  for (i = 0; i < level; i++)
+	    Putc(' ', tf);
+	}
+	Append(tf, ts);
+	Clear(ts);
+      }
+      Ungetc(c, str);
+
+      empty = 1;
+    } else if (c == '/') {	/* comment */
+      empty = 0;
+      c = Getc(str);
+      if (c != EOF) {
+	if (c == '/') {		/* C++ comment */
+	  while ((c = Getc(str)) != EOF) {
+	    if (c == '\n') {
+	      Ungetc(c, str);
+	      break;
+	    }
+	  }
+	} else if (c == '*') {	/* C comment */
+	  int endstar = 0;
+	  while ((c = Getc(str)) != EOF) {
+	    if (endstar && c == '/') {	/* end of C comment */
+	      break;
+	    }
+	    endstar = (c == '*');
+	  }
+	} else {
+	  Putc('/', ts);
+	  Putc(c, ts);
+	}
+      }
+    } else if (c == '#') {	/* Preprocessor line */
+      Putc('#', ts);
+      while ((c = Getc(str)) != EOF) {
+	Putc(c, ts);
+	if (c == '\\') {	/* Continued line of the same PP */
+	  c = Getc(str);
+	  if (c == '\n')
+	    Putc(c, ts);
+	  else
+	    Ungetc(c, str);
+	} else if (c == '\n')
+	  break;
+      }
+      if (!empty) {
+	Append(tf, "\n");
+      }
+      Append(tf, ts);
+      Printf(f, "%s", tf);
+      Clear(tf);
+      Clear(ts);
+      for (i = 0; i < level; i++)
+	Putc(' ', tf);
+      empty = 1;
+    } else {
+      if (!empty || !isspace(c)) {
+	Putc(c, ts);
+	empty = 0;
+      }
+    }
+  }
+  if (!empty) {
+    Append(tf, ts);
+  }
+  if (Len(tf) != 0)
+    Printf(f, "%s", tf);
+  Delete(ts);
+  Delete(tf);
+  Printf(f, "\n");
 }
 
 /* -----------------------------------------------------------------------------
- * Wrapper_dump()
- * 
- * Serialize on out
+ * Wrapper_print()
+ *
+ * Print out a wrapper function.  Does pretty or compact printing as well.
  * ----------------------------------------------------------------------------- */
 
-static int
-Wrapper_dump(DOH *wo, DOH *out) {
-  String *s;
-  int len;
-  s = Wrapper_str(wo);
-  len = Dump(s,out);
-  Delete(s);
-  return len;
+void Wrapper_print(Wrapper *w, File *f) {
+  String *str;
+
+  str = NewStringEmpty();
+  Printf(str, "%s\n", w->def);
+  Printf(str, "%s\n", w->locals);
+  Printf(str, "%s\n", w->code);
+  if (Compact_mode == 1)
+    Wrapper_compact_print(str, f);
+  else
+    Wrapper_pretty_print(str, f);
+
+  Delete(str);
 }
 
 /* -----------------------------------------------------------------------------
@@ -164,15 +406,13 @@ Wrapper_dump(DOH *wo, DOH *out) {
  * present (which may or may not be okay to the caller).
  * ----------------------------------------------------------------------------- */
 
-int
-Wrapper_add_local(Wrapper *wo, const String_or_char *name, const String_or_char *decl) {
-  WrapObj *w = (WrapObj *) ObjData(wo);
+int Wrapper_add_local(Wrapper *w, const String_or_char *name, const String_or_char *decl) {
   /* See if the local has already been declared */
-  if (Getattr(w->localh,name)) {
+  if (Getattr(w->localh, name)) {
     return -1;
   }
-  Setattr(w->localh,name,decl);
-  Printf(Getattr(w->attr,"locals"),"%s;\n", decl);
+  Setattr(w->localh, name, decl);
+  Printf(w->locals, "%s;\n", decl);
   return 0;
 }
 
@@ -184,25 +424,23 @@ Wrapper_add_local(Wrapper *wo, const String_or_char *name, const String_or_char 
  * to manually construct the 'decl' string before calling.
  * ----------------------------------------------------------------------------- */
 
-int
-Wrapper_add_localv(Wrapper *wo, const String_or_char *name, ...) {
+int Wrapper_add_localv(Wrapper *w, const String_or_char *name, ...) {
   va_list ap;
-  int     ret;
+  int ret;
   String *decl;
-  DOH       *obj;
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  decl = NewString("");
-  va_start(ap,name);
+  DOH *obj;
+  decl = NewStringEmpty();
+  va_start(ap, name);
 
-  obj = va_arg(ap,void *);
+  obj = va_arg(ap, void *);
   while (obj) {
-    Printv(decl,obj,0);
+    Append(decl, obj);
     Putc(' ', decl);
     obj = va_arg(ap, void *);
   }
   va_end(ap);
 
-  ret = Wrapper_add_local(wo,name,decl);
+  ret = Wrapper_add_local(w, name, decl);
   Delete(decl);
   return ret;
 }
@@ -213,10 +451,8 @@ Wrapper_add_localv(Wrapper *wo, const String_or_char *name, ...) {
  * Check to see if a local name has already been declared
  * ----------------------------------------------------------------------------- */
 
-int
-Wrapper_check_local(Wrapper *wo, const String_or_char *name) {
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  if (Getattr(w->localh,name)) {
+int Wrapper_check_local(Wrapper *w, const String_or_char *name) {
+  if (Getattr(w->localh, name)) {
     return 1;
   }
   return 0;
@@ -229,27 +465,26 @@ Wrapper_check_local(Wrapper *wo, const String_or_char *name) {
  * used.  Returns the name that was actually selected.
  * ----------------------------------------------------------------------------- */
 
-char *
-Wrapper_new_local(Wrapper *wo, const String_or_char *name, const String_or_char *decl) {
+char *Wrapper_new_local(Wrapper *w, const String_or_char *name, const String_or_char *decl) {
   int i;
-  char      *ret;
   String *nname = NewString(name);
   String *ndecl = NewString(decl);
-  WrapObj *w = (WrapObj *) ObjData(wo);
+  char *ret;
+
   i = 0;
 
-  while (Wrapper_check_local(wo,nname)) {
+  while (Wrapper_check_local(w, nname)) {
     Clear(nname);
-    Printf(nname,"%s%d",name,i);
+    Printf(nname, "%s%d", name, i);
     i++;
   }
   Replace(ndecl, name, nname, DOH_REPLACE_ID);
-  Setattr(w->localh,nname,ndecl);
-  Printf(Getattr(w->attr,"locals"),"%s;\n", ndecl);
+  Setattr(w->localh, nname, ndecl);
+  Printf(w->locals, "%s;\n", ndecl);
   ret = Char(nname);
   Delete(nname);
   Delete(ndecl);
-  return ret;      /* Note: nname should still exists in the w->localh hash */
+  return ret;			/* Note: nname should still exists in the w->localh hash */
 }
 
 
@@ -261,206 +496,23 @@ Wrapper_new_local(Wrapper *wo, const String_or_char *name, const String_or_char 
  * to manually construct the 'decl' string before calling.
  * ----------------------------------------------------------------------------- */
 
-char *
-Wrapper_new_localv(Wrapper *wo, const String_or_char *name, ...) {
+char *Wrapper_new_localv(Wrapper *w, const String_or_char *name, ...) {
   va_list ap;
   char *ret;
   String *decl;
-  DOH       *obj;
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  decl = NewString("");
-  va_start(ap,name);
+  DOH *obj;
+  decl = NewStringEmpty();
+  va_start(ap, name);
 
-  obj = va_arg(ap,void *);
+  obj = va_arg(ap, void *);
   while (obj) {
-    Printv(decl,obj,0);
-    Putc(' ',decl);
+    Append(decl, obj);
+    Putc(' ', decl);
     obj = va_arg(ap, void *);
   }
   va_end(ap);
 
-  ret = Wrapper_new_local(wo,name,decl);
+  ret = Wrapper_new_local(w, name, decl);
   Delete(decl);
   return ret;
 }
-
-/* -----------------------------------------------------------------------------
- * Wrapper_Getattr()
- * ----------------------------------------------------------------------------- */
-
-static DOH *
-Wrapper_getattr(Wrapper *wo, DOH *k) {
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  return Getattr(w->attr,k);
-}
-
-/* -----------------------------------------------------------------------------
- * Wrapper_Delattr()
- * ----------------------------------------------------------------------------- */
-
-static int
-Wrapper_delattr(Wrapper *wo, DOH *k) {
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  Delattr(w->attr,k);
-  return 0;
-}
-
-/* -----------------------------------------------------------------------------
- * Wrapper_Setattr()
- * ----------------------------------------------------------------------------- */
-
-static int
-Wrapper_setattr(Wrapper *wo, DOH *k, DOH *obj) {
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  return Setattr(w->attr,k,obj);
-}
-
-/* -----------------------------------------------------------------------------
- * Wrapper_firstkey()
- * ----------------------------------------------------------------------------- */
-
-static DOH *
-Wrapper_firstkey(Wrapper *wo) {
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  return Firstkey(w->attr);
-}
-
-/* -----------------------------------------------------------------------------
- * Wrapper_firstkey()
- * ----------------------------------------------------------------------------- */
-
-static DOH *
-Wrapper_nextkey(Wrapper *wo) {
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  return Nextkey(w->attr);
-}
-
-/* File methods.   These simply operate on the code string */
-
-static int
-Wrapper_read(Wrapper *wo, void *buffer, int nbytes) {
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  return Read(w->code,buffer,nbytes);
-}
-
-static int
-Wrapper_write(Wrapper *wo, void *buffer, int nbytes) {
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  return Write(w->code,buffer,nbytes);
-}
-
-static int
-Wrapper_putc(Wrapper *wo, int ch) {
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  return Putc(ch, w->code);
-}
-
-static int
-Wrapper_getc(Wrapper *wo) {
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  return Getc(w->code);
-}
-
-static int
-Wrapper_ungetc(Wrapper *wo, int ch) {
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  return Ungetc(ch, w->code);
-}
-
-static int
-Wrapper_seek(Wrapper *wo, long offset, int whence) {
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  return Seek(w->code, offset, whence);
-}
-
-static long
-Wrapper_tell(Wrapper *wo) {
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  return Tell(w->code);
-}
-
-/* String method */
-
-static int Wrapper_replace(DOH *wo, DOH *tok, DOH *rep, int flags) {
-  WrapObj *w = (WrapObj *) ObjData(wo);
-  return Replace(w->code, tok, rep, flags);
-}
-
-/* -----------------------------------------------------------------------------
- * type information
- * ----------------------------------------------------------------------------- */
-
-static DohHashMethods WrapperHashMethods = {
-  Wrapper_getattr,
-  Wrapper_setattr,
-  Wrapper_delattr,
-  Wrapper_firstkey,
-  Wrapper_nextkey,
-};
-
-static DohFileMethods WrapperFileMethods = {
-  Wrapper_read, 
-  Wrapper_write,
-  Wrapper_putc,
-  Wrapper_getc,
-  Wrapper_ungetc,
-  Wrapper_seek,
-  Wrapper_tell,
-  0,              /* close */
-};
-
-static DohStringMethods WrapperStringMethods = {
-  Wrapper_replace,
-  0,
-};
-
-static DohObjInfo WrapperType = {
-    "Wrapper",          /* objname */
-    DelWrapper,         /* doh_del */
-    0,                  /* doh_copy */
-    0,                  /* doh_clear */
-    Wrapper_str,        /* doh_str */
-    0,                  /* doh_data */
-    0,                  /* doh_dump */
-    0,                  /* doh_len */
-    0,                  /* doh_hash    */
-    0,                  /* doh_cmp */
-    0,                  /* doh_setfile */
-    0,                  /* doh_getfile */
-    0,                  /* doh_setline */
-    0,                  /* doh_getline */
-    &WrapperHashMethods, /* doh_mapping */
-    0,                   /* doh_sequence */
-    &WrapperFileMethods, /* doh_file */
-    &WrapperStringMethods, /* doh_string */
-    0,                /* doh_positional */
-    0,
-};
-
-/* -----------------------------------------------------------------------------
- * NewWrapper()
- *
- * Create a new wrapper function object.
- * ----------------------------------------------------------------------------- */
-
-#define DOHTYPE_WRAPPER   0xa
-
-Wrapper *
-NewWrapper() {
-  WrapObj *w;
-  static int init = 0;
-  if (!init) {
-    DohRegisterType(DOHTYPE_WRAPPER, &WrapperType);
-    init = 1;
-  }
-  w = (WrapObj *) DohMalloc(sizeof(WrapObj));
-  w->localh = NewHash();
-  w->code = NewString("");
-  w->attr= NewHash();
-  Setattr(w->attr,"locals","{\n");
-  Setattr(w->attr,"wrapcode", w->code);
-  return DohObjMalloc(DOHTYPE_WRAPPER, w);
-}
-
-
-

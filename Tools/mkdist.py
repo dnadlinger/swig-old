@@ -1,67 +1,42 @@
 #!/usr/local/bin/python
 
-# This script builds a SWIG1.3 distribution.
-# Usage : mkdist.py dirname 
+# This script builds a swig-1.3 distribution.
+# Usage : mkdist.py version, where version should be 1.3.x
 
 import sys
+import string
+import os
 
 try:
-   dirname = sys.argv[1]
+   version = sys.argv[1]
+   dirname = "swig-" + version
 except:
-   print "Usage: mkdist.py directory"
+   print "Usage: mkdist.py version, where version should be 1.3.x"
    sys.exit(0)
 
-# If directory exists, remove it
-import os
+# Check name matches normal unix conventions
+if string.lower(dirname) != dirname:
+  print "directory name ("+dirname+") should be in lowercase"
+  sys.exit(0)
+
+# If directory and tarball exist, remove it
 print "Removing ", dirname
 os.system("rm -rf "+dirname)
+
+print "Removing "+dirname+".tar if exists"
+os.system("rm -f "+dirname+".tar.gz")
+
+print "Removing "+dirname+".tar.gz if exists"
+os.system("rm -f "+dirname+".tar")
 
 # Do a CVS export on the directory name
 
 print "Checking out SWIG"
 os.system("cvs export -D now -d "+dirname+ " SWIG")
 
-# Now clean the source directory
+# Remove the debian directory -- it's not official
 
-SOURCES = ['DOH','Swig','Preprocessor','SWIG1.1','Modules1.1', 'Modules', 'Include']
-
-srcs = [ ]
-for d in SOURCES:
-	srcs.append(dirname+"/Source/"+d)
-
-print "Cleaning the source directory..."
-import glob
-import string
-dirs = glob.glob(dirname+"/Source/*")
-dnames = [ ]
-for d in dirs:
-      if not (d in srcs):
-		print "Removing ", d
-		os.system("rm -rf "+d)
-		dnames.append(string.split(d,"/")[-1])
-
-print "Patching the configure script"
-
-f = open(dirname+"/configure.in")
-s = f.read()
-f.close()
-
-# Remove any dirs not in SOURCES from the configure line
-
-print dnames
-
-for d in dnames:
-	s = string.replace(s,"Source/"+d+"/Makefile","")
-	s = string.replace(s,"Source/"+d,"")
-	
-f = open(dirname+"/configure.in","w")
-f.write(s)
-f.close()
-
-# Clean the documentation directory
-
-print "Cleaning the Doc directory"
-os.system("rm -rf "+dirname+"/Doc/*")
+os.system("rm -Rf "+dirname+"/debian");
 
 # Blow away all .cvsignore files
 
@@ -70,11 +45,19 @@ os.system("find "+dirname+" -name .cvsignore -exec rm {} \\;");
 
 # Go build the system
 
-os.system("cd "+dirname+"; autoconf")
-os.system("cd "+dirname+"/Source/DOH; autoconf")
-os.system("cd "+dirname+"/Tools; autoconf")
-os.system("cd "+dirname+"/Source/SWIG1.1; bison -y -d parser.yxx; mv y.tab.c parser.cxx; mv y.tab.h parser.h")
+print "Building system"
+os.system("cd "+dirname+"; ./autogen.sh")
+os.system("cd "+dirname+"/Tools/WAD; autoconf")
+os.system("cd "+dirname+"/Source/CParse; bison -y -d parser.y; mv y.tab.c parser.c; mv y.tab.h parser.h")
 
-os.system("tar -cf "+string.lower(dirname)+".tar "+dirname)
-os.system("gzip "+string.lower(dirname)+".tar")
+# Remove autoconf files
+os.system("find "+dirname+" -name autom4te.cache -exec rm -rf {} \\;");
+
+# Build documentation
+print "Building documentation"
+os.system("cd "+dirname+"/Doc/Manual; make; rm *.bak")
+
+# Build the tar-ball
+os.system("tar -cf "+dirname+".tar "+dirname)
+os.system("gzip "+dirname+".tar")
 

@@ -1,0 +1,14 @@
+example.py
+example.pyc
+*_wrap.c
+*_wrap.cxx
+*.pyd
+*.dll
+*.dsw
+*.exp
+*.lib
+*.ncb
+*.opt
+*.plg
+Release
+Debug

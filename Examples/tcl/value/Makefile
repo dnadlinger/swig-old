@@ -1,5 +1,5 @@
 TOP        = ../..
-SWIG       = $(TOP)/../swig
+SWIG       = $(TOP)/../preinst-swig
 SRCS       = example.c
 TARGET     = my_tclsh
 DLTARGET   = example
@@ -14,6 +14,6 @@ static::
 	TARGET='$(TARGET)' INTERFACE='$(INTERFACE)' tclsh
 
 clean::
-	rm -f *_wrap* *.o my_tclsh *~ .~* core *.so *.sl
+	$(MAKE) -f $(TOP)/Makefile tcl_clean
 
 check: all

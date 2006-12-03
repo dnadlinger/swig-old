@@ -1,6 +1,13 @@
-/* This is a support file needed to build a new version of Wish
-   Normally, this capability is found in TkAppInit.c, but this creates
-   tons of namespace problems for many applications. */
+/* -----------------------------------------------------------------------------
+ * See the LICENSE file for information on copyright, usage and redistribution
+ * of SWIG, and the README file for authors - http://www.swig.org/release.html.
+ *
+ * mactkinit.c
+ *
+ * This is a support file needed to build a new version of Wish.
+ * Normally, this capability is found in TkAppInit.c, but this creates
+ * tons of namespace problems for many applications.
+ * ----------------------------------------------------------------------------- */
    
 #include <Gestalt.h>
 #include <ToolUtils.h>
@@ -26,7 +33,7 @@ short			InstallConsole _ANSI_ARGS_((short fd));
 void			RemoveConsole _ANSI_ARGS_((void));
 long			WriteCharsToConsole _ANSI_ARGS_((char *buff, long n));
 long			ReadCharsFromConsole _ANSI_ARGS_((char *buff, long n));
-extern char *		__ttyname _ANSI_ARGS_((long fildes));
+char *			__ttyname _ANSI_ARGS_((long fildes));
 short			SIOUXHandleOneEvent _ANSI_ARGS_((EventRecord *event));
 
 /*
@@ -213,10 +220,10 @@ ReadCharsFromConsole(char *buffer, long n)
 extern char *
 __ttyname(long fildes)
 {
-    static char *__devicename = "null device";
+    static char *devicename = "null device";
 
     if (fildes >= 0 && fildes <= 2) {
-	return (__devicename);
+	return (devicename);
     }
     
     return (0L);

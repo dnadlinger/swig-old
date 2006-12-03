@@ -1,8 +1,6 @@
 /* File : example.i */
 %module example
 %{
-/* Put headers and other declarations here */
-
 /*
    example of a function that returns a value in the char * argument
    normally used like:
@@ -18,67 +16,86 @@ void f1(char *s) {
 }
 
 void f2(char *s) {
-  return f1(s);
+  f1(s);
 }
 
 void f3(char *s) {
-  return f1(s);
+  f1(s);
 }
 
 %}
 
-/* default behaviour is that of input arg, besides java cannot return
-   a value in a string argument
+/* default behaviour is that of input arg, Java cannot return a value in a 
+ * string argument, so any changes made by f1(char*) will not be seen in the Java
+ * string passed to the f1 function.
 */
 void f1(char *s);
 
-%include typemaps.i
+%include various.i
 
-/* use the BYTE typemap to get around this, but the resulting code is ugly */
+/* use the BYTE argout typemap to get around this. Changes in the string by 
+ * f2 can be seen in Java. */
 void f2(char *BYTE);
 
-/* make a StringBuffer typemap to handle this case */
 
-/* what type to use in java source code */
-%typemap(java,jtype) char *SBUF {StringBuffer}
 
-/* what is the corresponding jni type */
-%typemap(java,jni) char *SBUF {jobject}
+/* Alternative approach uses a StringBuffer typemap for argout */
 
-/* how to convert java type to requested c type */
-%typemap(java,in) char *SBUF {
-  jclass sbufClass;
-  jmethodID toStringID;
-  jmethodID setLengthID;
-  jstring js;
+/* Define the types to use in the generated JNI C code and Java code */
+%typemap(jni) char *SBUF "jobject"
+%typemap(jtype) char *SBUF "StringBuffer"
+%typemap(jstype) char *SBUF "StringBuffer"
 
-  $target = NULL;
-  if($source != NULL) {
-    /* get the String from the StringBuffer */
-    sbufClass = (*jenv)->GetObjectClass(jenv, $source);
-    toStringID = (*jenv)->GetMethodID(jenv, sbufClass, "toString", "()Ljava/lang/String;");
-    js = (jstring) (*jenv)->CallObjectMethod(jenv, $source, toStringID);
-    /* convert the String to a char * */
-    $target =  (char *)(*jenv)->GetStringUTFChars(jenv, js, 0); 
-    /* zero the original StringBuffer, so we can replace it with the result */
+/* How to convert Java(JNI) type to requested C type */
+%typemap(in) char *SBUF {
+
+  $1 = NULL;
+  if($input != NULL) {
+    /* Get the String from the StringBuffer */
+    jmethodID setLengthID;
+    jclass sbufClass = (*jenv)->GetObjectClass(jenv, $input);
+    jmethodID toStringID = (*jenv)->GetMethodID(jenv, sbufClass, "toString", "()Ljava/lang/String;");
+    jstring js = (jstring) (*jenv)->CallObjectMethod(jenv, $input, toStringID);
+
+    /* Convert the String to a C string */
+    const char *pCharStr = (*jenv)->GetStringUTFChars(jenv, js, 0);
+
+    /* Take a copy of the C string as the typemap is for a non const C string */
+    jmethodID capacityID = (*jenv)->GetMethodID(jenv, sbufClass, "capacity", "()I");
+    jint capacity = (*jenv)->CallIntMethod(jenv, $input, capacityID);
+    $1 = (char *) malloc(capacity+1);
+    strcpy($1, pCharStr);
+
+    /* Release the UTF string we obtained with GetStringUTFChars */
+    (*jenv)->ReleaseStringUTFChars(jenv,  js, pCharStr);
+
+    /* Zero the original StringBuffer, so we can replace it with the result */
     setLengthID = (*jenv)->GetMethodID(jenv, sbufClass, "setLength", "(I)V");
-    (*jenv)->CallVoidMethod(jenv, $source, setLengthID, (jint) 0);
+    (*jenv)->CallVoidMethod(jenv, $input, setLengthID, (jint) 0);
   }
 }
 
-/* how to convert the c type to the java type */
-%typemap(java,argout) char *SBUF {
-  jclass sbufClass;
-  jmethodID appendStringID;
+/* How to convert the C type to the Java(JNI) type */
+%typemap(argout) char *SBUF {
 
-  if($target != NULL) {
-    /* append the result to the empty StringBuffer */
-    sbufClass = (*jenv)->GetObjectClass(jenv, $source);
-    appendStringID = (*jenv)->GetMethodID(jenv, sbufClass, "append", "(Ljava/lang/String;)Ljava/lang/StringBuffer;");
-    (*jenv)->CallObjectMethod(jenv, $source, appendStringID, (*jenv)->NewStringUTF(jenv, $target));
-    if($source != NULL) (*jenv)->ReleaseStringUTFChars(jenv, $source, $target);
+  if($1 != NULL) {
+    /* Append the result to the empty StringBuffer */
+    jstring newString = (*jenv)->NewStringUTF(jenv, $1);
+    jclass sbufClass = (*jenv)->GetObjectClass(jenv, $input);
+    jmethodID appendStringID = (*jenv)->GetMethodID(jenv, sbufClass, "append", "(Ljava/lang/String;)Ljava/lang/StringBuffer;");
+    (*jenv)->CallObjectMethod(jenv, $input, appendStringID, newString);
+
+    /* Clean up the string object, no longer needed */
+    free($1);
+    $1 = NULL;
   }  
 }
+/* Prevent the default freearg typemap from being used */
+%typemap(freearg) char *SBUF ""
+
+/* Convert the jstype to jtype typemap type */
+%typemap(javain) char *SBUF "$javainput"
 
 /* apply the new typemap to our function */
 void f3(char *SBUF);
+

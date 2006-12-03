@@ -16,7 +16,6 @@ Example.cvar   =  "S"
 Example.fvar   =  3.14159
 Example.dvar   =  2.1828
 Example.strvar =  "Hello World"
-Example.cstrvar = "Goodbye"
 Example.iptrvar= Example.new_int(37)
 Example.ptptr  = Example.new_Point(37,42)
 Example.name   = "Bill"
@@ -25,23 +24,23 @@ Example.name   = "Bill"
 
 puts "Variables (values printed from Ruby)"
 
-print "ivar      = ", Example.ivar, "\n"
-print "svar      = ", Example.svar, "\n"
-print "lvar      = ", Example.lvar, "\n"
-print "uivar     = ", Example.uivar, "\n"
-print "usvar     = ", Example.usvar, "\n"
-print "ulvar     = ", Example.ulvar, "\n"
-print "scvar     = ", Example.scvar, "\n"
-print "ucvar     = ", Example.ucvar, "\n"
-print "fvar      = ", Example.fvar, "\n"
-print "dvar      = ", Example.dvar, "\n"
-print "cvar      = ", Example.cvar, "\n"
-print "strvar    = ", Example.strvar, "\n"
-print "cstrvar   = ", Example.cstrvar, "\n"
-print "iptrvar   = ", Example.iptrvar, "\n"
-print "name      = ", Example.name, "\n"
-print "ptptr     = ", Example.ptptr, " ", Example.Point_print(Example.ptptr), "\n"
-print "pt        = ", Example.pt, " ", Example.Point_print(Example.pt), "\n"
+puts "ivar      = #{Example.ivar}"
+puts "svar      = #{Example.svar}"
+puts "lvar      = #{Example.lvar}"
+puts "uivar     = #{Example.uivar}"
+puts "usvar     = #{Example.usvar}"
+puts "ulvar     = #{Example.ulvar}"
+puts "scvar     = #{Example.scvar}"
+puts "ucvar     = #{Example.ucvar}"
+puts "fvar      = #{Example.fvar}"
+puts "dvar      = #{Example.dvar}"
+puts "cvar      = #{Example.cvar}"
+puts "strvar    = #{Example.strvar}"
+puts "cstrvar   = #{Example.cstrvar}"
+puts "iptrvar   = #{Example.iptrvar}"
+puts "name      = #{Example.name}"
+puts "ptptr     = #{Example.ptptr} (#{Example.Point_print(Example.ptptr)})"
+puts "pt        = #{Example.pt} (#{Example.Point_print(Example.pt)})"
 
 puts "\nVariables (values printed from C)"
 
@@ -66,13 +65,13 @@ rescue NameError
 end
 
 
-print "\nI'm going to try and update a structure variable.\n\n"
+puts "\nI'm going to try and update a structure variable.\n"
 
 Example.pt = Example.ptptr
 
 puts "The new value is"
 Example.pt_print()
-print "You should see the value ", Example.Point_print(Example.ptptr), "\n"
+puts "You should see the value #{Example.Point_print(Example.ptptr)}"
 
 
 

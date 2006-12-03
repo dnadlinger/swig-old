@@ -1,673 +1,354 @@
-/*
- --------------------------------------------------
- argout typemaps
- convert arguments from C to Scheme
- --------------------------------------------------
- */
+/* -----------------------------------------------------------------------------
+ * See the LICENSE file for information on copyright, usage and redistribution
+ * of SWIG, and the README file for authors - http://www.swig.org/release.html.
+ *
+ * typemaps.i
+ * ----------------------------------------------------------------------------- */
 
-%{
-#define MAXVALUES 6
-%}
+/* The MzScheme module handles all types uniformly via typemaps. Here
+   are the definitions.  */
 
-%typemap(mzscheme, argout)
-    int *M_OUTPUT,
-    unsigned int *M_OUTPUT,
-    short *M_OUTPUT,
-    unsigned short *M_OUTPUT
+/* Pointers */
+
+%typemap(in) SWIGTYPE * {
+  $1 = ($ltype) SWIG_MustGetPtr($input, $descriptor, $argnum, 0);
+}
+
+%typemap(in) void * {
+  $1 = SWIG_MustGetPtr($input, NULL, $argnum, 0);
+}
+
+%typemap(varin) SWIGTYPE * {
+  $1 = ($ltype) SWIG_MustGetPtr($input, $descriptor, 1, 0);
+}
+
+%typemap(varin) SWIGTYPE & {
+  $1 = *(($1_ltype)SWIG_MustGetPtr($input, $descriptor, 1, 0));
+}
+
+%typemap(varin) SWIGTYPE [ANY] {
+  void *temp;
+  int ii;
+  $1_basetype *b = 0;
+  temp = SWIG_MustGetPtr($input, $1_descriptor, 1, 0);
+  b = ($1_basetype *) $1;
+  for (ii = 0; ii < $1_size; ii++) b[ii] = *(($1_basetype *) temp + ii);
+}
+  
+
+%typemap(varin) void * {
+  $1 = SWIG_MustGetPtr($input, NULL, 1, 0);
+}
+
+%typemap(out) SWIGTYPE * {
+  $result = SWIG_NewPointerObj ($1, $descriptor, $owner);
+}
+
+%typemap(out) SWIGTYPE *DYNAMIC {
+  swig_type_info *ty = SWIG_TypeDynamicCast($1_descriptor,(void **) &$1);
+  $result = SWIG_NewPointerObj ($1, ty, $owner);
+}
+    
+%typemap(varout) SWIGTYPE *, SWIGTYPE [] {
+  $result = SWIG_NewPointerObj ($1, $descriptor, 0);
+}
+
+%typemap(varout) SWIGTYPE & {
+  $result = SWIG_NewPointerObj((void *) &$1, $1_descriptor, 0);
+}
+
+/* C++ References */
+
+#ifdef __cplusplus
+
+%typemap(in) SWIGTYPE &, const SWIGTYPE & { 
+  $1 = ($ltype) SWIG_MustGetPtr($input, $descriptor, $argnum, 0);
+  if ($1 == NULL) scheme_signal_error("swig-type-error (null reference)");
+}
+
+%typemap(out) SWIGTYPE &, const SWIGTYPE & {
+  $result = SWIG_NewPointerObj ($1, $descriptor, $owner);
+}
+
+%typemap(out) SWIGTYPE &DYNAMIC {
+  swig_type_info *ty = SWIG_TypeDynamicCast($1_descriptor,(void **) &$1);
+  $result = SWIG_NewPointerObj ($1, ty, $owner);
+}
+
+#endif
+
+/* Arrays */
+
+%typemap(in) SWIGTYPE[] {
+  $1 = ($ltype) SWIG_MustGetPtr($input, $descriptor, $argnum, 0);
+}
+
+%typemap(out) SWIGTYPE[] {
+  $result = SWIG_NewPointerObj ($1, $descriptor, $owner);
+}
+
+/* Enums */
+%typemap(in) enum SWIGTYPE {
+  if (!SWIG_is_integer($input)) 
+      scheme_wrong_type(FUNC_NAME, "integer", $argnum - 1, argc, argv);
+  $1 = ($1_type) SWIG_convert_int($input);
+}
+
+%typemap(varin) enum SWIGTYPE {
+  if (!SWIG_is_integer($input)) 
+      scheme_wrong_type(FUNC_NAME, "integer", 0, argc, argv);
+  $1 = ($1_type) SWIG_convert_int($input);
+}
+
+%typemap(out) enum SWIGTYPE "$result = scheme_make_integer_value($1);";
+%typemap(varout) enum SWIGTYPE "$result = scheme_make_integer_value($1);";
+
+
+/* Pass-by-value */
+
+%typemap(in) SWIGTYPE($&1_ltype argp) {
+  argp = ($&1_ltype) SWIG_MustGetPtr($input, $&1_descriptor, $argnum, 0);
+  $1 = *argp;
+}
+
+%typemap(varin) SWIGTYPE {
+  $&1_ltype argp;
+  argp = ($&1_ltype) SWIG_MustGetPtr($input, $&1_descriptor, 1, 0);
+  $1 = *argp;
+}
+
+
+%typemap(out) SWIGTYPE 
+#ifdef __cplusplus
 {
-    Scheme_Object *s;
-    s = scheme_make_integer(*$target);
-    m_output_helper(_values, s, &_lenv);
-}
-
-%typemap(mzscheme, argout)
-    long *M_OUTPUT
+  $&1_ltype resultptr;
+  resultptr = new $1_ltype(($1_ltype &) $1);
+  $result =  SWIG_NewPointerObj (resultptr, $&1_descriptor, 1);
+} 
+#else
 {
-    Scheme_Object *s;
-    s = scheme_make_integer_value(*$target);
-    m_output_helper(_values, s, &_lenv);
+  $&1_ltype resultptr;
+  resultptr = ($&1_ltype) malloc(sizeof($1_type));
+  memmove(resultptr, &$1, sizeof($1_type));
+  $result = SWIG_NewPointerObj(resultptr, $&1_descriptor, 1);
 }
+#endif
 
-
-%typemap(mzscheme, argout)
-    unsigned long *M_OUTPUT
+%typemap(varout) SWIGTYPE 
+#ifdef __cplusplus
 {
-    Scheme_Object *s;
-    s = scheme_make_integer_value_from_unsigned(*$target);
-    m_output_helper(_values, s, &_lenv);
-}
-
-
-%typemap(mzscheme, argout)
-    char *M_OUTPUT,
-    unsigned char *M_OUTPUT
+  $&1_ltype resultptr;
+  resultptr = new $1_ltype(($1_ltype &) $1);
+  $result =  SWIG_NewPointerObj (resultptr, $&1_descriptor, 0);
+} 
+#else
 {
-    Scheme_Object *s;
-    s = scheme_make_string_without_copying(*$target);
-    m_output_helper(_values, s, &_lenv);
+  $&1_ltype resultptr;
+  resultptr = ($&1_ltype) malloc(sizeof($1_type));
+  memmove(resultptr, &$1, sizeof($1_type));
+  $result = SWIG_NewPointerObj(resultptr, $&1_descriptor, 0);
 }
+#endif
 
-%typemap(mzscheme, argout)
-float *M_OUTPUT,
-double *M_OUTPUT
+/* The SIMPLE_MAP macro below defines the whole set of typemaps needed
+   for simple types. */
+
+%define SIMPLE_MAP(C_NAME, MZ_PREDICATE, MZ_TO_C, C_TO_MZ, MZ_NAME)
+%typemap(in) C_NAME {
+    if (!MZ_PREDICATE($input))
+	scheme_wrong_type(FUNC_NAME, #MZ_NAME, $argnum - 1, argc, argv);
+    $1 = MZ_TO_C($input);
+}
+%typemap(varin) C_NAME {
+    if (!MZ_PREDICATE($input))
+	scheme_wrong_type(FUNC_NAME, #MZ_NAME, 0, argc, argv);
+    $1 = MZ_TO_C($input);
+}
+%typemap(out) C_NAME {
+    $result = C_TO_MZ($1);
+}
+%typemap(varout) C_NAME {
+    $result = C_TO_MZ($1);
+}
+%typemap(in) C_NAME *INPUT (C_NAME temp) {
+    temp = (C_NAME) MZ_TO_C($input);
+    $1 = &temp;
+}
+%typemap(in,numinputs=0) C_NAME *OUTPUT (C_NAME temp) {
+    $1 = &temp;
+}
+%typemap(argout) C_NAME *OUTPUT {
+    Scheme_Object *s;
+    s = C_TO_MZ(*$1);
+    SWIG_APPEND_VALUE(s);
+}
+%typemap(in) C_NAME *BOTH = C_NAME *INPUT;
+%typemap(argout) C_NAME *BOTH = C_NAME *OUTPUT;
+%typemap(in) C_NAME *INOUT = C_NAME *INPUT;
+%typemap(argout) C_NAME *INOUT = C_NAME *OUTPUT;
+%enddef
+
+SIMPLE_MAP(bool, SCHEME_BOOLP, SCHEME_TRUEP,
+	   swig_make_boolean, boolean);
+SIMPLE_MAP(char, SCHEME_CHARP, SCHEME_CHAR_VAL,
+	   scheme_make_character, character);
+SIMPLE_MAP(unsigned char, SCHEME_CHARP, SCHEME_CHAR_VAL,
+	   scheme_make_character, character);
+SIMPLE_MAP(int, SWIG_is_integer, SWIG_convert_int,
+	   scheme_make_integer_value, integer);
+SIMPLE_MAP(short, SWIG_is_integer, SWIG_convert_short,
+	   scheme_make_integer_value, integer);
+SIMPLE_MAP(long, SWIG_is_integer, SWIG_convert_long,
+	   scheme_make_integer_value, integer);
+SIMPLE_MAP(ptrdiff_t, SWIG_is_integer, SWIG_convert_long,
+	   scheme_make_integer_value, integer);
+SIMPLE_MAP(unsigned int, SWIG_is_unsigned_integer, SWIG_convert_unsigned_int,
+	   scheme_make_integer_value_from_unsigned, integer);
+SIMPLE_MAP(unsigned short, SWIG_is_unsigned_integer, SWIG_convert_unsigned_short,
+	   scheme_make_integer_value_from_unsigned, integer);
+SIMPLE_MAP(unsigned long, SWIG_is_unsigned_integer, SWIG_convert_unsigned_long,
+	   scheme_make_integer_value_from_unsigned, integer);
+SIMPLE_MAP(size_t, SWIG_is_unsigned_integer, SWIG_convert_unsigned_long,
+	   scheme_make_integer_value_from_unsigned, integer);
+SIMPLE_MAP(float, SCHEME_REALP, scheme_real_to_double,
+	   scheme_make_double, real);
+SIMPLE_MAP(double, SCHEME_REALP, scheme_real_to_double,
+	   scheme_make_double, real);
+
+SIMPLE_MAP(char *, SCHEME_STRINGP, SCHEME_STR_VAL, 
+	   SCHEME_MAKE_STRING, string);
+SIMPLE_MAP(const char *, SCHEME_STRINGP, SCHEME_STR_VAL, 
+	   SCHEME_MAKE_STRING, string);
+
+/* For MzScheme 30x:  Use these typemaps if you are not going to use
+   UTF8 encodings in your C code. 
+ SIMPLE_MAP(char *,SCHEME_BYTE_STRINGP, SCHEME_BYTE_STR_VAL,
+ 	   scheme_make_byte_string_without_copying,bytestring);
+ SIMPLE_MAP(const char *,SCHEME_BYTE_STRINGP, SCHEME_BYTE_STR_VAL,
+ 	   scheme_make_byte_string_without_copying,bytestring);
+*/
+
+/* Const primitive references.  Passed by value */
+
+%define REF_MAP(C_NAME, MZ_PREDICATE, MZ_TO_C, C_TO_MZ, MZ_NAME)
+  %typemap(in) const C_NAME & (C_NAME temp) {
+     if (!MZ_PREDICATE($input))
+        scheme_wrong_type(FUNC_NAME, #MZ_NAME, $argnum - 1, argc, argv);
+     temp = MZ_TO_C($input);
+     $1 = &temp;
+  }
+  %typemap(out) const C_NAME & {
+    $result = C_TO_MZ(*$1);
+  }
+%enddef
+
+REF_MAP(bool, SCHEME_BOOLP, SCHEME_TRUEP,
+	   swig_make_boolean, boolean);
+REF_MAP(char, SCHEME_CHARP, SCHEME_CHAR_VAL,
+	   scheme_make_character, character);
+REF_MAP(unsigned char, SCHEME_CHARP, SCHEME_CHAR_VAL,
+	   scheme_make_character, character);
+REF_MAP(int, SWIG_is_integer, SWIG_convert_int,
+	   scheme_make_integer_value, integer);
+REF_MAP(short, SWIG_is_integer, SWIG_convert_short,
+	   scheme_make_integer_value, integer);
+REF_MAP(long, SWIG_is_integer, SWIG_convert_long,
+	   scheme_make_integer_value, integer);
+REF_MAP(unsigned int, SWIG_is_unsigned_integer, SWIG_convert_unsigned_int,
+	   scheme_make_integer_value_from_unsigned, integer);
+REF_MAP(unsigned short, SWIG_is_unsigned_integer, SWIG_convert_unsigned_short,
+	   scheme_make_integer_value_from_unsigned, integer);
+REF_MAP(unsigned long, SWIG_is_unsigned_integer, SWIG_convert_unsigned_long,
+	   scheme_make_integer_value_from_unsigned, integer);
+REF_MAP(float, SCHEME_REALP, scheme_real_to_double,
+	   scheme_make_double, real);
+REF_MAP(double, SCHEME_REALP, scheme_real_to_double,
+	   scheme_make_double, real);
+
+/* Void */
+
+%typemap(out) void "$result = scheme_void;";
+
+/* Pass through Scheme_Object * */
+
+%typemap (in) Scheme_Object * "$1=$input;";
+%typemap (out) Scheme_Object * "$result=$1;";
+%typecheck(SWIG_TYPECHECK_POINTER) Scheme_Object * "$1=1;";
+
+
+/* ------------------------------------------------------------
+ * String & length
+ * ------------------------------------------------------------ */
+
+//%typemap(in) (char *STRING, int LENGTH) {
+//    int temp;
+//    $1 = ($1_ltype) gh_scm2newstr($input, &temp);
+//    $2 = ($2_ltype) temp;
+//}
+
+
+/* ------------------------------------------------------------
+ * Typechecking rules
+ * ------------------------------------------------------------ */
+
+%typecheck(SWIG_TYPECHECK_INTEGER)
+	 int, short, long,
+ 	 unsigned int, unsigned short, unsigned long,
+	 signed char, unsigned char,
+	 long long, unsigned long long,
+	 const int &, const short &, const long &,
+ 	 const unsigned int &, const unsigned short &, const unsigned long &,
+	 const long long &, const unsigned long long &,
+	 enum SWIGTYPE
 {
-    Scheme_Object *s;
-    s = scheme_make_double(*$target);
-    m_output_helper(_values, s, &_lenv);
+  $1 = (SWIG_is_integer($input)) ? 1 : 0;
 }
 
-%{
-void m_output_helper(Scheme_Object **target, Scheme_Object *s, int *_lenv) {
-    target[*_lenv] = s;
-    (*_lenv)++;
+%typecheck(SWIG_TYPECHECK_BOOL) bool, bool &, const bool &
+{
+  $1 = (SCHEME_BOOLP($input)) ? 1 : 0;
 }
-%}
 
-/*
- -------------------------------------------------
- Check the type of the MzScheme arguments and
- convert function arguments from a MzScheme to a C
- representation.
- -------------------------------------------------
- */
-
-%typemap(mzscheme, in) char {
-    if(!SCHEME_CHARP($source))
-	scheme_wrong_type("$name", "character", $argnum, argc, argv);
-    $target = SCHEME_CHAR_VAL($source);
-}
-
-%typemap(mzscheme, in) unsigned char {
-    if(!SCHEME_CHARP($source))
-	scheme_wrong_type("$name", "character", $argnum, argc, argv);
-    $target = SCHEME_CHAR_VAL($source);
-}
-
-%typemap(mzscheme, in) char * {
-    if(!SCHEME_STRINGP($source))
-	scheme_wrong_type("$name", "string", $argnum, argc, argv);
-    $target = SCHEME_STR_VAL($source);
-}
-
-%typemap(mzscheme, in) char [ANY] {
-    if(!SCHEME_STRINGP($source))
-	scheme_wrong_type("$name", "string", $argnum, argc, argv);
-    $target = SCHEME_STR_VAL($source);
-}
-
-%typemap(mzscheme, in) int {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    $target = SCHEME_INT_VAL($source);
-}
-
-%typemap(mzscheme, in) long {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    scheme_get_int_val($source, &$target);
-}
-
-%typemap(mzscheme, in) short {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    $target = SCHEME_INT_VAL($source);
-}
-
-%typemap(mzscheme, in) unsigned int {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    $target = SCHEME_INT_VAL($source);
-}
-
-%typemap(mzscheme, in) unsigned long {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    scheme_get_unsigned_int_val($source, &$target);
-}
-
-%typemap(mzscheme, in) unsigned short {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    $target = SCHEME_INT_VAL($source);
-}
-/*
-%typemap(mzscheme, in) long long {
-    if(!SCHEME_INTP($source))
-    scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    scheme_get_int_val($source, &$target);
-}
-*/
-%typemap(mzscheme, in) float {
-    if(!SCHEME_DBLP($source))
-	scheme_wrong_type("$name", "double", $argnum, argc, argv);
-    $target = SCHEME_DBL_VAL($source);
-}
-
-%typemap(mzscheme, in) double {
-    if(SCHEME_DBLP($source))
-	$target = SCHEME_DBL_VAL($source);
-    else if(SCHEME_REALP($source))
-	$target = scheme_real_to_double($source);
-    else scheme_wrong_type("$name", "real", $argnum, argc, argv);
-}
-/*
-%typemap(mzscheme, in) long double {
-    if(SCHEME_DBLP($source))
-	$target = SCHEME_DBL_VAL($source);
-    else if(SCHEME_REALP($source))
-	$target = scheme_real_to_double($source);
-    else scheme_wrong_type("$name", "real", $argnum, argc, argv);
-}
-*/
-
-/*
- ------------------------------------
- in typemaps for pass-by-reference
- ------------------------------------
- */
-
-%typemap(mzscheme, in) unsigned char *(unsigned char temp) {
-    if(!SCHEME_CHARP($source))
-	scheme_wrong_type("$name", "character", $argnum, argc, argv);
-    temp = SCHEME_STR_VAL($source);
-    $target = &temp;
-}
-
-%typemap(mzscheme, in) int *(int temp) {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    temp = (int)SCHEME_INT_VAL($source);
-    $target = &temp;
-}
-
-%typemap(mzscheme, in) long *(long temp) {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    scheme_get_int_val($source, &temp);
-    $target = &temp;
-
-}
-
-%typemap(mzscheme, in) short *(short temp) {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    temp = (short)SCHEME_INT_VAL($source);
-    $target = &temp;
-}
-
-%typemap(mzscheme, in) unsigned int *(unsigned temp) {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    temp = (unsigned)SCHEME_INT_VAL($source);
-    $target = &temp;
-}
-
-%typemap(mzscheme, in) unsigned long *(unsigned long temp) {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    scheme_get_unsigned_int_val($source, &temp);
-    $target = &temp;
-}
-
-%typemap(mzscheme, in) unsigned short *(unsigned short temp) {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    temp = (unsigned short)SCHEME_INT_VAL($source);
-    $target = &temp;
-
-}
-/*
-%typemap(mzscheme, in) long long *(long long temp) {
-    if(!SCHEME_INTP($source))
-    scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    scheme_get_int_val($source, &temp);
-    $target = &temp;
-}
-*/
-%typemap(mzscheme, in) float *(float temp) {
-    if(!SCHEME_DBLP($source))
-	scheme_wrong_type("$name", "double", $argnum, argc, argv);
-    temp = (float)SCHEME_DBL_VAL($source);
-    $target = &temp;
-
-}
-
-%typemap(mzscheme, in) double *(double temp) {
-    if(SCHEME_DBLP($source)) {
-	temp = (double)SCHEME_DBL_VAL($source);
-	$target = &temp;
-    }
-    else if(SCHEME_REALP($source)) {
-	temp = (double)scheme_real_to_double($source);
-	$target = &temp;
-    }
-    else scheme_wrong_type("$name", "real", $argnum, argc, argv);
-}
-/*
-%typemap(mzscheme, in) long double *(long double temp) {
-    if(SCHEME_DBLP($source)) {
-	temp = (long double)SCHEME_DBL_VAL($source);
-	$target = &temp;
-    }
-    else if(SCHEME_REALP($source)) {
-	temp = (long double)scheme_real_to_double($source);
-	$target = &temp;
-    }
-    else scheme_wrong_type("$name", "real", $argnum, argc, argv);
-}
-*/
-
-/*
- ------------------------------------
- convert return type from C to Scheme
- ------------------------------------
- */
-
-%typemap(mzscheme, out) char {
-    $target = scheme_make_character($source);
-}
-
-%typemap(mzscheme, out) unsigned char {
-    $target = scheme_make_character($source);
-}
-
-%typemap(mzscheme, out) char * {
-    $target = scheme_make_string_without_copying($source);
-}
-
-%typemap(mzscheme, out) char [ANY] {
-    $target = scheme_make_string_without_copying($source);
-}
-
-%typemap(mzscheme, out) int {
-    $target = scheme_make_integer_value($source);
-}
-
-%typemap(mzscheme, out) long {
-    $target = scheme_make_integer_value($source);
-}
-
-%typemap(mzscheme, out) short {
-    $target = scheme_make_integer_value($source);
-}
-/*
-%typemap(mzscheme, out) long long {
-    $target = scheme_make_integer_value($source);
-}
-*/
-%typemap(mzscheme, out) unsigned int {
-    $target = scheme_make_integer_value_from_unsigned($source);
-}
-
-%typemap(mzscheme, out) unsigned long {
-    $target = scheme_make_integer_value_from_unsigned($source);
-}
-
-%typemap(mzscheme, out) unsigned short {
-    $target = scheme_make_integer_value_from_unsigned($source);
-}
-
-%typemap(mzscheme, out) float {
-    $target = scheme_make_double($source);
-}
-
-%typemap(mzscheme, out) double {
-    $target = scheme_make_double($source);
-}
-/*
-%typemap(mzscheme, out) long double {
-    $target = scheme_make_double($source);
-}
-*/
-
-/*
- -----------------------------------
- convert pointers from C to MzScheme
- -----------------------------------
- */
-
-%typemap(mzscheme, out) int * {
-    $target = scheme_make_integer_value(*$source);
-}
-
-%typemap(mzscheme, out) long * {
-    $target = scheme_make_integer_value(*$source);
-}
-
-%typemap(mzscheme, out) short * {
-    $target = scheme_make_integer_value(*$source);
-}
-
-/*
-%typemap(mzscheme, out) long long * {
-    $target = scheme_make_integer_value(*$source);
-}
-*/
-%typemap(mzscheme, out) unsigned int * {
-    $target = scheme_make_integer_value_from_unsigned(*$source);
-}
-
-%typemap(mzscheme, out) unsigned long * {
-    $target = scheme_make_integer_value_from_unsigned(*$source);
-}
-
-%typemap(mzscheme, out) unsigned short * {
-    $target = scheme_make_integer_value_from_unsigned(*$source);
+%typecheck(SWIG_TYPECHECK_DOUBLE)
+	float, double,
+	const float &, const double &
+{
+  $1 = (SCHEME_REALP($input)) ? 1 : 0;
 }
 
-%typemap(mzscheme, out) float * {
-    $target = scheme_make_double(*$source);
+%typecheck(SWIG_TYPECHECK_STRING) char {
+  $1 = (SCHEME_STRINGP($input)) ? 1 : 0;
 }
 
-%typemap(mzscheme, out) double * {
-    $target = scheme_make_double(*$source);
+%typecheck(SWIG_TYPECHECK_STRING) char * {
+  $1 = (SCHEME_STRINGP($input)) ? 1 : 0;
 }
-/*
-%typemap(mzscheme, out) long double * {
-    $target = scheme_make_double(*$source);
-}
-*/
-
-/*
- ------------------------------------------------------------
- Typemaps for accessing a global C variable from MzScheme
- ------------------------------------------------------------
- */
-
-%typemap(mzscheme, varin) char {
-    if(!SCHEME_CHARP($source))
-	scheme_wrong_type("$name", "character", $argnum, argc, argv);
-    $target = SCHEME_CHAR_VAL($source);
-}
-
-%typemap(mzscheme, varin) unsigned char {
-    if(!SCHEME_CHARP($source))
-	scheme_wrong_type("$name", "character", $argnum, argc, argv);
-    $target = SCHEME_CHAR_VAL($source);
-}
-
-%typemap(mzscheme, varin) char * {
-    if(!SCHEME_STRINGP($source))
-	scheme_wrong_type("$name", "string", $argnum, argc, argv);
-    $target = SCHEME_STR_VAL($source);
-}
-
-%typemap(mzscheme, varin) char [ANY] {
-    if(!SCHEME_STRINGP($source))
-	scheme_wrong_type("$name", "string", $argnum, argc, argv);
-    $target = SCHEME_STR_VAL($source);
-}
-
-%typemap(mzscheme, varin) int {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    $target = SCHEME_INT_VAL($source);
-}
-
-%typemap(mzscheme, varin) long {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    scheme_get_int_val($source, &$target);
-}
-
-%typemap(mzscheme, varin) short {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    $target = SCHEME_INT_VAL($source);
-}
-
-%typemap(mzscheme, varin) unsigned int {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    $target = SCHEME_INT_VAL($source);
-}
-
-%typemap(mzscheme, varin) unsigned long {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    scheme_get_unsigned_int_val($source, &$target);
-}
-
-%typemap(mzscheme, varin) unsigned short {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    $target = SCHEME_INT_VAL($source);
-}
-/*
-%typemap(mzscheme, varin) long long {
-    if(!SCHEME_INTP($source))
-    scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    scheme_get_int_val($source, &$target);
-}
-*/
-%typemap(mzscheme, varin) float {
-    if(!SCHEME_DBLP($source))
-	scheme_wrong_type("$name", "double", $argnum, argc, argv);
-    $target = SCHEME_DBL_VAL($source);
-}
-
-%typemap(mzscheme, varin) double {
-    if(SCHEME_DBLP($source))
-	$target = SCHEME_DBL_VAL($source);
-    else if(SCHEME_REALP($source))
-	$target = scheme_real_to_double($source);
-    else scheme_wrong_type("$name", "real", $argnum, argc, argv);
-}
-/*
-%typemap(mzscheme, varin) long double {
-    if(SCHEME_DBLP($source))
-	$target = SCHEME_DBL_VAL($source);
-    else if(SCHEME_REALP($source))
-	$target = scheme_real_to_double($source);
-    else scheme_wrong_type("$name", "real", $argnum, argc, argv);
-}
-*/
-
-/*
- ------------------------------------
- global pointer variable
- ------------------------------------
- */
-
-%typemap(mzscheme, varin) unsigned char *(unsigned char temp) {
-    if(!SCHEME_CHARP($source))
-	scheme_wrong_type("$name", "character", $argnum, argc, argv);
-    temp = SCHEME_STR_VAL($source);
-    $target = &temp;
-}
-
-%typemap(mzscheme, varin) int *(int temp) {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    temp = (int)SCHEME_INT_VAL($source);
-    $target = &temp;
-}
-
-%typemap(mzscheme, varin) long *(long temp) {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    scheme_get_int_val($source, &temp);
-    $target = &temp;
-
-}
-
-%typemap(mzscheme, varin) short *(short temp) {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    temp = (short)SCHEME_INT_VAL($source);
-    $target = &temp;
-}
-
-%typemap(mzscheme, varin) unsigned int *(unsigned temp) {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    temp = (unsigned)SCHEME_INT_VAL($source);
-    $target = &temp;
-}
-
-%typemap(mzscheme, varin) unsigned long *(unsigned long temp) {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    scheme_get_unsigned_int_val($source, &temp);
-    $target = &temp;
-}
-
-%typemap(mzscheme, varin) unsigned short *(unsigned short temp) {
-    if(!SCHEME_INTP($source))
-	scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    temp = (unsigned short)SCHEME_INT_VAL($source);
-    $target = &temp;
-
-}
-/*
-%typemap(mzscheme, varin) long long *(long long temp) {
-    if(!SCHEME_INTP($source))
-    scheme_wrong_type("$name", "integer", $argnum, argc, argv);
-    scheme_get_int_val($source, &temp);
-    $target = &temp;
-}
-*/
-%typemap(mzscheme, varin) float *(float temp) {
-    if(!SCHEME_DBLP($source))
-	scheme_wrong_type("$name", "double", $argnum, argc, argv);
-    temp = (float)SCHEME_DBL_VAL($source);
-    $target = &temp;
-
-}
-
-%typemap(mzscheme, varin) double *(double temp) {
-    if(SCHEME_DBLP($source)) {
-	temp = (double)SCHEME_DBL_VAL($source);
-	$target = &temp;
-    }
-    else if(SCHEME_REALP($source)) {
-	temp = (double)scheme_real_to_double($source);
-	$target = &temp;
-    }
-    else scheme_wrong_type("$name", "real", $argnum, argc, argv);
-}
-/*
-%typemap(mzscheme, varin) long double *(long double temp) {
-    if(SCHEME_DBLP($source)) {
-	temp = (long double)SCHEME_DBL_VAL($source);
-	$target = &temp;
-    }
-    else if(SCHEME_REALP($source)) {
-	temp = (long double)scheme_real_to_double($source);
-	$target = &temp;
-    }
-    else scheme_wrong_type("$name", "real", $argnum, argc, argv);
-}
-*/
-
-
-/*
- -----------------------------------
- convert a variable from C to Scheme
- -----------------------------------
- */
-
-%typemap(mzscheme, varout) char {
-    $target = scheme_make_character($source);
-}
-
-%typemap(mzscheme, varout) unsigned char {
-    $target = scheme_make_character($source);
-}
-
-%typemap(mzscheme, varout) char * {
-    $target = scheme_make_string_without_copying($source);
-}
-
-%typemap(mzscheme, varout) char [ANY] {
-    $target = scheme_make_string_without_copying($source);
-}
-
-%typemap(mzscheme, varout) int {
-    $target = scheme_make_integer_value($source);
-}
-
-%typemap(mzscheme, varout) long {
-    $target = scheme_make_integer_value($source);
-}
-
-%typemap(mzscheme, varout) short {
-    $target = scheme_make_integer_value($source);
-}
-/*
-%typemap(mzscheme, varout) long long {
-    $target = scheme_make_integer_value($source);
-}
-*/
-%typemap(mzscheme, varout) unsigned int {
-    $target = scheme_make_integer_value_from_unsigned($source);
-}
-
-%typemap(mzscheme, varout) unsigned long {
-    $target = scheme_make_integer_value_from_unsigned($source);
-}
-
-%typemap(mzscheme, varout) unsigned short {
-    $target = scheme_make_integer_value_from_unsigned($source);
-}
-
-%typemap(mzscheme, varout) float {
-    $target = scheme_make_double($source);
-}
-
-%typemap(mzscheme, varout) double {
-    $target = scheme_make_double($source);
-}
-/*
-%typemap(mzscheme, varout) long double {
-    $target = scheme_make_double($source);
-}
-*/
 
-/*
- -----------------------------------
- convert a pointer variable from C to MzScheme
- -----------------------------------
- */
-
-%typemap(mzscheme, varout) int * {
-    $target = scheme_make_integer_value(*$source);
-}
-
-%typemap(mzscheme, varout) long * {
-    $target = scheme_make_integer_value(*$source);
-}
-
-%typemap(mzscheme, varout) short * {
-    $target = scheme_make_integer_value(*$source);
+%typecheck(SWIG_TYPECHECK_POINTER) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] {
+  void *ptr;
+  if (SWIG_ConvertPtr($input, (void **) &ptr, $1_descriptor, 0)) {
+    $1 = 0;
+  } else {
+    $1 = 1;
+  }
 }
 
-/*
-%typemap(mzscheme, varout) long long * {
-    $target = scheme_make_integer_value(*$source);
+%typecheck(SWIG_TYPECHECK_POINTER) SWIGTYPE {
+  void *ptr;
+  if (SWIG_ConvertPtr($input, (void **) &ptr, $&1_descriptor, 0)) {
+    $1 = 0;
+  } else {
+    $1 = 1;
+  }
 }
-*/
-%typemap(mzscheme, varout) unsigned int * {
-    $target = scheme_make_integer_value_from_unsigned(*$source);
-}
-
-%typemap(mzscheme, varout) unsigned long * {
-    $target = scheme_make_integer_value_from_unsigned(*$source);
-}
 
-%typemap(mzscheme, varout) unsigned short * {
-    $target = scheme_make_integer_value_from_unsigned(*$source);
+%typecheck(SWIG_TYPECHECK_VOIDPTR) void * {
+  void *ptr;
+  if (SWIG_ConvertPtr($input, (void **) &ptr, 0, 0)) {
+    $1 = 0;
+  } else {
+    $1 = 1;
+  }
 }
 
-%typemap(mzscheme, varout) float * {
-    $target = scheme_make_double(*$source);
-}
 
-%typemap(mzscheme, varout) double * {
-    $target = scheme_make_double(*$source);
-}
-/*
-%typemap(mzscheme, varout) long double * {
-    $target = scheme_make_double(*$source);
-}
-*/

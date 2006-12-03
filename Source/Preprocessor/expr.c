@@ -1,24 +1,24 @@
 /* -----------------------------------------------------------------------------
+ * See the LICENSE file for information on copyright, usage and redistribution
+ * of SWIG, and the README file for authors - http://www.swig.org/release.html.
+ *
  * expr.c
  *
- *     Integer arithmetic expression evaluator used to handle expressions
- *     encountered during preprocessing.
- *
- * Author(s) : David Beazley (beazley@cs.uchicago.edu)
- *
- * Copyright (C) 1999-2000.  The University of Chicago
- * See the file LICENSE for information on usage and redistribution.
+ * Integer arithmetic expression evaluator used to handle expressions
+ * encountered during preprocessing.
  * ----------------------------------------------------------------------------- */
 
-static char cvsroot[] = "$Header$";
+char cvsroot_expr_c[] = "$Header$";
 
+#include "swig.h"
 #include "preprocessor.h"
 
 static SwigScanner *scan = 0;
 
 typedef struct {
-  int       op;
-  long      value;
+  int op;
+  long value;
+  String *svalue;
 } exprval;
 
 #define  EXPR_TOP      1
@@ -27,11 +27,11 @@ typedef struct {
 #define  EXPR_GROUP    4
 #define  EXPR_UMINUS   100
 
-static exprval stack[256];              /* Parsing stack       */
-static int     sp = 0;                  /* Stack pointer       */
-static int     prec[256];               /* Precedence rules    */
-static int     expr_init = 0;           /* Initialization flag */
-static char   *errmsg = 0;              /* Parsing error       */
+static exprval stack[256];	/* Parsing stack       */
+static int sp = 0;		/* Stack pointer       */
+static int prec[256];		/* Precedence rules    */
+static int expr_init = 0;	/* Initialization flag */
+static char *errmsg = 0;	/* Parsing error       */
 
 /* Initialize the precedence table for various operators.  Low values have higher precedence */
 static void init_precedence() {
@@ -59,104 +59,157 @@ static void init_precedence() {
   expr_init = 1;
 }
 
+#define UNARY_OP(token) (((token) == SWIG_TOKEN_NOT) || \
+			 ((token) == SWIG_TOKEN_LNOT) || \
+			 ((token) == EXPR_UMINUS))
+
 /* Reduce a single operator on the stack */
-static void reduce_op() {
-  if (stack[sp-1].op != EXPR_OP) {
-    errmsg = "Missing operator";
-    sp = 0;
-    return;
+/* return 0 on failure, 1 on success */
+static int reduce_op() {
+  long op_token = stack[sp - 1].value;
+  assert(sp > 0);
+  assert(stack[sp - 1].op == EXPR_OP);
+  /* do some basic checking first: */
+  if (stack[sp].op != EXPR_VALUE) {
+    errmsg = "Right-hand side is not value";
+    return 0;
   }
-  switch(stack[sp-1].value) {
-  case SWIG_TOKEN_STAR:
-    stack[sp-2].value = stack[sp-2].value * stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_EQUALTO:
-    stack[sp-2].value = stack[sp-2].value == stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_NOTEQUAL:
-    stack[sp-2].value = stack[sp-2].value != stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_PLUS:
-    stack[sp-2].value = stack[sp-2].value + stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_MINUS:
-    stack[sp-2].value = stack[sp-2].value - stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_AND:
-    stack[sp-2].value = stack[sp-2].value & stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_LAND:
-    stack[sp-2].value = stack[sp-2].value && stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_OR:
-    stack[sp-2].value = stack[sp-2].value | stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_LOR:
-    stack[sp-2].value = stack[sp-2].value || stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_XOR:
-    stack[sp-2].value = stack[sp-2].value ^ stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_LESSTHAN:
-    stack[sp-2].value = stack[sp-2].value < stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_GREATERTHAN:
-    stack[sp-2].value = stack[sp-2].value > stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_LTEQUAL:
-    stack[sp-2].value = stack[sp-2].value <= stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_GTEQUAL:
-    stack[sp-2].value = stack[sp-2].value >= stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_NOT:
-    stack[sp-1].value = ~stack[sp].value;
-    sp--;
-    break;
-  case SWIG_TOKEN_LNOT:
-    stack[sp-1].value = !stack[sp].value;
-    sp--;
-    break;
-  case EXPR_UMINUS:
-    stack[sp-1].value = -stack[sp].value;
-    sp--;
-    break;
-  case SWIG_TOKEN_SLASH:
-    stack[sp-2].value = stack[sp-2].value / stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_PERCENT:
-    stack[sp-2].value = stack[sp-2].value % stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_LSHIFT:
-    stack[sp-2].value = stack[sp-2].value << stack[sp].value;
-    sp -= 2;
-    break;
-  case SWIG_TOKEN_RSHIFT:
-    stack[sp-2].value = stack[sp-2].value >> stack[sp].value;
-    sp -= 2;
-    break;
-  default:
-    errmsg = "Syntax error";
-    sp = 0;
-    break;
+  if (UNARY_OP(op_token)) {
+    if (stack[sp].svalue) {
+      errmsg = "Syntax error: attempt to apply unary operator to string";
+      return 0;
+    }
+  } else {
+    /* binary operator: */
+    if (sp == 1) {
+      /* top of stack: don't attempt to use sp-2! */
+      errmsg = "Missing left-hand side for binary operator";
+      return 0;
+    }
+    if (stack[sp].op != EXPR_VALUE) {
+      errmsg = "Left-hand side of binary operator is not a value";
+      return 0;
+    }
+    if ((!stack[sp - 2].svalue) != (!stack[sp].svalue)) {
+      errmsg = "Can't mix strings and integers in expression";
+      return 0;
+    }
+  }
+  if (stack[sp].svalue) {
+    /* A binary string expression */
+    switch (stack[sp - 1].value) {
+    case SWIG_TOKEN_EQUALTO:
+      stack[sp - 2].value = (Strcmp(stack[sp - 2].svalue, stack[sp].svalue) == 0);
+      Delete(stack[sp - 2].svalue);
+      Delete(stack[sp].svalue);
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_NOTEQUAL:
+      stack[sp - 2].value = (Strcmp(stack[sp - 2].svalue, stack[sp].svalue) != 0);
+      Delete(stack[sp - 2].svalue);
+      Delete(stack[sp].svalue);
+      sp -= 2;
+      break;
+    default:
+      errmsg = "Syntax error: bad binary operator for strings";
+      return 0;
+      break;
+    }
+  } else {
+    switch (op_token) {
+    case SWIG_TOKEN_STAR:
+      stack[sp - 2].value = stack[sp - 2].value * stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_EQUALTO:
+      stack[sp - 2].value = stack[sp - 2].value == stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_NOTEQUAL:
+      stack[sp - 2].value = stack[sp - 2].value != stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_PLUS:
+      stack[sp - 2].value = stack[sp - 2].value + stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_MINUS:
+      stack[sp - 2].value = stack[sp - 2].value - stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_AND:
+      stack[sp - 2].value = stack[sp - 2].value & stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_LAND:
+      stack[sp - 2].value = stack[sp - 2].value && stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_OR:
+      stack[sp - 2].value = stack[sp - 2].value | stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_LOR:
+      stack[sp - 2].value = stack[sp - 2].value || stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_XOR:
+      stack[sp - 2].value = stack[sp - 2].value ^ stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_LESSTHAN:
+      stack[sp - 2].value = stack[sp - 2].value < stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_GREATERTHAN:
+      stack[sp - 2].value = stack[sp - 2].value > stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_LTEQUAL:
+      stack[sp - 2].value = stack[sp - 2].value <= stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_GTEQUAL:
+      stack[sp - 2].value = stack[sp - 2].value >= stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_NOT:
+      stack[sp - 1].value = ~stack[sp].value;
+      sp--;
+      break;
+    case SWIG_TOKEN_LNOT:
+      stack[sp - 1].value = !stack[sp].value;
+      sp--;
+      break;
+    case EXPR_UMINUS:
+      stack[sp - 1].value = -stack[sp].value;
+      sp--;
+      break;
+    case SWIG_TOKEN_SLASH:
+      stack[sp - 2].value = stack[sp - 2].value / stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_PERCENT:
+      stack[sp - 2].value = stack[sp - 2].value % stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_LSHIFT:
+      stack[sp - 2].value = stack[sp - 2].value << stack[sp].value;
+      sp -= 2;
+      break;
+    case SWIG_TOKEN_RSHIFT:
+      stack[sp - 2].value = stack[sp - 2].value >> stack[sp].value;
+      sp -= 2;
+      break;
+    default:
+      errmsg = "Syntax error: bad operator";
+      return 0;
+      break;
+    }
   }
   stack[sp].op = EXPR_VALUE;
+  stack[sp].svalue = 0;		/* ensure it's not a string! */
+  return 1;
 }
 
 /* -----------------------------------------------------------------------------
@@ -165,10 +218,31 @@ static void reduce_op() {
  * Initialize the expression evaluator
  * ----------------------------------------------------------------------------- */
 
-void
-Preprocessor_expr_init (void) {
-  if (!expr_init) init_precedence();
-  if (!scan) scan = NewSwigScanner();
+void Preprocessor_expr_init(void) {
+  if (!expr_init)
+    init_precedence();
+  if (!scan)
+    scan = NewSwigScanner();
+}
+
+void Preprocessor_expr_delete(void) {
+  SwigScanner_clear(scan);
+  DelSwigScanner(scan);
+}
+
+
+/* -----------------------------------------------------------------------------
+ * Tokenizer 
+ * ----------------------------------------------------------------------------- */
+
+static int expr_token(SwigScanner * s) {
+  int t;
+  while (1) {
+    t = SwigScanner_token(s);
+    if (!((t == SWIG_TOKEN_BACKSLASH) || (t == SWIG_TOKEN_ENDLINE)))
+      break;
+  }
+  return t;
 }
 
 /* -----------------------------------------------------------------------------
@@ -177,19 +251,19 @@ Preprocessor_expr_init (void) {
  * Evaluates an arithmetic expression.  Returns the result and sets an error code.
  * ----------------------------------------------------------------------------- */
 
-int
-Preprocessor_expr(DOH *s, int *error) {
-  int     token = 0;
-  int     op = 0;
+int Preprocessor_expr(DOH *s, int *error) {
+  int token = 0;
+  int op = 0;
 
   sp = 0;
   assert(s);
   assert(scan);
 
-  Seek(s,0,SEEK_SET);
+  Seek(s, 0, SEEK_SET);
+  /* Printf(stdout,"evaluating : '%s'\n", s); */
   *error = 0;
   SwigScanner_clear(scan);
-  SwigScanner_push(scan,s);
+  SwigScanner_push(scan, s);
 
   /* Put initial state onto the stack */
   stack[sp].op = EXPR_TOP;
@@ -197,10 +271,10 @@ Preprocessor_expr(DOH *s, int *error) {
 
   while (1) {
     /* Look at the top of the stack */
-    switch(stack[sp].op) {
+    switch (stack[sp].op) {
     case EXPR_TOP:
       /* An expression.   Can be a number or another expression enclosed in parens */
-      token = SwigScanner_token(scan);
+      token = expr_token(scan);
       if (!token) {
 	errmsg = "Expected an expression";
 	*error = 1;
@@ -208,39 +282,55 @@ Preprocessor_expr(DOH *s, int *error) {
       }
       if ((token == SWIG_TOKEN_INT) || (token == SWIG_TOKEN_UINT) || (token == SWIG_TOKEN_LONG) || (token == SWIG_TOKEN_ULONG)) {
 	/* A number.  Reduce EXPR_TOP to an EXPR_VALUE */
-	stack[sp].value = (long) atol(Char(SwigScanner_text(scan)));
+	char *c = Char(SwigScanner_text(scan));
+	stack[sp].value = (long) strtol(c, 0, 0);
+	stack[sp].svalue = 0;
+	/*        stack[sp].value = (long) atol(Char(SwigScanner_text(scan))); */
 	stack[sp].op = EXPR_VALUE;
-      } else if (token == SWIG_TOKEN_PLUS) { }
-       else if ((token == SWIG_TOKEN_MINUS) || (token == SWIG_TOKEN_LNOT) || (token==SWIG_TOKEN_NOT)) {
-	if (token == SWIG_TOKEN_MINUS) token = EXPR_UMINUS;
+      } else if (token == SWIG_TOKEN_PLUS) {
+      } else if ((token == SWIG_TOKEN_MINUS) || (token == SWIG_TOKEN_LNOT) || (token == SWIG_TOKEN_NOT)) {
+	if (token == SWIG_TOKEN_MINUS)
+	  token = EXPR_UMINUS;
 	stack[sp].value = token;
 	stack[sp++].op = EXPR_OP;
 	stack[sp].op = EXPR_TOP;
+	stack[sp].svalue = 0;
       } else if ((token == SWIG_TOKEN_LPAREN)) {
 	stack[sp++].op = EXPR_GROUP;
 	stack[sp].op = EXPR_TOP;
 	stack[sp].value = 0;
-      } else if (token == SWIG_TOKEN_ENDLINE) { }
-      else goto syntax_error;
+	stack[sp].svalue = 0;
+      } else if (token == SWIG_TOKEN_ENDLINE) {
+      } else if ((token == SWIG_TOKEN_STRING)) {
+	stack[sp].svalue = NewString(SwigScanner_text(scan));
+	stack[sp].op = EXPR_VALUE;
+      } else if ((token == SWIG_TOKEN_ID)) {
+	stack[sp].value = 0;
+	stack[sp].svalue = 0;
+	stack[sp].op = EXPR_VALUE;
+      } else
+	goto syntax_error;
       break;
     case EXPR_VALUE:
       /* A value is on the stack.   We may reduce or evaluate depending on what the next token is */
-      token = SwigScanner_token(scan);
+      token = expr_token(scan);
       if (!token) {
 	/* End of input. Might have to reduce if an operator is on stack */
 	while (sp > 0) {
-	  if (stack[sp-1].op == EXPR_OP) {
-	    reduce_op();
-	  } else if (stack[sp-1].op == EXPR_GROUP) {
+	  if (stack[sp - 1].op == EXPR_OP) {
+	    if (!reduce_op())
+	      goto reduce_error;
+	  } else if (stack[sp - 1].op == EXPR_GROUP) {
 	    errmsg = "Missing \')\'";
 	    *error = 1;
 	    return 0;
-	  } else goto syntax_error;
+	  } else
+	    goto syntax_error;
 	}
 	return stack[sp].value;
       }
       /* Token must be an operator */
-      switch(token) {
+      switch (token) {
       case SWIG_TOKEN_STAR:
       case SWIG_TOKEN_EQUALTO:
       case SWIG_TOKEN_NOTEQUAL:
@@ -259,7 +349,7 @@ Preprocessor_expr(DOH *s, int *error) {
       case SWIG_TOKEN_PERCENT:
       case SWIG_TOKEN_LSHIFT:
       case SWIG_TOKEN_RSHIFT:
-	if ((sp == 0) || (stack[sp-1].op == EXPR_GROUP)) {
+	if ((sp == 0) || (stack[sp - 1].op == EXPR_GROUP)) {
 	  /* No possibility of reduce. Push operator and expression */
 	  sp++;
 	  stack[sp].op = EXPR_OP;
@@ -268,16 +358,17 @@ Preprocessor_expr(DOH *s, int *error) {
 	  stack[sp].op = EXPR_TOP;
 	  stack[sp].value = 0;
 	} else {
-	  if (stack[sp-1].op != EXPR_OP) goto syntax_error;
-	  op = stack[sp-1].value;         /* Previous operator */
+	  if (stack[sp - 1].op != EXPR_OP)
+	    goto syntax_error_expected_operator;
+	  op = stack[sp - 1].value;	/* Previous operator */
 
 	  /* Now, depending on the precedence relationship between the last operator and the current
 	     we will reduce or push */
 
 	  if (prec[op] <= prec[token]) {
 	    /* Reduce the previous operator */
-	    reduce_op();
-	    if (stack[sp].op != EXPR_VALUE) goto syntax_error;
+	    if (!reduce_op())
+	      goto reduce_error;
 	  }
 	  sp++;
 	  stack[sp].op = EXPR_OP;
@@ -288,31 +379,48 @@ Preprocessor_expr(DOH *s, int *error) {
 	}
 	break;
       case SWIG_TOKEN_RPAREN:
-	if (sp ==  0) goto extra_rparen;
+	if (sp == 0)
+	  goto extra_rparen;
 
 	/* Might have to reduce operators first */
-	while ((sp > 0) && (stack[sp-1].op == EXPR_OP)) reduce_op();
-	if ((sp == 0) || (stack[sp-1].op != EXPR_GROUP)) goto extra_rparen;
-	stack[sp-1].op = EXPR_VALUE;
-	stack[sp-1].value = stack[sp].value;
+	while ((sp > 0) && (stack[sp - 1].op == EXPR_OP)) {
+	  if (!reduce_op())
+	    goto reduce_error;
+	}
+	if ((sp == 0) || (stack[sp - 1].op != EXPR_GROUP))
+	  goto extra_rparen;
+	stack[sp - 1].op = EXPR_VALUE;
+	stack[sp - 1].value = stack[sp].value;
 	sp--;
 	break;
       default:
-	goto syntax_error;
+	goto syntax_error_expected_operator;
 	break;
       }
       break;
+
     default:
-      fprintf(stderr,"Internal error in expression evaluator.\n");
+      fprintf(stderr, "Internal error in expression evaluator.\n");
       abort();
     }
   }
- syntax_error:
+
+syntax_error:
   errmsg = "Syntax error";
   *error = 1;
   return 0;
 
- extra_rparen:
+syntax_error_expected_operator:
+  errmsg = "Syntax error: expected operator";
+  *error = 1;
+  return 0;
+
+reduce_error:
+  /*  errmsg has been set by reduce_op */
+  *error = 1;
+  return 0;
+
+extra_rparen:
   errmsg = "Extra \')\'";
   *error = 1;
   return 0;
@@ -324,14 +432,6 @@ Preprocessor_expr(DOH *s, int *error) {
  * Return error message set by the evaluator (if any)
  * ----------------------------------------------------------------------------- */
 
-char *
-Preprocessor_expr_error() {
+char *Preprocessor_expr_error() {
   return errmsg;
 }
-
-
-
-
-
-
-

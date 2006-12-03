@@ -1,17 +1,19 @@
-// 
-// SWIG constraint library
-// Dave Beazley
-// May 4, 1997
-//
-// This library file contains typemaps for implementing various kinds of 
-// constraints.  Depends upon the SWIG exception library for generating
-// errors in a language-independent manner.
+/* -----------------------------------------------------------------------------
+ * See the LICENSE file for information on copyright, usage and redistribution
+ * of SWIG, and the README file for authors - http://www.swig.org/release.html.
+ *
+ * constraints.i
+ *
+ * SWIG constraints library.
+ *
+ * SWIG library file containing typemaps for implementing various kinds of 
+ * constraints.  Depends upon the SWIG exception library for generating
+ * errors in a language-independent manner.
+ * ----------------------------------------------------------------------------- */
 
 #ifdef AUTODOC
-%section "Constraint Library",info,after,pre,nosort,skip=1,chop_left=3,chop_right=0,chop_top=0,chop_bottom=0
-
 %text %{
-%include constraints.i
+%include <constraints.i>
 
 This library provides support for applying constraints to function
 arguments.  Using a constraint, you can restrict arguments to be
@@ -66,11 +68,20 @@ If you have used typedef to change type-names, you can also do this :
 %}
 #endif
 
-%include exception.i
+%include <exception.i>
+
+#ifdef SWIGCSHARP
+// Required attribute for C# exception handling
+#define SWIGCSHARPCANTHROW , canthrow=1
+#else
+#define SWIGCSHARPCANTHROW
+#endif
+
 
 // Positive numbers
 
-%typemap(check) int               POSITIVE,
+%typemap(check SWIGCSHARPCANTHROW) 
+                int               POSITIVE,
                 short             POSITIVE,
                 long              POSITIVE,
                 unsigned int      POSITIVE,
@@ -82,14 +93,15 @@ If you have used typedef to change type-names, you can also do this :
                 double            POSITIVE,
                 Number            POSITIVE
 {
-  if ($target <= 0) {
+  if ($1 <= 0) {
     SWIG_exception(SWIG_ValueError,"Expected a positive value.");
   }
 }
 
 // Negative numbers
 
-%typemap(check) int               NEGATIVE,
+%typemap(check SWIGCSHARPCANTHROW) 
+                int               NEGATIVE,
                 short             NEGATIVE,
                 long              NEGATIVE,
                 unsigned int      NEGATIVE,
@@ -101,14 +113,15 @@ If you have used typedef to change type-names, you can also do this :
                 double            NEGATIVE,
                 Number            NEGATIVE
 {
-  if ($target >= 0) {
+  if ($1 >= 0) {
     SWIG_exception(SWIG_ValueError,"Expected a negative value.");
   }
 }
 
 // Nonzero numbers
 
-%typemap(check) int               NONZERO,
+%typemap(check SWIGCSHARPCANTHROW) 
+                int               NONZERO,
                 short             NONZERO,
                 long              NONZERO,
                 unsigned int      NONZERO,
@@ -120,14 +133,15 @@ If you have used typedef to change type-names, you can also do this :
                 double            NONZERO,
                 Number            NONZERO
 {
-  if ($target == 0) {
+  if ($1 == 0) {
     SWIG_exception(SWIG_ValueError,"Expected a nonzero value.");
   }
 }
 
 // Nonnegative numbers
 
-%typemap(check) int               NONNEGATIVE,
+%typemap(check SWIGCSHARPCANTHROW) 
+                int               NONNEGATIVE,
                 short             NONNEGATIVE,
                 long              NONNEGATIVE,
                 unsigned int      NONNEGATIVE,
@@ -139,14 +153,15 @@ If you have used typedef to change type-names, you can also do this :
                 double            NONNEGATIVE,
                 Number            NONNEGATIVE
 {
-  if ($target < 0) {
+  if ($1 < 0) {
     SWIG_exception(SWIG_ValueError,"Expected a non-negative value.");
   }
 }
 
 // Nonpositive numbers
 
-%typemap(check) int               NONPOSITIVE,
+%typemap(check SWIGCSHARPCANTHROW) 
+                int               NONPOSITIVE,
                 short             NONPOSITIVE,
                 long              NONPOSITIVE,
                 unsigned int      NONPOSITIVE,
@@ -158,48 +173,52 @@ If you have used typedef to change type-names, you can also do this :
                 double            NONPOSITIVE,
                 Number            NONPOSITIVE
 {
-  if ($target > 0) {
+  if ($1 > 0) {
     SWIG_exception(SWIG_ValueError,"Expected a non-positive value.");
   }
 }
                 
 // Non-NULL pointer
 
-%typemap(check) void *            NONNULL,
+%typemap(check SWIGCSHARPCANTHROW) 
+                void *            NONNULL,
                 Pointer           NONNULL
 {
-  if (!$target) {
+  if (!$1) {
     SWIG_exception(SWIG_ValueError,"Received a NULL pointer.");
   }
 }
 
 // Aligned pointers
 
-%typemap(check) void *            ALIGN8,
+%typemap(check SWIGCSHARPCANTHROW) 
+                void *            ALIGN8,
                 Pointer           ALIGN8
 {
-   long tmp;
-   tmp = (long) $target;
+   unsigned long long tmp;
+   tmp = (unsigned long long) $1;
    if (tmp & 7) {
      SWIG_exception(SWIG_ValueError,"Pointer must be 8-byte aligned.");
    }
 }
 
-%typemap(check) void *            ALIGN4,
+%typemap(check SWIGCSHARPCANTHROW) 
+                void *            ALIGN4,
                 Pointer           ALIGN4
 {
-   long tmp;
-   tmp = (long) $target;
+   unsigned long long tmp;
+   tmp = (unsigned long long) $1;
    if (tmp & 3) {
      SWIG_exception(SWIG_ValueError,"Pointer must be 4-byte aligned.");
    }
 }
 
-%typemap(check) void *            ALIGN2,
+%typemap(check SWIGCSHARPCANTHROW) 
+                void *            ALIGN2,
                 Pointer           ALIGN2
 {
-   long tmp;
-   tmp = (long) $target;
+   unsigned long long tmp;
+   tmp = (unsigned long long) $1;
    if (tmp & 1) {
      SWIG_exception(SWIG_ValueError,"Pointer must be 2-byte aligned.");
    }

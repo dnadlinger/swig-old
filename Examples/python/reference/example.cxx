@@ -1,5 +1,10 @@
 /* File : example.cxx */
 
+/* Deal with Microsoft's attempt at deprecating C standard runtime functions */
+#if !defined(SWIG_NO_CRT_SECURE_NO_DEPRECATE) && defined(_MSC_VER)
+# define _CRT_SECURE_NO_DEPRECATE
+#endif
+
 #include "example.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +19,7 @@ Vector operator+(const Vector &a, const Vector &b) {
 
 char *Vector::print() {
   static char temp[512];
-  sprintf(temp,"Vector %x (%g,%g,%g)", this, x,y,z);
+  sprintf(temp,"Vector %p (%g,%g,%g)", this, x,y,z);
   return temp;
 }
 

@@ -1,25 +1,11 @@
-//
-// $Header$
-//
-// SWIG File for making wish
-// Dave Beazley
-// April 25, 1996
-//
-/* Revision History
- * $Log$
- * Revision 1.1  2000/01/11 21:15:54  beazley
- * Added files
+/* -----------------------------------------------------------------------------
+ * See the LICENSE file for information on copyright, usage and redistribution
+ * of SWIG, and the README file for authors - http://www.swig.org/release.html.
  *
- * Revision 1.2  1999/11/05 21:45:14  beazley
- * Minor Changes
+ * wish.i
  *
- * Revision 1.1.1.1  1999/02/28 02:00:56  beazley
- * Swig1.1
- *
- * Revision 1.1  1996/05/22 19:47:45  beazley
- * Initial revision
- *
- */
+ * SWIG File for making wish
+ * ----------------------------------------------------------------------------- */
 
 #ifdef AUTODOC
 %subsection "wish.i"
@@ -31,7 +17,7 @@ both static and dynamic loading, put something like this in your
 interface file :
 
      #ifdef STATIC
-     %include wish.i
+     %include <wish.i>
      #endif
 
 A startup file may be specified by defining the symbol SWIG_RcFileName
@@ -122,7 +108,7 @@ int Tcl_AppInit(Tcl_Interp *interp)
      */
 
 #if TCL_MAJOR_VERSION >= 8 || TCL_MAJOR_VERSION == 7 && TCL_MINOR_VERSION >= 5
-   Tcl_SetVar(interp,"tcl_rcFileName",SWIG_RcFileName,TCL_GLOBAL_ONLY);
+   Tcl_SetVar(interp, (char *) "tcl_rcFileName",SWIG_RcFileName,TCL_GLOBAL_ONLY);
 #else
    tcl_RcFileName = SWIG_RcFileName;
 #endif
@@ -131,7 +117,7 @@ int Tcl_AppInit(Tcl_Interp *interp)
 
 #ifdef MAC_TCL
 #ifdef SWIG_RcRsrcName
-    Tcl_SetVar(interp,"tcl_rcRsrcName",SWIG_RcRsrcName,TCL_GLOBAL_ONLY);
+    Tcl_SetVar(interp, (char *) "tcl_rcRsrcName",SWIG_RcRsrcName,TCL_GLOBAL_ONLY);
 #endif
 #endif
     return TCL_OK;

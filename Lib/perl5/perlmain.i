@@ -1,6 +1,11 @@
-// $Header$
-// Code to statically rebuild perl5.
-//
+/* -----------------------------------------------------------------------------
+ * See the LICENSE file for information on copyright, usage and redistribution
+ * of SWIG, and the README file for authors - http://www.swig.org/release.html.
+ *
+ * perlmain.i
+ *
+ * Code to statically rebuild perl5.
+ * ----------------------------------------------------------------------------- */
 
 #ifdef AUTODOC
 %subsection "perlmain.i"
@@ -24,7 +29,7 @@ library is C++ safe.
 
 %{
 
-static void xs_init _((void));
+static void xs_init _((pTHX));
 static PerlInterpreter *my_perl;
 
 int perl_eval(char *string) {
@@ -64,7 +69,7 @@ main(int argc, char **argv, char **env)
 /* EXTERN_C void boot_DynaLoader _((CV* cv)); */
 
 static void
-xs_init()
+xs_init(pTHX)
 {
 /*  dXSUB_SYS; */
     char *file = __FILE__;

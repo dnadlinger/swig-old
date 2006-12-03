@@ -8,6 +8,8 @@
 #include "example.h"
 %}
 
+%rename(cprint) print;
+
 class Vector {
 public:
     Vector(double x, double y, double z);
@@ -31,12 +33,12 @@ public:
   int size();
   
   /* This wrapper provides an alternative to the [] operator */
-  %addmethods {
+  %extend {
     Vector &get(int index) {
-      return (*self)[index];
+      return (*$self)[index];
     }
     void set(int index, Vector &a) {
-      (*self)[index] = a;
+      (*$self)[index] = a;
     }
   }
 };

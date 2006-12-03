@@ -1,3 +1,10 @@
+/* -----------------------------------------------------------------------------
+ * See the LICENSE file for information on copyright, usage and redistribution
+ * of SWIG, and the README file for authors - http://www.swig.org/release.html.
+ *
+ * mactclinit.c
+ * ----------------------------------------------------------------------------- */
+
 /* 
  * tclMacAppInit.c --
  *
@@ -44,7 +51,7 @@ short InstallConsole _ANSI_ARGS_((short fd));
  *----------------------------------------------------------------------
  */
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C"
 #endif
 extern int

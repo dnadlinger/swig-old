@@ -1,42 +1,30 @@
 /* -----------------------------------------------------------------------------
+ * See the LICENSE file for information on copyright, usage and redistribution
+ * of SWIG, and the README file for authors - http://www.swig.org/release.html.
+ *
  * typemaps.i
  *
- *      Swig typemap library for Tcl8.  This file contains various sorts
- *      of typemaps for modifying Swig's code generation.
- *
- * Author: David Beazley (beazley@cs.uchicago.edu)
- *
+ * Swig typemap library for Tcl8.  This file contains various sorts
+ * of typemaps for modifying Swig's code generation.
  * ----------------------------------------------------------------------------- */
 
-#ifdef AUTODOC
-%section "Typemap Library (Tcl)",info,after,pre,nosort,skip=1,chop_left=3,chop_right=0,chop_top=0,chop_bottom=0
-%text %{
-%include typemaps.i
+#if !defined(SWIG_USE_OLD_TYPEMAPS)
+%include <typemaps/typemaps.swg>
+#else
 
+/*
 The SWIG typemap library provides a language independent mechanism for
 supporting output arguments, input values, and other C function
 calling mechanisms.  The primary use of the library is to provide a
 better interface to certain C function--especially those involving
 pointers.
-%}
-
-#endif
-
-// ------------------------------------------------------------------------
-// Pointer handling
-//
-// These mappings provide support for input/output arguments and common
-// uses for C/C++ pointers.
-// ------------------------------------------------------------------------
+*/
 
 // INPUT typemaps.
 // These remap a C pointer to be an "INPUT" value which is passed by value
 // instead of reference.
 
-#ifdef AUTODOC
-%subsection "Input Methods"
-
-%text %{
+/*
 The following methods can be applied to turn a pointer into a simple
 "input" value.  That is, instead of passing a pointer to an object,
 you would use a real value instead.
@@ -44,10 +32,13 @@ you would use a real value instead.
          int            *INPUT
          short          *INPUT
          long           *INPUT
+         long long      *INPUT
          unsigned int   *INPUT
          unsigned short *INPUT
          unsigned long  *INPUT
+         unsigned long long *INPUT
          unsigned char  *INPUT
+         bool           *INPUT
          float          *INPUT
          double         *INPUT
          
@@ -68,97 +59,130 @@ or you can use the %apply directive :
         %apply double *INPUT { double *a, double *b };
         double fadd(double *a, double *b);
 
-%}
-#endif
+*/
 
-%typemap(tcl8,in) double *INPUT(double temp)
+%typemap(in) double *INPUT(double temp), double &INPUT(double temp)
 {
-  if (Tcl_GetDoubleFromObj(interp,$source,&temp) == TCL_ERROR) {
-    return TCL_ERROR;
+  if (Tcl_GetDoubleFromObj(interp,$input,&temp) == TCL_ERROR) {
+    SWIG_fail;
   }
-  $target = &temp;
+  $1 = &temp;
 }
 
-%typemap(tcl8,in) float *INPUT(double dvalue, float  temp) 
+%typemap(in) float *INPUT(double dvalue, float  temp), float &INPUT(double dvalue, float temp) 
 {
-  if (Tcl_GetDoubleFromObj(interp,$source,&dvalue) == TCL_ERROR) {
-    return TCL_ERROR;
+  if (Tcl_GetDoubleFromObj(interp,$input,&dvalue) == TCL_ERROR) {
+    SWIG_fail;
   }
   temp = (float) dvalue;
-  $target = &temp;
+  $1 = &temp;
 }
 
-%typemap(tcl8,in) int  *INPUT(int temp)
+%typemap(in) int  *INPUT(int temp), int &INPUT(int temp)
 {
-  if (Tcl_GetIntFromObj(interp,$source,&temp) == TCL_ERROR) {
-    return TCL_ERROR;
+  if (Tcl_GetIntFromObj(interp,$input,&temp) == TCL_ERROR) {
+    SWIG_fail;
   }
-  $target = &temp;
+  $1 = &temp;
 }
 
-%typemap(tcl8,in) short *INPUT(int ivalue, short temp)
+%typemap(in) short *INPUT(int ivalue, short temp), short &INPUT(int ivalue, short temp)
 {
-  if (Tcl_GetIntFromObj(interp,$source,&ivalue) == TCL_ERROR) {
-    return TCL_ERROR;
+  if (Tcl_GetIntFromObj(interp,$input,&ivalue) == TCL_ERROR) {
+    SWIG_fail;
   }
   temp = (short) ivalue;
-  $target = &temp;
+  $1 = &temp;
 }
 
-%typemap(tcl8,in) long *INPUT(int ivalue, long temp)
+%typemap(in) long *INPUT(int ivalue, long temp), long &INPUT(int ivalue, long temp)
 {
-  if (Tcl_GetIntFromObj(interp,$source,&ivalue) == TCL_ERROR) {
-    return TCL_ERROR;
+  if (Tcl_GetIntFromObj(interp,$input,&ivalue) == TCL_ERROR) {
+    SWIG_fail;
   }
   temp = (long) ivalue;
-  $target = &temp;
+  $1 = &temp;
 }
 
-%typemap(tcl8,in) unsigned int  *INPUT(int ivalue, unsigned int temp)
+%typemap(in) unsigned int  *INPUT(int ivalue, unsigned int temp), 
+             unsigned int  &INPUT(int ivalue, unsigned int temp)
 {
-  if (Tcl_GetIntFromObj(interp,$source,&ivalue) == TCL_ERROR) {
-    return TCL_ERROR;
+  if (Tcl_GetIntFromObj(interp,$input,&ivalue) == TCL_ERROR) {
+    SWIG_fail;
   }
   temp = (unsigned int) ivalue;
-  $target = &temp;
+  $1 = &temp;
 }
 
-%typemap(tcl8,in) unsigned short *INPUT(int ivalue, unsigned short temp)
+%typemap(in) unsigned short *INPUT(int ivalue, unsigned short temp),
+             unsigned short &INPUT(int ivalue, unsigned short temp)
 {
-  if (Tcl_GetIntFromObj(interp,$source,&ivalue) == TCL_ERROR) {
-    return TCL_ERROR;
+  if (Tcl_GetIntFromObj(interp,$input,&ivalue) == TCL_ERROR) {
+    SWIG_fail;
   }
   temp = (unsigned short) ivalue;
-  $target = &temp;
+  $1 = &temp;
 }
 
-%typemap(tcl8,in) unsigned long *INPUT(int ivalue, unsigned long temp)
+%typemap(in) unsigned long *INPUT(int ivalue, unsigned long temp),
+             unsigned long &INPUT(int ivalue, unsigned long temp)
 {
-  if (Tcl_GetIntFromObj(interp,$source,&ivalue) == TCL_ERROR) {
-    return TCL_ERROR;
+  if (Tcl_GetIntFromObj(interp,$input,&ivalue) == TCL_ERROR) {
+    SWIG_fail;
   }
   temp = (unsigned long) ivalue;
-  $target = &temp;
+  $1 = &temp;
 }
 
-%typemap(tcl8,in) unsigned char *INPUT(int ivalue, unsigned char temp)
+%typemap(in) unsigned char *INPUT(int ivalue, unsigned char temp),
+             unsigned char &INPUT(int ivalue, unsigned char temp)
 {
-  if (Tcl_GetIntFromObj(interp,$source,&ivalue) == TCL_ERROR) {
-    return TCL_ERROR;
+  if (Tcl_GetIntFromObj(interp,$input,&ivalue) == TCL_ERROR) {
+    SWIG_fail;
   }
   temp = (unsigned char) ivalue;
-  $target = &temp;
+  $1 = &temp;
+}
+
+%typemap(in) signed char *INPUT(int ivalue, signed char temp),
+             signed char &INPUT(int ivalue, signed char temp)
+{
+  if (Tcl_GetIntFromObj(interp,$input,&ivalue) == TCL_ERROR) {
+    SWIG_fail;
+  }
+  temp = (signed char) ivalue;
+  $1 = &temp;
+}
+
+%typemap(in) bool *INPUT(int ivalue, bool temp),
+             bool &INPUT(int ivalue, bool temp)
+{
+  if (Tcl_GetIntFromObj(interp,$input,&ivalue) == TCL_ERROR) {
+    SWIG_fail;
+  }
+  temp = ivalue ? true : false;
+  $1 = &temp;
+}
+
+%typemap(in) long long *INPUT($*1_ltype temp), 
+             long long &INPUT($*1_ltype temp)
+{
+  temp = ($*1_ltype) strtoll(Tcl_GetStringFromObj($input,NULL),0,0);
+  $1 = &temp;
+}
+
+%typemap(in) unsigned long long *INPUT($*1_ltype temp), 
+             unsigned long long &INPUT($*1_ltype temp)
+{
+  temp = ($*1_ltype) strtoull(Tcl_GetStringFromObj($input,NULL),0,0);
+  $1 = &temp;
 }
   
 // OUTPUT typemaps.   These typemaps are used for parameters that
 // are output only.   The output value is appended to the result as
 // a list element.
 
-
-#ifdef AUTODOC
-%subsection "Output Methods"
-
-%text %{
+/*
 The following methods can be applied to turn a pointer into an "output"
 value.  When calling a function, no input value would be given for
 a parameter, but an output value would be returned.  In the case of
@@ -167,10 +191,13 @@ multiple output values, they are returned in the form of a Tcl list.
          int            *OUTPUT
          short          *OUTPUT
          long           *OUTPUT
+         long long      *OUTPUT
          unsigned int   *OUTPUT
          unsigned short *OUTPUT
          unsigned long  *OUTPUT
+         unsigned long long *OUTPUT
          unsigned char  *OUTPUT
+         bool           *OUTPUT
          float          *OUTPUT
          double         *OUTPUT
          
@@ -194,67 +221,99 @@ or you can use the %apply directive :
 The Tcl output of the function would be a list containing both
 output values. 
 
-%}
+*/
 
-#endif
-
-
-%typemap(tcl8,ignore) int            *OUTPUT(int temp),
+%typemap(in,numinputs=0)     int            *OUTPUT(int temp),
                      short          *OUTPUT(short temp),
                      long           *OUTPUT(long temp),
                      unsigned int   *OUTPUT(unsigned int temp),
                      unsigned short *OUTPUT(unsigned short temp),
                      unsigned long  *OUTPUT(unsigned long temp),
                      unsigned char  *OUTPUT(unsigned char temp),
+	             signed char    *OUTPUT(signed char temp),
+                     bool           *OUTPUT(bool temp),
                      float          *OUTPUT(float temp),
-                     double         *OUTPUT(double temp)
-{
-  $target = &temp;
-}
+                     double         *OUTPUT(double temp),
+                     long long      *OUTPUT($*1_ltype temp),
+                     unsigned long long *OUTPUT($*1_ltype temp),
+	             int            &OUTPUT(int temp),
+                     short          &OUTPUT(short temp),
+                     long           &OUTPUT(long temp),
+                     unsigned int   &OUTPUT(unsigned int temp),
+                     unsigned short &OUTPUT(unsigned short temp),
+                     unsigned long  &OUTPUT(unsigned long temp),
+                     signed char    &OUTPUT(signed char temp),
+                     bool           &OUTPUT(bool temp),
+                     unsigned char  &OUTPUT(unsigned char temp),
+                     float          &OUTPUT(float temp),
+                     double         &OUTPUT(double temp),
+                     long long      &OUTPUT($*1_ltype temp),
+                     unsigned long long &OUTPUT($*1_ltype temp)
+"$1 = &temp;";
 
-%typemap(tcl8,argout) int     *OUTPUT,
-                     short   *OUTPUT,
-                     long    *OUTPUT,
-                     unsigned int   *OUTPUT,
-                     unsigned short *OUTPUT,
-                     unsigned long  *OUTPUT,
-                     unsigned char  *OUTPUT
+%typemap(argout)     int     *OUTPUT, int &OUTPUT,
+                     short   *OUTPUT, short &OUTPUT,
+                     long    *OUTPUT, long &OUTPUT,
+                     unsigned int   *OUTPUT, unsigned int &OUTPUT,
+                     unsigned short *OUTPUT, unsigned short &OUTPUT,
+                     unsigned long  *OUTPUT, unsigned long &OUTPUT,
+                     unsigned char  *OUTPUT, unsigned char &OUTPUT,
+                     signed char    *OUTPUT, signed char  &OUTPUT,
+                     bool           *OUTPUT, bool &OUTPUT
 {
   Tcl_Obj *o;
-  o = Tcl_NewIntObj((int) *($source));
+  o = Tcl_NewIntObj((int) *($1));
   Tcl_ListObjAppendElement(interp,Tcl_GetObjResult(interp),o);
 }
 
-%typemap(tcl8,argout) float    *OUTPUT,
-                     double   *OUTPUT
+%typemap(argout) float    *OUTPUT, float &OUTPUT,
+                 double   *OUTPUT, double &OUTPUT
 {
   Tcl_Obj *o;
-  o = Tcl_NewDoubleObj((double) *($source));
+  o = Tcl_NewDoubleObj((double) *($1));
   Tcl_ListObjAppendElement(interp,Tcl_GetObjResult(interp),o);
 }
 
-// BOTH
+%typemap(argout) long long *OUTPUT, long long &OUTPUT
+{
+  char temp[256];
+  Tcl_Obj *o;
+  sprintf(temp,"%lld",(long long)*($1));
+  o = Tcl_NewStringObj(temp,-1);
+  Tcl_ListObjAppendElement(interp,Tcl_GetObjResult(interp),o);
+}
+
+%typemap(argout) unsigned long long *OUTPUT, unsigned long long &OUTPUT
+{
+  char temp[256];
+  Tcl_Obj *o;
+  sprintf(temp,"%llu",(unsigned long long)*($1));
+  o = Tcl_NewStringObj(temp,-1);
+  Tcl_ListObjAppendElement(interp,Tcl_GetObjResult(interp),o);
+}
+
+// INOUT
 // Mappings for an argument that is both an input and output
 // parameter
 
-#ifdef AUTODOC
-%subsection "Input/Output Methods"
-
-%text %{
+/*
 The following methods can be applied to make a function parameter both
 an input and output value.  This combines the behavior of both the
 "INPUT" and "OUTPUT" methods described earlier.  Output values are
 returned in the form of a Tcl list.
 
-         int            *BOTH
-         short          *BOTH
-         long           *BOTH
-         unsigned int   *BOTH
-         unsigned short *BOTH
-         unsigned long  *BOTH
-         unsigned char  *BOTH
-         float          *BOTH
-         double         *BOTH
+         int            *INOUT
+         short          *INOUT
+         long           *INOUT
+         long long      *INOUT
+         unsigned int   *INOUT
+         unsigned short *INOUT
+         unsigned long  *INOUT
+         unsigned long long *INOUT
+         unsigned char  *INOUT
+         bool           *INOUT
+         float          *INOUT
+         double         *INOUT
          
 For example, suppose you were trying to wrap the following function :
 
@@ -265,12 +324,12 @@ For example, suppose you were trying to wrap the following function :
 You could wrap it with SWIG as follows :
 
         %include typemaps.i
-        void neg(double *BOTH);
+        void neg(double *INOUT);
 
 or you can use the %apply directive :
 
         %include typemaps.i
-        %apply double *BOTH { double *x };
+        %apply double *INOUT { double *x };
         void neg(double *x);
 
 Unlike C, this mapping does not directly modify the input value (since
@@ -280,87 +339,129 @@ to a Tcl variable you might do this :
 
        set x [neg $x]
 
-%}
+*/
+
+
+%typemap(in) int *INOUT = int *INPUT;
+%typemap(in) short *INOUT = short *INPUT;
+%typemap(in) long *INOUT = long *INPUT;
+%typemap(in) unsigned int *INOUT = unsigned int *INPUT;
+%typemap(in) unsigned short *INOUT = unsigned short *INPUT;
+%typemap(in) unsigned long *INOUT = unsigned long *INPUT;
+%typemap(in) unsigned char *INOUT = unsigned char *INPUT;
+%typemap(in) signed char *INOUT = signed char *INPUT;
+%typemap(in) bool *INOUT = bool *INPUT;
+%typemap(in) float *INOUT = float *INPUT;
+%typemap(in) double *INOUT = double *INPUT;
+%typemap(in) long long *INOUT = long long *INPUT;
+%typemap(in) unsigned long long *INOUT = unsigned long long *INPUT;
+
+%typemap(in) int &INOUT = int &INPUT;
+%typemap(in) short &INOUT = short &INPUT;
+%typemap(in) long &INOUT = long &INPUT;
+%typemap(in) unsigned int &INOUT = unsigned int &INPUT;
+%typemap(in) unsigned short &INOUT = unsigned short &INPUT;
+%typemap(in) unsigned long &INOUT = unsigned long &INPUT;
+%typemap(in) unsigned char &INOUT = unsigned char &INPUT;
+%typemap(in) signed char &INOUT = signed char &INPUT;
+%typemap(in) bool &INOUT = bool &INPUT;
+%typemap(in) float &INOUT = float &INPUT;
+%typemap(in) double &INOUT = double &INPUT;
+%typemap(in) long long &INOUT = long long &INPUT;
+%typemap(in) unsigned long long &INOUT = unsigned long long &INPUT;
+
+%typemap(argout) int *INOUT = int *OUTPUT;
+%typemap(argout) short *INOUT = short *OUTPUT;
+%typemap(argout) long *INOUT = long *OUTPUT;
+%typemap(argout) unsigned int *INOUT = unsigned int *OUTPUT;
+%typemap(argout) unsigned short *INOUT = unsigned short *OUTPUT;
+%typemap(argout) unsigned long *INOUT = unsigned long *OUTPUT;
+%typemap(argout) unsigned char *INOUT = unsigned char *OUTPUT;
+%typemap(argout) signed char *INOUT = signed char *OUTPUT;
+%typemap(argout) bool *INOUT = bool *OUTPUT;
+%typemap(argout) float *INOUT = float *OUTPUT;
+%typemap(argout) double *INOUT = double *OUTPUT;
+%typemap(argout) long long *INOUT = long long *OUTPUT;
+%typemap(argout) unsigned long long *INOUT = unsigned long long *OUTPUT;
+
+%typemap(argout) int &INOUT = int &OUTPUT;
+%typemap(argout) short &INOUT = short &OUTPUT;
+%typemap(argout) long &INOUT = long &OUTPUT;
+%typemap(argout) unsigned int &INOUT = unsigned int &OUTPUT;
+%typemap(argout) unsigned short &INOUT = unsigned short &OUTPUT;
+%typemap(argout) unsigned long &INOUT = unsigned long &OUTPUT;
+%typemap(argout) unsigned char &INOUT = unsigned char &OUTPUT;
+%typemap(argout) signed char &INOUT = signed char &OUTPUT;
+%typemap(argout) bool &INOUT = bool &OUTPUT;
+%typemap(argout) float &INOUT = float &OUTPUT;
+%typemap(argout) double &INOUT = double &OUTPUT;
+%typemap(argout) long long &INOUT = long long &OUTPUT;
+%typemap(argout) unsigned long long &INOUT = unsigned long long &OUTPUT;
+
+
+/* Overloading information */
+
+%typemap(typecheck) double *INPUT = double;
+%typemap(typecheck) bool *INPUT = bool;
+%typemap(typecheck) signed char *INPUT = signed char;
+%typemap(typecheck) unsigned char *INPUT = unsigned char;
+%typemap(typecheck) unsigned long *INPUT = unsigned long;
+%typemap(typecheck) unsigned short *INPUT = unsigned short;
+%typemap(typecheck) unsigned int *INPUT = unsigned int;
+%typemap(typecheck) long *INPUT = long;
+%typemap(typecheck) short *INPUT = short;
+%typemap(typecheck) int *INPUT = int;
+%typemap(typecheck) float *INPUT = float;
+%typemap(typecheck) long long *INPUT = long long;
+%typemap(typecheck) unsigned long long *INPUT = unsigned long long;
+
+%typemap(typecheck) double &INPUT = double;
+%typemap(typecheck) bool &INPUT = bool;
+%typemap(typecheck) signed char &INPUT = signed char;
+%typemap(typecheck) unsigned char &INPUT = unsigned char;
+%typemap(typecheck) unsigned long &INPUT = unsigned long;
+%typemap(typecheck) unsigned short &INPUT = unsigned short;
+%typemap(typecheck) unsigned int &INPUT = unsigned int;
+%typemap(typecheck) long &INPUT = long;
+%typemap(typecheck) short &INPUT = short;
+%typemap(typecheck) int &INPUT = int;
+%typemap(typecheck) float &INPUT = float;
+%typemap(typecheck) long long &INPUT = long long;
+%typemap(typecheck) unsigned long long &INPUT = unsigned long long;
+
+%typemap(typecheck) double *INOUT = double;
+%typemap(typecheck) bool *INOUT = bool;
+%typemap(typecheck) signed char *INOUT = signed char;
+%typemap(typecheck) unsigned char *INOUT = unsigned char;
+%typemap(typecheck) unsigned long *INOUT = unsigned long;
+%typemap(typecheck) unsigned short *INOUT = unsigned short;
+%typemap(typecheck) unsigned int *INOUT = unsigned int;
+%typemap(typecheck) long *INOUT = long;
+%typemap(typecheck) short *INOUT = short;
+%typemap(typecheck) int *INOUT = int;
+%typemap(typecheck) float *INOUT = float;
+%typemap(typecheck) long long *INOUT = long long;
+%typemap(typecheck) unsigned long long *INOUT = unsigned long long;
+
+%typemap(typecheck) double &INOUT = double;
+%typemap(typecheck) bool &INOUT = bool;
+%typemap(typecheck) signed char &INOUT = signed char;
+%typemap(typecheck) unsigned char &INOUT = unsigned char;
+%typemap(typecheck) unsigned long &INOUT = unsigned long;
+%typemap(typecheck) unsigned short &INOUT = unsigned short;
+%typemap(typecheck) unsigned int &INOUT = unsigned int;
+%typemap(typecheck) long &INOUT = long;
+%typemap(typecheck) short &INOUT = short;
+%typemap(typecheck) int &INOUT = int;
+%typemap(typecheck) float &INOUT = float;
+%typemap(typecheck) long long &INOUT = long long;
+%typemap(typecheck) unsigned long long &INOUT = unsigned long long;
 
 #endif
-
-
-%typemap(tcl8,in) int *BOTH = int *INPUT;
-%typemap(tcl8,in) short *BOTH = short *INPUT;
-%typemap(tcl8,in) long *BOTH = long *INPUT;
-%typemap(tcl8,in) unsigned int *BOTH = unsigned int *INPUT;
-%typemap(tcl8,in) unsigned short *BOTH = unsigned short *INPUT;
-%typemap(tcl8,in) unsigned long *BOTH = unsigned long *INPUT;
-%typemap(tcl8,in) unsigned char *BOTH = unsigned char *INPUT;
-%typemap(tcl8,in) float *BOTH = float *INPUT;
-%typemap(tcl8,in) double *BOTH = double *INPUT;
-
-%typemap(tcl8,argout) int *BOTH = int *OUTPUT;
-%typemap(tcl8,argout) short *BOTH = short *OUTPUT;
-%typemap(tcl8,argout) long *BOTH = long *OUTPUT;
-%typemap(tcl8,argout) unsigned int *BOTH = unsigned int *OUTPUT;
-%typemap(tcl8,argout) unsigned short *BOTH = unsigned short *OUTPUT;
-%typemap(tcl8,argout) unsigned long *BOTH = unsigned long *OUTPUT;
-%typemap(tcl8,argout) unsigned char *BOTH = unsigned char *OUTPUT;
-%typemap(tcl8,argout) float *BOTH = float *OUTPUT;
-%typemap(tcl8,argout) double *BOTH = double *OUTPUT;
 
 // --------------------------------------------------------------------
 // Special types
 // --------------------------------------------------------------------
 
-// If interp * appears as a function argument, we ignore it and get
-// it from the wrapper function.
-
-#ifdef AUTODOC
-%subsection "Special Methods"
-
-%text %{
-The typemaps.i library also provides the following mappings :
-
-Tcl_Interp *interp
-
-      Passes the current Tcl_Interp value directly to a C function.
-      This can be used to work with existing wrapper functions or
-      if you just need the interp value for some reason.  When used,
-      the 'interp' parameter becomes hidden in the Tcl interface--that
-      is, you don't specify it explicitly. SWIG fills in its value
-      automatically.
-
-int Tcl_Result
-
-      Makes the integer return code of a function the return value 
-      of a SWIG generated wrapper function.  For example :
-
-            int foo() {
-                  ... do stuff ...
-                  return TCL_OK;
-            }      
-
-      could be wrapped as follows :
-
-            %include typemaps.i
-            %apply int Tcl_Result { int foo };
-            int foo();
- 
-%}
-
-#endif
-
-%typemap(tcl8,ignore) Tcl_Interp *interp {
-  $target = interp;
-}
-
-// If return code is a Tcl_Result, simply pass it on
-
-%typemap(tcl8,out) int Tcl_Result {
-  return $source;
-}
-
-
-
-  
-  
-  
-
-
+%include <tclinterp.i>
+%include <tclresult.i>
