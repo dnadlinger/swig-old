@@ -1,4 +1,6 @@
-import example = example;
+module runme;
+
+static import example;
 import tango.io.Stdout;
 
 /*
@@ -14,10 +16,10 @@ Stdout.format( "The gcd of {} and {} is {}.", x, y, g ).newline;
  */
 
 // Output its current value
-Stdout.format( "Foo = {}" + example.Foo );
+Stdout.format( "Foo = {}" + example.Foo ).newline;
 
 // Change its value
 example.Foo = 3.1415926;
 
 // See if the change took effect
-Stdout.format( "Foo = {}" + example.Foo );
+Stdout.format( "Foo = {}" + example.Foo ).newline;
