@@ -2104,6 +2104,10 @@ SKIP_UFFI=
 #fi
 AC_SUBST(SKIP_UFFI)
 
+# D is always skipped for now since the test suite has yet to be
+# set up.
+SKIP_D="1"
+
 #----------------------------------------------------------------
 # Additional language dependencies
 #----------------------------------------------------------------

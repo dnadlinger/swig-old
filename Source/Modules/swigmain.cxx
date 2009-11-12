@@ -47,6 +47,7 @@ extern "C" {
   Language *swig_cffi(void);
   Language *swig_uffi(void);
   Language *swig_r(void);
+  Language *swig_d(void);
 }
 
 struct swig_module {
@@ -65,6 +66,7 @@ static swig_module modules[] = {
   {"-clisp", swig_clisp, "CLISP"},
   {"-cffi", swig_cffi, "CFFI"},
   {"-csharp", swig_csharp, "C#"},
+  {"-d", swig_d, "D"},
   {"-guile", swig_guile, "Guile"},
   {"-java", swig_java, "Java"},
   {"-lua", swig_lua, "Lua"},

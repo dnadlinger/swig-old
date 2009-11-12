@@ -75,6 +75,7 @@ skip-clisp	= test -n "@SKIP_CLISP@"
 skip-cffi	= test -n "@SKIP_CFFI@"
 skip-uffi	= test -n "@SKIP_UFFI@"
 skip-r		= test -n "@SKIP_R@"
+skip-d		= test -n "@SKIP_D@"
 
 # Additional dependencies for some tests
 skip-gcj        = test -n "@SKIP_GCJ@"
@@ -110,6 +111,7 @@ check-aliveness:
 	@$(skip-modula3)  || ./$(TARGET) -modula3  -help
 	@$(skip-lua)      || ./$(TARGET) -lua      -help
 	@$(skip-r) 	  || ./$(TARGET) -r        -help
+	@$(skip-d) 	  || ./$(TARGET) -d        -help
 
 check-ccache:
 	test -z "$(ENABLE_CCACHE)" || (cd $(CCACHE) && $(MAKE) check)
@@ -135,7 +137,8 @@ check-examples:					\
 	check-clisp-examples			\
 	check-uffi-examples			\
 	check-cffi-examples			\
-	check-r-examples
+	check-r-examples			\
+	check-d-examples
 
 tcl_examples       :=$(shell sed '/^\#/d' $(srcdir)/Examples/tcl/check.list)
 perl5_examples     :=$(shell sed '/^\#/d' $(srcdir)/Examples/perl5/check.list)
@@ -157,6 +160,7 @@ clisp_examples     :=
 uffi_examples      :=
 cffi_examples      :=
 r_examples         :=$(shell sed '/^\#/d' $(srcdir)/Examples/r/check.list)
+d_examples         :=$(shell sed '/^\#/d' $(srcdir)/Examples/d/check.list)
 
 # all examples
 check-%-examples :
@@ -203,6 +207,7 @@ check-gifplot:					\
 	check-chicken-gifplot                   \
 #	check-lua-gifplot                  	\
 #	check-csharp-gifplot                    \
+#	check-d-gifplot                         \
 #	check-modula3-gifplot
 
 check-%-gifplot: gifplot-library
@@ -250,7 +255,8 @@ check-test-suite:				\
 	check-uffi-test-suite			\
 	check-cffi-test-suite			\
 	check-chicken-test-suite		\
-	check-r-test-suite
+	check-r-test-suite			\
+	check-d-test-suite
 
 check-%-test-suite:
 	@if test -z "$(skip-$*)"; then					\
@@ -301,7 +307,8 @@ all-test-suite:					\
 	all-uffi-test-suite			\
 	all-cffi-test-suite			\
 	all-chicken-test-suite			\
-	all-r-test-suite
+	all-r-test-suite			\
+	all-d-test-suite
 
 all-%-test-suite:
 	@$(MAKE) -k -s check-$*-test-suite ACTION=all
@@ -328,7 +335,8 @@ broken-test-suite:				\
 	broken-uffi-test-suite			\
 	broken-cffi-test-suite			\
 	broken-chicken-test-suite		\
-	broken-r-test-suite
+	broken-r-test-suite			\
+	broken-d-test-suite
 
 broken-%-test-suite:
 	@$(MAKE) -k -s check-$*-test-suite ACTION=broken
@@ -445,7 +453,7 @@ install-main:
 	@$(INSTALL_PROGRAM) $(TARGET) $(DESTDIR)$(BIN_DIR)/`echo $(TARGET_NOEXE) | sed '$(transform)'`@EXEEXT@
 
 lib-languages = gcj typemaps tcl perl5 python guile java mzscheme ruby php ocaml octave \
-	pike chicken csharp modula3 allegrocl clisp lua cffi uffi r
+	pike chicken csharp modula3 allegrocl clisp lua cffi uffi r d
 
 lib-modules = std
 
