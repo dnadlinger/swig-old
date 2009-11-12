@@ -9,9 +9,9 @@
 
 %include <dhead.swg>
 
-/* The ctype, imtype and cstype typemaps work together and so there should be one of each. 
- * The ctype typemap contains the PInvoke type used in the PInvoke (C/C++) code. 
- * The imtype typemap contains the C# type used in the intermediary class. 
+/* The ctype, imtype and cstype typemaps work together and so there should be one of each.
+ * The ctype typemap contains the PInvoke type used in the PInvoke (C/C++) code.
+ * The imtype typemap contains the C# type used in the intermediary class.
  * The cstype typemap contains the C# type used in the C# proxy classes, type wrapper classes and module class. */
 
 
@@ -43,14 +43,14 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
       uu = ((d - '0') << 4);
     else if ((d >= 'a') && (d <= 'f'))
       uu = ((d - ('a'-10)) << 4);
-    else 
+    else
       return (char *) 0;
     d = *(c++);
     if ((d >= '0') && (d <= '9'))
       uu |= (d - '0');
     else if ((d >= 'a') && (d <= 'f'))
       uu |= (d - ('a'-10));
-    else 
+    else
       return (char *) 0;
     *u = uu;
   }
@@ -145,33 +145,33 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %typemap(csdirectorin) bool "$iminput"
 %typemap(csdirectorout) bool "$cscall"
 
-%typemap(in) char, 
-             signed char, 
-             unsigned char, 
-             short, 
-             unsigned short, 
-             int, 
-             unsigned int, 
-             long, 
-             unsigned long, 
-             long long, 
-             unsigned long long, 
-             float, 
+%typemap(in) char,
+             signed char,
+             unsigned char,
+             short,
+             unsigned short,
+             int,
+             unsigned int,
+             long,
+             unsigned long,
+             long long,
+             unsigned long long,
+             float,
              double
 %{ $1 = ($1_ltype)$input; %}
 
-%typemap(directorout) char, 
-             signed char, 
-             unsigned char, 
-             short, 
-             unsigned short, 
-             int, 
-             unsigned int, 
-             long, 
-             unsigned long, 
-             long long, 
-             unsigned long long, 
-             float, 
+%typemap(directorout) char,
+             signed char,
+             unsigned char,
+             short,
+             unsigned short,
+             int,
+             unsigned int,
+             long,
+             unsigned long,
+             long long,
+             unsigned long long,
+             float,
              double
 %{ $result = ($1_ltype)$input; %}
 
@@ -190,33 +190,33 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %typemap(directorin) float              "$input = $1;"
 %typemap(directorin) double             "$input = $1;"
 
-%typemap(csdirectorin) char, 
-                       signed char, 
-                       unsigned char, 
-                       short, 
-                       unsigned short, 
-                       int, 
-                       unsigned int, 
-                       long, 
-                       unsigned long, 
-                       long long, 
-                       unsigned long long, 
-                       float, 
+%typemap(csdirectorin) char,
+                       signed char,
+                       unsigned char,
+                       short,
+                       unsigned short,
+                       int,
+                       unsigned int,
+                       long,
+                       unsigned long,
+                       long long,
+                       unsigned long long,
+                       float,
                        double
   "$iminput"
 
-%typemap(csdirectorout) char, 
-                        signed char, 
-                        unsigned char, 
-                        short, 
-                        unsigned short, 
-                        int, 
-                        unsigned int, 
-                        long, 
-                        unsigned long, 
-                        long long, 
-                        unsigned long long, 
-                        float, 
+%typemap(csdirectorout) char,
+                        signed char,
+                        unsigned char,
+                        short,
+                        unsigned short,
+                        int,
+                        unsigned int,
+                        long,
+                        unsigned long,
+                        long long,
+                        unsigned long long,
+                        float,
                         double
   "$cscall"
 
@@ -244,7 +244,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %typemap(csdirectorout) char * "$cscall"
 
 /* char *& - treat as String */
-%typemap(in) char *& ($*1_ltype temp = 0) %{ 
+%typemap(in) char *& ($*1_ltype temp = 0) %{
   temp = ($*1_ltype)$input;
   $1 = &temp;
 %}
@@ -257,31 +257,31 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 
 /* primitive types by const reference */
 %typemap(in) const bool & ($*1_ltype temp)
-%{ temp = $input ? true : false; 
+%{ temp = $input ? true : false;
    $1 = &temp; %}
 
 %typemap(directorout,warning=SWIGWARN_TYPEMAP_THREAD_UNSAFE_MSG) const bool &
 %{ static $*1_ltype temp;
-   temp = $input ? true : false; 
+   temp = $input ? true : false;
    $result = &temp; %}
 
 %typemap(csdirectorin) const bool & "$iminput"
 %typemap(csdirectorout) const bool & "$cscall"
 
-%typemap(in) const char & ($*1_ltype temp), 
-             const signed char & ($*1_ltype temp), 
-             const unsigned char & ($*1_ltype temp), 
-             const short & ($*1_ltype temp), 
-             const unsigned short & ($*1_ltype temp), 
-             const int & ($*1_ltype temp), 
-             const unsigned int & ($*1_ltype temp), 
-             const long & ($*1_ltype temp), 
-             const unsigned long & ($*1_ltype temp), 
-             const long long & ($*1_ltype temp), 
-             const unsigned long long & ($*1_ltype temp), 
-             const float & ($*1_ltype temp), 
+%typemap(in) const char & ($*1_ltype temp),
+             const signed char & ($*1_ltype temp),
+             const unsigned char & ($*1_ltype temp),
+             const short & ($*1_ltype temp),
+             const unsigned short & ($*1_ltype temp),
+             const int & ($*1_ltype temp),
+             const unsigned int & ($*1_ltype temp),
+             const long & ($*1_ltype temp),
+             const unsigned long & ($*1_ltype temp),
+             const long long & ($*1_ltype temp),
+             const unsigned long long & ($*1_ltype temp),
+             const float & ($*1_ltype temp),
              const double & ($*1_ltype temp)
-%{ temp = ($*1_ltype)$input; 
+%{ temp = ($*1_ltype)$input;
    $1 = &temp; %}
 
 %typemap(directorout,warning=SWIGWARN_TYPEMAP_THREAD_UNSAFE_MSG) const char &,
@@ -297,7 +297,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
              const float &,
              const double &
 %{ static $*1_ltype temp;
-   temp = ($*1_ltype)$input; 
+   temp = ($*1_ltype)$input;
    $result = &temp; %}
 
 %typemap(directorin) const bool &           "$input = $1_name;"
@@ -314,31 +314,31 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %typemap(directorin) const float &          "$input = $1_name;"
 %typemap(directorin) const double &         "$input = $1_name;"
 
-%typemap(csdirectorin) const char & ($*1_ltype temp), 
-                       const signed char & ($*1_ltype temp), 
-                       const unsigned char & ($*1_ltype temp), 
-                       const short & ($*1_ltype temp), 
-                       const unsigned short & ($*1_ltype temp), 
-                       const int & ($*1_ltype temp), 
-                       const unsigned int & ($*1_ltype temp), 
-                       const long & ($*1_ltype temp), 
-                       const unsigned long & ($*1_ltype temp), 
-                       const long long & ($*1_ltype temp), 
-                       const float & ($*1_ltype temp), 
+%typemap(csdirectorin) const char & ($*1_ltype temp),
+                       const signed char & ($*1_ltype temp),
+                       const unsigned char & ($*1_ltype temp),
+                       const short & ($*1_ltype temp),
+                       const unsigned short & ($*1_ltype temp),
+                       const int & ($*1_ltype temp),
+                       const unsigned int & ($*1_ltype temp),
+                       const long & ($*1_ltype temp),
+                       const unsigned long & ($*1_ltype temp),
+                       const long long & ($*1_ltype temp),
+                       const float & ($*1_ltype temp),
                        const double & ($*1_ltype temp)
   "$iminput"
 
-%typemap(csdirectorout) const char & ($*1_ltype temp), 
-                        const signed char & ($*1_ltype temp), 
-                        const unsigned char & ($*1_ltype temp), 
-                        const short & ($*1_ltype temp), 
-                        const unsigned short & ($*1_ltype temp), 
-                        const int & ($*1_ltype temp), 
-                        const unsigned int & ($*1_ltype temp), 
-                        const long & ($*1_ltype temp), 
-                        const unsigned long & ($*1_ltype temp), 
-                        const long long & ($*1_ltype temp), 
-                        const float & ($*1_ltype temp), 
+%typemap(csdirectorout) const char & ($*1_ltype temp),
+                        const signed char & ($*1_ltype temp),
+                        const unsigned char & ($*1_ltype temp),
+                        const short & ($*1_ltype temp),
+                        const unsigned short & ($*1_ltype temp),
+                        const int & ($*1_ltype temp),
+                        const unsigned int & ($*1_ltype temp),
+                        const long & ($*1_ltype temp),
+                        const unsigned long & ($*1_ltype temp),
+                        const long long & ($*1_ltype temp),
+                        const float & ($*1_ltype temp),
                         const double & ($*1_ltype temp)
   "$cscall"
 
@@ -360,7 +360,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 
 /* Default handling. Object passed by value. Convert to a pointer */
 %typemap(in, canthrow=1) SWIGTYPE ($&1_type argp)
-%{ argp = ($&1_ltype)$input; 
+%{ argp = ($&1_ltype)$input;
    if (!argp) {
      SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "Attempt to dereference null $1_type", 0);
      return $null;
@@ -374,7 +374,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
    }
    $result = *($&1_ltype)$input; %}
 
-%typemap(out) SWIGTYPE 
+%typemap(out) SWIGTYPE
 #ifdef __cplusplus
 %{ $result = new $1_ltype((const $1_ltype &)$1); %}
 #else
@@ -385,14 +385,14 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 }
 #endif
 
-%typemap(directorin) SWIGTYPE 
+%typemap(directorin) SWIGTYPE
 %{ $input = (void *)&$1; %}
 %typemap(csdirectorin) SWIGTYPE "new $&csclassname($iminput, false)"
 %typemap(csdirectorout) SWIGTYPE "$&csclassname.getCPtr($cscall).Handle"
 
 /* Generic pointers and references */
 %typemap(in) SWIGTYPE * %{ $1 = ($1_ltype)$input; %}
-%typemap(in, fragment="SWIG_UnPackData") SWIGTYPE (CLASS::*) %{ 
+%typemap(in, fragment="SWIG_UnPackData") SWIGTYPE (CLASS::*) %{
   SWIG_UnpackData($input, (void *)&$1, sizeof($1));
 %}
 %typemap(in, canthrow=1) SWIGTYPE & %{ $1 = ($1_ltype)$input;
@@ -400,14 +400,14 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
     SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "$1_type type is null", 0);
     return $null;
   } %}
-%typemap(out) SWIGTYPE * %{ $result = (void *)$1; %} 
+%typemap(out) SWIGTYPE * %{ $result = (void *)$1; %}
 %typemap(out, fragment="SWIG_PackData") SWIGTYPE (CLASS::*) %{
   char buf[128];
   char *data = SWIG_PackData(buf, (void *)&$1, sizeof($1));
   *data = '\0';
   $result = SWIG_csharp_string_callback(buf);
 %}
-%typemap(out) SWIGTYPE & %{ $result = (void *)$1; %} 
+%typemap(out) SWIGTYPE & %{ $result = (void *)$1; %}
 
 %typemap(directorout, warning=SWIGWARN_TYPEMAP_DIRECTOROUT_PTR_MSG) SWIGTYPE *
 %{ $result = ($1_ltype)$input; %}
@@ -434,7 +434,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 
 /* Default array handling */
 %typemap(in) SWIGTYPE [] %{ $1 = ($1_ltype)$input; %}
-%typemap(out) SWIGTYPE [] %{ $result = $1; %} 
+%typemap(out) SWIGTYPE [] %{ $result = $1; %}
 
 /* char arrays - treat as String */
 %typemap(in) char[ANY], char[] %{ $1 = ($1_ltype)$input; %}
@@ -447,7 +447,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %typemap(csdirectorout) char[ANY], char[] "$cscall"
 
 
-/* Typecheck typemaps - The purpose of these is merely to issue a warning for overloaded C++ functions 
+/* Typecheck typemaps - The purpose of these is merely to issue a warning for overloaded C++ functions
  * that cannot be overloaded in C# as more than one C++ type maps to a single C# type */
 
 %typecheck(SWIG_TYPECHECK_BOOL)
@@ -456,7 +456,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
     ""
 
 %typecheck(SWIG_TYPECHECK_CHAR)
-    char, 
+    char,
     const char &
     ""
 
@@ -466,36 +466,36 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
     ""
 
 %typecheck(SWIG_TYPECHECK_UINT8)
-    unsigned char, 
-    const unsigned char & 
+    unsigned char,
+    const unsigned char &
     ""
 
 %typecheck(SWIG_TYPECHECK_INT16)
-    short, 
+    short,
     const short &
     ""
 
 %typecheck(SWIG_TYPECHECK_UINT16)
-    unsigned short, 
+    unsigned short,
     const unsigned short &
     ""
 
 %typecheck(SWIG_TYPECHECK_INT32)
-    int, 
-    long, 
-    const int &, 
+    int,
+    long,
+    const int &,
     const long &
     ""
 
 %typecheck(SWIG_TYPECHECK_UINT32)
-    unsigned int, 
-    unsigned long, 
-    const unsigned int &, 
+    unsigned int,
+    unsigned long,
+    const unsigned int &,
     const unsigned long &
     ""
 
 %typecheck(SWIG_TYPECHECK_INT64)
-    long long, 
+    long long,
     const long long &
     ""
 
@@ -522,20 +522,20 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
     ""
 
 %typecheck(SWIG_TYPECHECK_POINTER)
-    SWIGTYPE, 
-    SWIGTYPE *, 
-    SWIGTYPE &, 
+    SWIGTYPE,
+    SWIGTYPE *,
+    SWIGTYPE &,
     SWIGTYPE [],
     SWIGTYPE (CLASS::*)
     ""
 
 /* Exception handling */
 
-%typemap(throws, canthrow=1) int, 
-                 long, 
-                 short, 
-                 unsigned int, 
-                 unsigned long, 
+%typemap(throws, canthrow=1) int,
+                 long,
+                 short,
+                 unsigned int,
+                 unsigned long,
                  unsigned short
 %{ char error_msg[256];
    sprintf(error_msg, "C++ $1_type exception thrown, value: %d", $1);
@@ -554,7 +554,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 
 /* Typemaps for code generation in proxy classes and C# type wrapper classes */
 
-/* The csin typemap is used for converting function parameter types from the type 
+/* The csin typemap is used for converting function parameter types from the type
  * used in the proxy, module or type wrapper class to the type used in the PInvoke class. */
 %typemap(csin)   bool,               const bool &,
                  char,               const char &,
@@ -798,7 +798,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %{ temp = ($*1_ltype)$input;
    $1 = &temp; %}
 %typemap(out) SWIGTYPE *&
-%{ $result = (void *)*$1; %} 
+%{ $result = (void *)*$1; %}
 
 /* Array reference typemaps */
 %apply SWIGTYPE & { SWIGTYPE ((&)[ANY]) }
@@ -808,7 +808,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %typemap(imtype) void *VOID_INT_PTR "IntPtr"
 %typemap(cstype) void *VOID_INT_PTR "IntPtr"
 %typemap(in) void *VOID_INT_PTR %{ $1 = ($1_ltype)$input; %}
-%typemap(out) void *VOID_INT_PTR %{ $result = (void *)$1; %} 
+%typemap(out) void *VOID_INT_PTR %{ $result = (void *)$1; %}
 %typemap(csin) void *VOID_INT_PTR "$csinput"
 %typemap(csout, excode=SWIGEXCODE) void *VOID_INT_PTR {
     IntPtr ret = $imcall;$excode
@@ -938,15 +938,12 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 #define %csnothrowexception         %feature("except")
 #define %csattributes               %feature("cs:attributes")
 
-%pragma(csharp) imclassclassmodifiers="class"
-%pragma(csharp) moduleclassmodifiers="public class"
+%pragma(d) imclassclassmodifiers="class"
 
-%pragma(csharp) moduleimports=%{
-using System;
-using System.Runtime.InteropServices;
+%pragma(d) moduleimports=%{
 %}
 
-%pragma(csharp) imclassimports=%{
+%pragma(d) imclassimports=%{
 using System;
 using System.Runtime.InteropServices;
 %}
@@ -956,7 +953,7 @@ using System.Runtime.InteropServices;
 %apply unsigned long { size_t };
 %apply const unsigned long & { const size_t & };
 
-/* csharp keywords */
+/* D keywords */
 %include <dkeywords.swg>
 
 // Default enum handling
@@ -964,7 +961,7 @@ using System.Runtime.InteropServices;
 
 /*
 // Alternative char * typemaps.
-%pragma(csharp) imclasscode=%{
+%pragma(d) imclasscode=%{
   public class SWIGStringMarshal : IDisposable {
     public readonly HandleRef swigCPtr;
     public SWIGStringMarshal(string str) {

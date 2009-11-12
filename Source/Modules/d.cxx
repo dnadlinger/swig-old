@@ -45,7 +45,7 @@ class D:public Language {
   bool generate_property_declaration_flag;	// Flag for generating properties
 
   String *imclass_name;		// intermediary class name
-  String *module_class_name;	// module class name
+  String *shadow_module_name;	// The name of the shadow module which exposes the (SWIG) module contents as a D module.
   String *imclass_class_code;	// intermediary class code
   String *proxy_class_def;
   String *proxy_class_code;
@@ -60,11 +60,8 @@ class D:public Language {
   String *imclass_imports;	//intermediary class imports from %pragma
   String *module_imports;	//module imports from %pragma
   String *imclass_baseclass;	//inheritance for intermediary class class from %pragma
-  String *module_baseclass;	//inheritance for module class from %pragma
   String *imclass_interfaces;	//interfaces for intermediary class class from %pragma
-  String *module_interfaces;	//interfaces for module class from %pragma
   String *imclass_class_modifiers;	//class modifiers for intermediary class overriden by %pragma
-  String *module_class_modifiers;	//class modifiers for module class overriden by %pragma
   String *upcasts_code;		//C++ casts for inheritance hierarchies C++ code
   String *imclass_cppcasts_code;	//C++ casts up inheritance hierarchies intermediary class code
   String *director_callback_typedefs;	// Director function pointer typedefs for callbacks
@@ -122,7 +119,7 @@ public:
       old_variable_names(false),
       generate_property_declaration_flag(false),
       imclass_name(NULL),
-      module_class_name(NULL),
+      shadow_module_name(NULL),
       imclass_class_code(NULL),
       proxy_class_def(NULL),
       proxy_class_code(NULL),
@@ -137,11 +134,8 @@ public:
       imclass_imports(NULL),
       module_imports(NULL),
       imclass_baseclass(NULL),
-      module_baseclass(NULL),
       imclass_interfaces(NULL),
-      module_interfaces(NULL),
       imclass_class_modifiers(NULL),
-      module_class_modifiers(NULL),
       upcasts_code(NULL),
       imclass_cppcasts_code(NULL),
       director_callback_typedefs(NULL),
@@ -325,16 +319,17 @@ public:
     swig_types_hash = NewHash();
     filenames_list = NewList();
 
-    // Make the intermediary class and module class names. The intermediary class name can be set in the module directive.
+    // Make the intermediary class and shadow module names.
+    // The intermediary class name can be set in the module directive.
     if (!imclass_name) {
       imclass_name = NewStringf("%sPINVOKE", Getattr(n, "name"));
-      module_class_name = Copy(Getattr(n, "name"));
+      shadow_module_name = Copy(Getattr(n, "name"));
     } else {
       // Rename the module name if it is the same as intermediary class name - a backwards compatibility solution
       if (Cmp(imclass_name, Getattr(n, "name")) == 0)
-	module_class_name = NewStringf("%sModule", Getattr(n, "name"));
+	shadow_module_name = NewStringf("%sModule", Getattr(n, "name"));
       else
-	module_class_name = Copy(Getattr(n, "name"));
+	shadow_module_name = Copy(Getattr(n, "name"));
     }
 
     imclass_class_code = NewString("");
@@ -345,10 +340,7 @@ public:
     imclass_interfaces = NewString("");
     imclass_class_modifiers = NewString("");
     module_class_code = NewString("");
-    module_baseclass = NewString("");
-    module_interfaces = NewString("");
     module_imports = NewString("");
-    module_class_modifiers = NewString("");
     imclass_imports = NewString("");
     imclass_cppcasts_code = NewString("");
     director_connect_parms = NewString("");
@@ -360,7 +352,7 @@ public:
     if (!namespce)
       namespce = NewString("");
     if (!dllimport)
-      dllimport = Copy(module_class_name);
+      dllimport = Copy(shadow_module_name);
 
     Swig_banner(f_begin);
 
@@ -373,8 +365,8 @@ public:
       /* Emit initial director header and director code: */
       Swig_banner(f_directors_h);
       Printf(f_directors_h, "\n");
-      Printf(f_directors_h, "#ifndef SWIG_%s_WRAP_H_\n", module_class_name);
-      Printf(f_directors_h, "#define SWIG_%s_WRAP_H_\n\n", module_class_name);
+      Printf(f_directors_h, "#ifndef SWIG_%s_WRAP_H_\n", shadow_module_name);
+      Printf(f_directors_h, "#define SWIG_%s_WRAP_H_\n\n", shadow_module_name);
 
       Printf(f_directors, "\n\n");
       Printf(f_directors, "/* ---------------------------------------------------\n");
@@ -434,7 +426,7 @@ public:
       Printf(f_im, "{\n");
 
       // Add the intermediary class methods
-      Replaceall(imclass_class_code, "$module", module_class_name);
+      Replaceall(imclass_class_code, "$module", shadow_module_name);
       Replaceall(imclass_class_code, "$imclassname", imclass_name);
       Replaceall(imclass_class_code, "$dllimport", dllimport);
       Printv(f_im, imclass_class_code, NIL);
@@ -447,13 +439,14 @@ public:
       Close(f_im);
     }
 
-    // Generate the C# module class
+    // Generate the D module for the wrapped module.
     {
-      String *filen = NewStringf("%s%s.cs", SWIG_output_directory(), module_class_name);
+      // TODO: Add target package support (to replace C# namespace support).
+      String *filen = NewStringf("%s%s.d", SWIG_output_directory(), shadow_module_name);
       File *f_module = NewFile(filen, "w", SWIG_output_files());
       if (!f_module) {
-	FileErrorDisplay(filen);
-	SWIG_exit(EXIT_FAILURE);
+        FileErrorDisplay(filen);
+        SWIG_exit(EXIT_FAILURE);
       }
       Append(filenames_list, Copy(filen));
       Delete(filen);
@@ -462,23 +455,13 @@ public:
       // Start writing out the module class file
       emitBanner(f_module);
 
-      addOpenNamespace(namespce, f_module);
+      Printf(f_module, "module %s;\n", shadow_module_name);
 
       if (module_imports)
-	Printf(f_module, "%s\n", module_imports);
+        Printf(f_module, "%s\n", module_imports);
 
-      if (Len(module_class_modifiers) > 0)
-	Printf(f_module, "%s ", module_class_modifiers);
-      Printf(f_module, "%s ", module_class_name);
-
-      if (module_baseclass && *Char(module_baseclass))
-	Printf(f_module, ": %s ", module_baseclass);
-      if (Len(module_interfaces) > 0)
-	Printv(f_module, "implements ", module_interfaces, " ", NIL);
-      Printf(f_module, "{\n");
-
-      Replaceall(module_class_code, "$module", module_class_name);
-      Replaceall(module_class_constants_code, "$module", module_class_name);
+      Replaceall(module_class_code, "$module", shadow_module_name);
+      Replaceall(module_class_constants_code, "$module", shadow_module_name);
 
       Replaceall(module_class_code, "$imclassname", imclass_name);
       Replaceall(module_class_constants_code, "$imclassname", imclass_name);
@@ -492,9 +475,6 @@ public:
       // Write out all the global constants
       Printv(f_module, module_class_constants_code, NIL);
 
-      // Finish off the class
-      Printf(f_module, "}\n");
-      addCloseNamespace(namespce, f_module);
 
       Close(f_module);
     }
@@ -550,18 +530,12 @@ public:
     imclass_interfaces = NULL;
     Delete(imclass_class_modifiers);
     imclass_class_modifiers = NULL;
-    Delete(module_class_name);
-    module_class_name = NULL;
+    Delete(shadow_module_name);
+    shadow_module_name = NULL;
     Delete(module_class_code);
     module_class_code = NULL;
-    Delete(module_baseclass);
-    module_baseclass = NULL;
-    Delete(module_interfaces);
-    module_interfaces = NULL;
     Delete(module_imports);
     module_imports = NULL;
-    Delete(module_class_modifiers);
-    module_class_modifiers = NULL;
     Delete(imclass_imports);
     imclass_imports = NULL;
     Delete(imclass_cppcasts_code);
@@ -1419,7 +1393,7 @@ public:
 
   virtual int insertDirective(Node *n) {
     String *code = Getattr(n, "code");
-    Replaceall(code, "$module", module_class_name);
+    Replaceall(code, "$module", shadow_module_name);
     Replaceall(code, "$imclassname", imclass_name);
     Replaceall(code, "$dllimport", dllimport);
     return Language::insertDirective(n);
@@ -1449,7 +1423,7 @@ public:
       String *code = Getattr(n, "name");
       String *value = Getattr(n, "value");
 
-      if (Strcmp(lang, "csharp") == 0) {
+      if (Strcmp(lang, "d") == 0) {
 
 	String *strvalue = NewString(value);
 	Replaceall(strvalue, "\\\"", "\"");
@@ -1468,20 +1442,11 @@ public:
 	} else if (Strcmp(code, "imclassinterfaces") == 0) {
 	  Delete(imclass_interfaces);
 	  imclass_interfaces = Copy(strvalue);
-	} else if (Strcmp(code, "modulebase") == 0) {
-	  Delete(module_baseclass);
-	  module_baseclass = Copy(strvalue);
-	} else if (Strcmp(code, "moduleclassmodifiers") == 0) {
-	  Delete(module_class_modifiers);
-	  module_class_modifiers = Copy(strvalue);
 	} else if (Strcmp(code, "modulecode") == 0) {
 	  Printf(module_class_code, "%s\n", strvalue);
 	} else if (Strcmp(code, "moduleimports") == 0) {
 	  Delete(module_imports);
 	  module_imports = Copy(strvalue);
-	} else if (Strcmp(code, "moduleinterfaces") == 0) {
-	  Delete(module_interfaces);
-	  module_interfaces = Copy(strvalue);
 	} else {
 	  Printf(stderr, "%s : Line %d. Unrecognized pragma.\n", input_file, line_number);
 	}
@@ -1707,8 +1672,8 @@ public:
     Replaceall(proxy_class_code, "$csclassname", proxy_class_name);
     Replaceall(proxy_class_def, "$csclassname", proxy_class_name);
 
-    Replaceall(proxy_class_def, "$module", module_class_name);
-    Replaceall(proxy_class_code, "$module", module_class_name);
+    Replaceall(proxy_class_def, "$module", shadow_module_name);
+    Replaceall(proxy_class_code, "$module", shadow_module_name);
 
     Replaceall(proxy_class_def, "$imclassname", imclass_name);
     Replaceall(proxy_class_code, "$imclassname", imclass_name);
@@ -1752,7 +1717,7 @@ public:
 	SWIG_exit(EXIT_FAILURE);
       }
 
-      if (Cmp(proxy_class_name, module_class_name) == 0) {
+      if (Cmp(proxy_class_name, shadow_module_name) == 0) {
 	Printf(stderr, "Class name cannot be equal to module class name: %s\n", proxy_class_name);
 	SWIG_exit(EXIT_FAILURE);
       }
@@ -1785,9 +1750,9 @@ public:
 
       emitProxyClassDefAndCPPCasts(n);
 
-      Replaceall(proxy_class_def, "$module", module_class_name);
-      Replaceall(proxy_class_code, "$module", module_class_name);
-      Replaceall(proxy_class_constants_code, "$module", module_class_name);
+      Replaceall(proxy_class_def, "$module", shadow_module_name);
+      Replaceall(proxy_class_code, "$module", shadow_module_name);
+      Replaceall(proxy_class_constants_code, "$module", shadow_module_name);
       Replaceall(proxy_class_def, "$imclassname", imclass_name);
       Replaceall(proxy_class_code, "$imclassname", imclass_name);
       Replaceall(proxy_class_constants_code, "$imclassname", imclass_name);
@@ -3033,7 +2998,7 @@ public:
 	   "}\n", NIL);
 
     Replaceall(swigtype, "$csclassname", classname);
-    Replaceall(swigtype, "$module", module_class_name);
+    Replaceall(swigtype, "$module", shadow_module_name);
     Replaceall(swigtype, "$imclassname", imclass_name);
     Replaceall(swigtype, "$dllimport", dllimport);
 
@@ -3469,7 +3434,7 @@ public:
 	    String *din = Copy(Getattr(p, "tmap:csdirectorin"));
 
 	    if (din) {
-	      Replaceall(din, "$module", module_class_name);
+	      Replaceall(din, "$module", shadow_module_name);
 	      Replaceall(din, "$imclassname", imclass_name);
 	      substituteClassname(pt, din);
 	      Replaceall(din, "$iminput", ln);

@@ -16,7 +16,7 @@
 
 #if !defined(SWIG_CSHARP_NO_EXCEPTION_HELPER)
 %insert(runtime) %{
-/* Support for throwing C# exceptions from C/C++. There are two types: 
+/* Support for throwing C# exceptions from C/C++. There are two types:
  * Exceptions that take a message and ArgumentExceptions that take a message and a parameter name. */
 typedef enum {
   SWIG_CSharpApplicationException,
@@ -90,19 +90,19 @@ static void SWIGUNUSED SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpExcepti
 
 %insert(runtime) %{
 #ifdef __cplusplus
-extern "C" 
+extern "C"
 #endif
 SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionCallbacks_$module(
                                                 SWIG_CSharpExceptionCallback_t applicationCallback,
                                                 SWIG_CSharpExceptionCallback_t arithmeticCallback,
-                                                SWIG_CSharpExceptionCallback_t divideByZeroCallback, 
-                                                SWIG_CSharpExceptionCallback_t indexOutOfRangeCallback, 
+                                                SWIG_CSharpExceptionCallback_t divideByZeroCallback,
+                                                SWIG_CSharpExceptionCallback_t indexOutOfRangeCallback,
                                                 SWIG_CSharpExceptionCallback_t invalidCastCallback,
                                                 SWIG_CSharpExceptionCallback_t invalidOperationCallback,
                                                 SWIG_CSharpExceptionCallback_t ioCallback,
                                                 SWIG_CSharpExceptionCallback_t nullReferenceCallback,
-                                                SWIG_CSharpExceptionCallback_t outOfMemoryCallback, 
-                                                SWIG_CSharpExceptionCallback_t overflowCallback, 
+                                                SWIG_CSharpExceptionCallback_t outOfMemoryCallback,
+                                                SWIG_CSharpExceptionCallback_t overflowCallback,
                                                 SWIG_CSharpExceptionCallback_t systemCallback) {
   SWIG_csharp_exceptions[SWIG_CSharpApplicationException].callback = applicationCallback;
   SWIG_csharp_exceptions[SWIG_CSharpArithmeticException].callback = arithmeticCallback;
@@ -118,7 +118,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionCallbacks_$module(
 }
 
 #ifdef __cplusplus
-extern "C" 
+extern "C"
 #endif
 SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
                                                 SWIG_CSharpExceptionArgumentCallback_t argumentCallback,
@@ -130,7 +130,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
 }
 %}
 
-%pragma(csharp) imclasscode=%{
+%pragma(d) imclasscode=%{
   protected class SWIGExceptionHelper {
 
     public delegate void ExceptionDelegate(string message);
@@ -156,14 +156,14 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
     public static extern void SWIGRegisterExceptionCallbacks_$module(
                                 ExceptionDelegate applicationDelegate,
                                 ExceptionDelegate arithmeticDelegate,
-                                ExceptionDelegate divideByZeroDelegate, 
-                                ExceptionDelegate indexOutOfRangeDelegate, 
+                                ExceptionDelegate divideByZeroDelegate,
+                                ExceptionDelegate indexOutOfRangeDelegate,
                                 ExceptionDelegate invalidCastDelegate,
                                 ExceptionDelegate invalidOperationDelegate,
                                 ExceptionDelegate ioDelegate,
                                 ExceptionDelegate nullReferenceDelegate,
-                                ExceptionDelegate outOfMemoryDelegate, 
-                                ExceptionDelegate overflowDelegate, 
+                                ExceptionDelegate outOfMemoryDelegate,
+                                ExceptionDelegate overflowDelegate,
                                 ExceptionDelegate systemExceptionDelegate);
 
     [DllImport("$dllimport", EntryPoint="SWIGRegisterExceptionArgumentCallbacks_$module")]
@@ -255,7 +255,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
           if (pendingException != null)
             pending = true;
         return pending;
-      } 
+      }
     }
 
     public static void Set(Exception e) {
@@ -291,7 +291,7 @@ typedef char * (SWIGSTDCALL* SWIG_CSharpStringHelperCallback)(const char *);
 static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback = NULL;
 %}
 
-%pragma(csharp) imclasscode=%{
+%pragma(d) imclasscode=%{
   protected class SWIGStringHelper {
 
     public delegate string SWIGStringDelegate(string message);
@@ -314,7 +314,7 @@ static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback = NULL;
 
 %insert(runtime) %{
 #ifdef __cplusplus
-extern "C" 
+extern "C"
 #endif
 SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_CSharpStringHelperCallback callback) {
   SWIG_csharp_string_callback = callback;
