@@ -586,86 +586,86 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %define SWIGEXCODE2 "\n      if ($imclassname.SWIGPendingException.Pending) throw $imclassname.SWIGPendingException.Retrieve();" %enddef
 
 %typemap(csout, excode=SWIGEXCODE) bool,               const bool &               {
-    bool ret = $imcall;$excode
-    return ret;
-  }
+  bool ret = $imcall;$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) char,               const char &               {
-    char ret = $imcall;$excode
-    return ret;
-  }
+  char ret = $imcall;$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) signed char,        const signed char &        {
-    sbyte ret = $imcall;$excode
-    return ret;
-  }
+  sbyte ret = $imcall;$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) unsigned char,      const unsigned char &      {
-    byte ret = $imcall;$excode
-    return ret;
-  }
+  byte ret = $imcall;$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) short,              const short &              {
-    short ret = $imcall;$excode
-    return ret;
-  }
+  short ret = $imcall;$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) unsigned short,     const unsigned short &     {
-    ushort ret = $imcall;$excode
-    return ret;
-  }
+  ushort ret = $imcall;$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) int,                const int &                {
-    int ret = $imcall;$excode
-    return ret;
-  }
+  int ret = $imcall;$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) unsigned int,       const unsigned int &       {
-    uint ret = $imcall;$excode
-    return ret;
-  }
+  uint ret = $imcall;$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) long,               const long &               {
-    int ret = $imcall;$excode
-    return ret;
-  }
+  int ret = $imcall;$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) unsigned long,      const unsigned long &      {
-    uint ret = $imcall;$excode
-    return ret;
-  }
+  uint ret = $imcall;$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) long long,          const long long &          {
-    long ret = $imcall;$excode
-    return ret;
-  }
+  long ret = $imcall;$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) unsigned long long, const unsigned long long & {
-    ulong ret = $imcall;$excode
-    return ret;
-  }
+  ulong ret = $imcall;$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) float,              const float &              {
-    float ret = $imcall;$excode
-    return ret;
-  }
+  float ret = $imcall;$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) double,             const double &             {
-    double ret = $imcall;$excode
-    return ret;
-  }
+  double ret = $imcall;$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) char *, char *&, char[ANY], char[] {
-    string ret = $imcall;$excode
-    return ret;
-  }
+  string ret = $imcall;$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) void {
-    $imcall;$excode
-  }
+  $imcall;$excode
+}
 %typemap(csout, excode=SWIGEXCODE) SWIGTYPE {
-    $&csclassname ret = new $&csclassname($imcall, true);$excode
-    return ret;
-  }
+  $&csclassname ret = new $&csclassname($imcall, true);$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) SWIGTYPE & {
-    $csclassname ret = new $csclassname($imcall, $owner);$excode
-    return ret;
-  }
+  $csclassname ret = new $csclassname($imcall, $owner);$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) SWIGTYPE *, SWIGTYPE [] {
-    IntPtr cPtr = $imcall;
-    $csclassname ret = (cPtr == IntPtr.Zero) ? null : new $csclassname(cPtr, $owner);$excode
-    return ret;
-  }
+  IntPtr cPtr = $imcall;
+  $csclassname ret = (cPtr == IntPtr.Zero) ? null : new $csclassname(cPtr, $owner);$excode
+  return ret;
+}
 %typemap(csout, excode=SWIGEXCODE) SWIGTYPE (CLASS::*) {
-    string cMemberPtr = $imcall;
-    $csclassname ret = (cMemberPtr == null) ? null : new $csclassname(cMemberPtr, $owner);$excode
-    return ret;
-  }
+  string cMemberPtr = $imcall;
+  $csclassname ret = (cMemberPtr == null) ? null : new $csclassname(cMemberPtr, $owner);$excode
+  return ret;
+}
 
 
 /* Properties */
@@ -934,7 +934,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 #define %csconst(flag)              %feature("cs:const","flag")
 #define %csconstvalue(value)        %feature("cs:constvalue",value)
 #define %csenum(wrapapproach)       %feature("cs:enum","wrapapproach")
-#define %csmethodmodifiers          %feature("cs:methodmodifiers")
+#define %dmethodmodifiers           %feature("d:methodmodifiers")
 #define %csnothrowexception         %feature("except")
 #define %csattributes               %feature("cs:attributes")
 

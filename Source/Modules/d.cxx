@@ -49,7 +49,7 @@ class D:public Language {
   String *imclass_class_code;	// intermediary class code
   String *proxy_class_def;
   String *proxy_class_code;
-  String *module_class_code;
+  String *shadow_functions_code;// The code which mirrors global functions and is inserted into the shadow module.
   String *proxy_class_name;
   String *variable_name;	//Name of a variable being wrapped
   String *proxy_class_constants_code;
@@ -123,7 +123,7 @@ public:
       imclass_class_code(NULL),
       proxy_class_def(NULL),
       proxy_class_code(NULL),
-      module_class_code(NULL),
+      shadow_functions_code(NULL),
       proxy_class_name(NULL),
       variable_name(NULL),
       proxy_class_constants_code(NULL),
@@ -339,7 +339,7 @@ public:
     imclass_baseclass = NewString("");
     imclass_interfaces = NewString("");
     imclass_class_modifiers = NewString("");
-    module_class_code = NewString("");
+    shadow_functions_code = NewString("");
     module_imports = NewString("");
     imclass_imports = NewString("");
     imclass_cppcasts_code = NewString("");
@@ -460,17 +460,17 @@ public:
       if (module_imports)
         Printf(f_module, "%s\n", module_imports);
 
-      Replaceall(module_class_code, "$module", shadow_module_name);
+      Replaceall(shadow_functions_code, "$module", shadow_module_name);
       Replaceall(module_class_constants_code, "$module", shadow_module_name);
 
-      Replaceall(module_class_code, "$imclassname", imclass_name);
+      Replaceall(shadow_functions_code, "$imclassname", imclass_name);
       Replaceall(module_class_constants_code, "$imclassname", imclass_name);
 
-      Replaceall(module_class_code, "$dllimport", dllimport);
+      Replaceall(shadow_functions_code, "$dllimport", dllimport);
       Replaceall(module_class_constants_code, "$dllimport", dllimport);
 
       // Add the wrapper methods
-      Printv(f_module, module_class_code, NIL);
+      Printv(f_module, shadow_functions_code, NIL);
 
       // Write out all the global constants
       Printv(f_module, module_class_constants_code, NIL);
@@ -532,8 +532,8 @@ public:
     imclass_class_modifiers = NULL;
     Delete(shadow_module_name);
     shadow_module_name = NULL;
-    Delete(module_class_code);
-    module_class_code = NULL;
+    Delete(shadow_functions_code);
+    shadow_functions_code = NULL;
     Delete(module_imports);
     module_imports = NULL;
     Delete(imclass_imports);
@@ -997,7 +997,7 @@ public:
     }
 
     if (!(proxy_flag && is_wrapping_class()) && !enum_constant_flag) {
-      moduleClassFunctionHandler(n);
+      writeShadowModuleFunction(n);
     }
 
     /*
@@ -1056,7 +1056,7 @@ public:
     generate_property_declaration_flag = false;
 
     if (proxy_flag) {
-      Printf(module_class_code, "\n  }\n\n");
+      Printf(shadow_functions_code, "\n  }\n\n");
     }
 
     return ret;
@@ -1443,7 +1443,7 @@ public:
 	  Delete(imclass_interfaces);
 	  imclass_interfaces = Copy(strvalue);
 	} else if (Strcmp(code, "modulecode") == 0) {
-	  Printf(module_class_code, "%s\n", strvalue);
+	  Printf(shadow_functions_code, "%s\n", strvalue);
 	} else if (Strcmp(code, "moduleimports") == 0) {
 	  Delete(module_imports);
 	  module_imports = Copy(strvalue);
@@ -2486,10 +2486,10 @@ public:
   }
 
   /* -----------------------------------------------------------------------------
-   * moduleClassFunctionHandler()
+   * writeShadowModuleFunction()
    * ----------------------------------------------------------------------------- */
 
-  void moduleClassFunctionHandler(Node *n) {
+  void writeShadowModuleFunction(Node *n) {
     SwigType *t = Getattr(n, "type");
     ParmList *l = Getattr(n, "parms");
     String *tm;
@@ -2553,9 +2553,13 @@ public:
     const String *csattributes = Getattr(n, "feature:cs:attributes");
     if (csattributes)
       Printf(function_code, "  %s\n", csattributes);
-    const String *methodmods = Getattr(n, "feature:cs:methodmodifiers");
-    methodmods = methodmods ? methodmods : (is_public(n) ? public_string : protected_string);
-    Printf(function_code, "  %s static %s %s(", methodmods, return_type, func_name);
+
+    const String *methodmods = Getattr(n, "feature:d:methodmodifiers");
+    // TODO: Check if is_public(n) could possibly make any sense here
+    // (private global functions would be useless anyway?).
+    methodmods = methodmods ? methodmods : empty_string;
+
+    Printf(function_code, "%s%s %s(", methodmods, return_type, func_name);
     Printv(imcall, imclass_name, ".", overloaded_name, "(", NIL);
 
     /* Get number of required and total arguments */
@@ -2645,12 +2649,11 @@ public:
       bool is_post_code = Len(post_code) > 0;
       bool is_terminator_code = Len(terminator_code) > 0;
       if (is_pre_code || is_post_code || is_terminator_code) {
-        Replaceall(tm, "\n ", "\n   "); // add extra indentation to code in typemap
         if (is_post_code) {
-          Insert(tm, 0, "\n    try ");
-          Printv(tm, " finally {\n", post_code, "\n    }", NIL);
+          Insert(tm, 0, "\n  try ");
+          Printv(tm, " finally {\n", post_code, "\n  }", NIL);
         } else {
-          Insert(tm, 0, "\n    ");
+          Insert(tm, 0, "\n  ");
         }
         if (is_pre_code) {
           Insert(tm, 0, pre_code);
@@ -2659,8 +2662,8 @@ public:
         if (is_terminator_code) {
           Printv(tm, "\n", terminator_code, NIL);
         }
-	Insert(tm, 0, "{");
-	Printf(tm, "\n  }");
+	Insert(tm, 0, " {");
+	Printf(tm, "\n}");
       }
       if (GetFlag(n, "feature:new"))
 	Replaceall(tm, "$owner", "true");
@@ -2690,11 +2693,11 @@ public:
 	}
 	const String *csattributes = Getattr(n, "feature:cs:attributes");
 	if (csattributes)
-	  Printf(module_class_code, "  %s\n", csattributes);
+	  Printf(shadow_functions_code, "%s\n", csattributes);
 	const String *methodmods = Getattr(n, "feature:cs:methodmodifiers");
 	if (!methodmods)
 	  methodmods = (is_public(n) ? public_string : protected_string);
-	Printf(module_class_code, "  %s static %s %s {", methodmods, variable_type, variable_name);
+	Printf(shadow_functions_code, "  %s static %s %s {", methodmods, variable_type, variable_name);
       }
       generate_property_declaration_flag = false;
 
@@ -2707,7 +2710,7 @@ public:
 	  Replaceall(tm, "$csinput", "value");
 	  Replaceall(tm, "$imcall", imcall);
 	  excodeSubstitute(n, tm, "csvarin", p);
-	  Printf(module_class_code, "%s", tm);
+	  Printf(shadow_functions_code, "%s", tm);
 	} else {
 	  Swig_warning(WARN_CSHARP_TYPEMAP_CSOUT_UNDEF, input_file, line_number, "No csvarin typemap defined for %s\n", SwigType_str(pt, 0));
 	}
@@ -2721,15 +2724,17 @@ public:
 	  substituteClassname(t, tm);
 	  Replaceall(tm, "$imcall", imcall);
 	  excodeSubstitute(n, tm, "csvarout", n);
-	  Printf(module_class_code, "%s", tm);
+	  Printf(shadow_functions_code, "%s", tm);
 	} else {
 	  Swig_warning(WARN_CSHARP_TYPEMAP_CSOUT_UNDEF, input_file, line_number, "No csvarout typemap defined for %s\n", SwigType_str(t, 0));
 	}
       }
     } else {
-      // Normal function call
+      // Normal function call.
+      // The whole function code is now in stored tm (if any, of course), so
+      // simply append it to the code buffer.
       Printf(function_code, " %s\n\n", tm ? (const String *) tm : empty_string);
-      Printv(module_class_code, function_code, NIL);
+      Printv(shadow_functions_code, function_code, NIL);
     }
 
     Delete(pre_code);
