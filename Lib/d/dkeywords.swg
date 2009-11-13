@@ -1,94 +1,109 @@
-#ifndef CSHARP_CSHARPKW_SWG_
-#define CSHARP_CSHARPKW_SWG_
+#ifndef D_DKEYWORDS_SWG_
+#define D_DKEYWORDS_SWG_
 
-/* Warnings for C# keywords */
-#define CSHARPKW(x) %keywordwarn("'" `x` "' is a C# keyword, renaming to '_" `x` "'",rename="_%s")  `x`
+/* Warnings for D keywords */
+#define DKEYWORD(x) %keywordwarn("'" `x` "' is a D keyword, renaming to '_" `x` "'",rename="_%s")  `x`
 
-/*
-   from
-   http://www.jaggersoft.com/csharp_grammar.html#1.7%20Keywords
+// Source: http://www.digitalmars.com/d/1.0/lex.html
+DKEYWORD(abstract);
+DKEYWORD(alias);
+DKEYWORD(align);
+DKEYWORD(asm);
+DKEYWORD(assert);
+DKEYWORD(auto);
+DKEYWORD(body);
+DKEYWORD(bool);
+DKEYWORD(break);
+DKEYWORD(byte);
+DKEYWORD(case);
+DKEYWORD(cast);
+DKEYWORD(catch);
+DKEYWORD(cdouble);
+DKEYWORD(cent);
+DKEYWORD(cfloat);
+DKEYWORD(char);
+DKEYWORD(class);
+DKEYWORD(const);
+DKEYWORD(continue);
+DKEYWORD(creal);
+DKEYWORD(dchar);
+DKEYWORD(debug);
+DKEYWORD(default);
+DKEYWORD(delegate);
+DKEYWORD(delete);
+DKEYWORD(deprecated);
+DKEYWORD(do);
+DKEYWORD(double);
+DKEYWORD(else);
+DKEYWORD(enum);
+DKEYWORD(export);
+DKEYWORD(extern);
+DKEYWORD(false);
+DKEYWORD(final);
+DKEYWORD(finally);
+DKEYWORD(float);
+DKEYWORD(for);
+DKEYWORD(foreach);
+DKEYWORD(foreach_reverse);
+DKEYWORD(function);
+DKEYWORD(goto);
+DKEYWORD(idouble);
+DKEYWORD(if);
+DKEYWORD(ifloat);
+DKEYWORD(import);
+DKEYWORD(in);
+DKEYWORD(inout);
+DKEYWORD(int);
+DKEYWORD(interface);
+DKEYWORD(invariant);
+DKEYWORD(ireal);
+DKEYWORD(is);
+DKEYWORD(lazy);
+DKEYWORD(long);
+DKEYWORD(macro);
+DKEYWORD(mixin);
+DKEYWORD(module);
+DKEYWORD(new);
+DKEYWORD(null);
+DKEYWORD(out);
+DKEYWORD(override);
+DKEYWORD(package);
+DKEYWORD(pragma);
+DKEYWORD(private);
+DKEYWORD(protected);
+DKEYWORD(public);
+DKEYWORD(real);
+DKEYWORD(ref);
+DKEYWORD(return);
+DKEYWORD(scope);
+DKEYWORD(short);
+DKEYWORD(static);
+DKEYWORD(struct);
+DKEYWORD(super);
+DKEYWORD(switch);
+DKEYWORD(synchronized);
+DKEYWORD(template);
+DKEYWORD(this);
+DKEYWORD(throw);
+DKEYWORD(true);
+DKEYWORD(try);
+DKEYWORD(typedef);
+DKEYWORD(typeid);
+DKEYWORD(typeof);
+DKEYWORD(ubyte);
+DKEYWORD(ucent);
+DKEYWORD(uint);
+DKEYWORD(ulong);
+DKEYWORD(union);
+DKEYWORD(unittest);
+DKEYWORD(ushort);
+DKEYWORD(version);
+DKEYWORD(void);
+DKEYWORD(volatile);
+DKEYWORD(wchar);
+DKEYWORD(while);
+DKEYWORD(with);
 
-*/
+#undef DKEYWORD
 
-CSHARPKW(abstract);
-CSHARPKW(as);
-CSHARPKW(base);
-CSHARPKW(bool);
-CSHARPKW(break);
-CSHARPKW(byte);
-CSHARPKW(case);
-CSHARPKW(catch);
-CSHARPKW(char);
-CSHARPKW(checked);
-CSHARPKW(class);
-CSHARPKW(const);
-CSHARPKW(continue);
-CSHARPKW(decimal);
-CSHARPKW(default);
-CSHARPKW(delegate);
-CSHARPKW(do);
-CSHARPKW(double);
-CSHARPKW(else);
-CSHARPKW(enum);
-CSHARPKW(event);
-CSHARPKW(explicit);
-CSHARPKW(extern);
-CSHARPKW(false);
-CSHARPKW(finally);
-CSHARPKW(fixed);
-CSHARPKW(float);
-CSHARPKW(for);
-CSHARPKW(foreach);
-CSHARPKW(goto);
-CSHARPKW(if);
-CSHARPKW(implicit);
-CSHARPKW(in);
-CSHARPKW(int);
-CSHARPKW(interface);
-CSHARPKW(internal);
-CSHARPKW(is);
-CSHARPKW(lock);
-CSHARPKW(long);
-CSHARPKW(namespace);
-CSHARPKW(new);
-CSHARPKW(null);
-CSHARPKW(object);
-CSHARPKW(operator);
-CSHARPKW(out);
-CSHARPKW(override);
-CSHARPKW(params);
-CSHARPKW(private);
-CSHARPKW(protected);
-CSHARPKW(public);
-CSHARPKW(readonly);
-CSHARPKW(ref);
-CSHARPKW(return);
-CSHARPKW(sbyte);
-CSHARPKW(sealed);
-CSHARPKW(short);
-CSHARPKW(sizeof);
-CSHARPKW(stackalloc);
-CSHARPKW(static);
-CSHARPKW(struct);
-CSHARPKW(string);
-CSHARPKW(switch);
-CSHARPKW(this);
-CSHARPKW(throw);
-CSHARPKW(true);
-CSHARPKW(try);
-CSHARPKW(typeof);
-CSHARPKW(uint);
-CSHARPKW(ulong);
-CSHARPKW(unchecked);
-CSHARPKW(unsafe);
-CSHARPKW(ushort);
-CSHARPKW(using);
-CSHARPKW(virtual);
-CSHARPKW(void);
-CSHARPKW(volatile);
-CSHARPKW(while);
-
-
-#undef CSHARPKW
-
-#endif //CSHARP_CSHARPKW_SWG_
+#endif //D_DKEYWORDS_SWG_
