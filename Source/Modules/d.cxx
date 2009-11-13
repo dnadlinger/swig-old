@@ -45,11 +45,11 @@ class D:public Language {
   bool generate_property_declaration_flag;	// Flag for generating properties
 
   String *imclass_name;		// intermediary class name
-  String *shadow_module_name;	// The name of the shadow module which exposes the (SWIG) module contents as a D module.
+  String *proxy_module_name;	// The name of the proxy module which exposes the (SWIG) module contents as a D module.
   String *imclass_class_code;	// intermediary class code
   String *proxy_class_def;
   String *proxy_class_code;
-  String *shadow_functions_code;// The code which mirrors global functions and is inserted into the shadow module.
+  String *proxy_functions_code;// The code which mirrors global functions and is inserted into the proxy module.
   String *proxy_class_name;
   String *variable_name;	//Name of a variable being wrapped
   String *proxy_class_constants_code;
@@ -119,11 +119,11 @@ public:
       old_variable_names(false),
       generate_property_declaration_flag(false),
       imclass_name(NULL),
-      shadow_module_name(NULL),
+      proxy_module_name(NULL),
       imclass_class_code(NULL),
       proxy_class_def(NULL),
       proxy_class_code(NULL),
-      shadow_functions_code(NULL),
+      proxy_functions_code(NULL),
       proxy_class_name(NULL),
       variable_name(NULL),
       proxy_class_constants_code(NULL),
@@ -319,17 +319,17 @@ public:
     swig_types_hash = NewHash();
     filenames_list = NewList();
 
-    // Make the intermediary class and shadow module names.
+    // Make the intermediary class and proxy module names.
     // The intermediary class name can be set in the module directive.
     if (!imclass_name) {
       imclass_name = NewStringf("%sPINVOKE", Getattr(n, "name"));
-      shadow_module_name = Copy(Getattr(n, "name"));
+      proxy_module_name = Copy(Getattr(n, "name"));
     } else {
       // Rename the module name if it is the same as intermediary class name - a backwards compatibility solution
       if (Cmp(imclass_name, Getattr(n, "name")) == 0)
-	shadow_module_name = NewStringf("%sModule", Getattr(n, "name"));
+	proxy_module_name = NewStringf("%sModule", Getattr(n, "name"));
       else
-	shadow_module_name = Copy(Getattr(n, "name"));
+	proxy_module_name = Copy(Getattr(n, "name"));
     }
 
     imclass_class_code = NewString("");
@@ -339,7 +339,7 @@ public:
     imclass_baseclass = NewString("");
     imclass_interfaces = NewString("");
     imclass_class_modifiers = NewString("");
-    shadow_functions_code = NewString("");
+    proxy_functions_code = NewString("");
     module_imports = NewString("");
     imclass_imports = NewString("");
     imclass_cppcasts_code = NewString("");
@@ -352,7 +352,7 @@ public:
     if (!namespce)
       namespce = NewString("");
     if (!dllimport)
-      dllimport = Copy(shadow_module_name);
+      dllimport = Copy(proxy_module_name);
 
     Swig_banner(f_begin);
 
@@ -365,8 +365,8 @@ public:
       /* Emit initial director header and director code: */
       Swig_banner(f_directors_h);
       Printf(f_directors_h, "\n");
-      Printf(f_directors_h, "#ifndef SWIG_%s_WRAP_H_\n", shadow_module_name);
-      Printf(f_directors_h, "#define SWIG_%s_WRAP_H_\n\n", shadow_module_name);
+      Printf(f_directors_h, "#ifndef SWIG_%s_WRAP_H_\n", proxy_module_name);
+      Printf(f_directors_h, "#define SWIG_%s_WRAP_H_\n\n", proxy_module_name);
 
       Printf(f_directors, "\n\n");
       Printf(f_directors, "/* ---------------------------------------------------\n");
@@ -426,7 +426,7 @@ public:
       Printf(f_im, "{\n");
 
       // Add the intermediary class methods
-      Replaceall(imclass_class_code, "$module", shadow_module_name);
+      Replaceall(imclass_class_code, "$module", proxy_module_name);
       Replaceall(imclass_class_code, "$imclassname", imclass_name);
       Replaceall(imclass_class_code, "$dllimport", dllimport);
       Printv(f_im, imclass_class_code, NIL);
@@ -442,7 +442,7 @@ public:
     // Generate the D module for the wrapped module.
     {
       // TODO: Add target package support (to replace C# namespace support).
-      String *filen = NewStringf("%s%s.d", SWIG_output_directory(), shadow_module_name);
+      String *filen = NewStringf("%s%s.d", SWIG_output_directory(), proxy_module_name);
       File *f_module = NewFile(filen, "w", SWIG_output_files());
       if (!f_module) {
         FileErrorDisplay(filen);
@@ -455,22 +455,22 @@ public:
       // Start writing out the module class file
       emitBanner(f_module);
 
-      Printf(f_module, "module %s;\n", shadow_module_name);
+      Printf(f_module, "module %s;\n", proxy_module_name);
 
       if (module_imports)
         Printf(f_module, "%s\n", module_imports);
 
-      Replaceall(shadow_functions_code, "$module", shadow_module_name);
-      Replaceall(module_class_constants_code, "$module", shadow_module_name);
+      Replaceall(proxy_functions_code, "$module", proxy_module_name);
+      Replaceall(module_class_constants_code, "$module", proxy_module_name);
 
-      Replaceall(shadow_functions_code, "$imclassname", imclass_name);
+      Replaceall(proxy_functions_code, "$imclassname", imclass_name);
       Replaceall(module_class_constants_code, "$imclassname", imclass_name);
 
-      Replaceall(shadow_functions_code, "$dllimport", dllimport);
+      Replaceall(proxy_functions_code, "$dllimport", dllimport);
       Replaceall(module_class_constants_code, "$dllimport", dllimport);
 
       // Add the wrapper methods
-      Printv(f_module, shadow_functions_code, NIL);
+      Printv(f_module, proxy_functions_code, NIL);
 
       // Write out all the global constants
       Printv(f_module, module_class_constants_code, NIL);
@@ -530,10 +530,10 @@ public:
     imclass_interfaces = NULL;
     Delete(imclass_class_modifiers);
     imclass_class_modifiers = NULL;
-    Delete(shadow_module_name);
-    shadow_module_name = NULL;
-    Delete(shadow_functions_code);
-    shadow_functions_code = NULL;
+    Delete(proxy_module_name);
+    proxy_module_name = NULL;
+    Delete(proxy_functions_code);
+    proxy_functions_code = NULL;
     Delete(module_imports);
     module_imports = NULL;
     Delete(imclass_imports);
@@ -997,7 +997,7 @@ public:
     }
 
     if (!(proxy_flag && is_wrapping_class()) && !enum_constant_flag) {
-      writeShadowModuleFunction(n);
+      writeProxyModuleFunction(n);
     }
 
     /*
@@ -1056,7 +1056,7 @@ public:
     generate_property_declaration_flag = false;
 
     if (proxy_flag) {
-      Printf(shadow_functions_code, "\n  }\n\n");
+      Printf(proxy_functions_code, "\n  }\n\n");
     }
 
     return ret;
@@ -1393,7 +1393,7 @@ public:
 
   virtual int insertDirective(Node *n) {
     String *code = Getattr(n, "code");
-    Replaceall(code, "$module", shadow_module_name);
+    Replaceall(code, "$module", proxy_module_name);
     Replaceall(code, "$imclassname", imclass_name);
     Replaceall(code, "$dllimport", dllimport);
     return Language::insertDirective(n);
@@ -1443,7 +1443,7 @@ public:
 	  Delete(imclass_interfaces);
 	  imclass_interfaces = Copy(strvalue);
 	} else if (Strcmp(code, "modulecode") == 0) {
-	  Printf(shadow_functions_code, "%s\n", strvalue);
+	  Printf(proxy_functions_code, "%s\n", strvalue);
 	} else if (Strcmp(code, "moduleimports") == 0) {
 	  Delete(module_imports);
 	  module_imports = Copy(strvalue);
@@ -1672,8 +1672,8 @@ public:
     Replaceall(proxy_class_code, "$csclassname", proxy_class_name);
     Replaceall(proxy_class_def, "$csclassname", proxy_class_name);
 
-    Replaceall(proxy_class_def, "$module", shadow_module_name);
-    Replaceall(proxy_class_code, "$module", shadow_module_name);
+    Replaceall(proxy_class_def, "$module", proxy_module_name);
+    Replaceall(proxy_class_code, "$module", proxy_module_name);
 
     Replaceall(proxy_class_def, "$imclassname", imclass_name);
     Replaceall(proxy_class_code, "$imclassname", imclass_name);
@@ -1717,7 +1717,7 @@ public:
 	SWIG_exit(EXIT_FAILURE);
       }
 
-      if (Cmp(proxy_class_name, shadow_module_name) == 0) {
+      if (Cmp(proxy_class_name, proxy_module_name) == 0) {
 	Printf(stderr, "Class name cannot be equal to module class name: %s\n", proxy_class_name);
 	SWIG_exit(EXIT_FAILURE);
       }
@@ -1750,9 +1750,9 @@ public:
 
       emitProxyClassDefAndCPPCasts(n);
 
-      Replaceall(proxy_class_def, "$module", shadow_module_name);
-      Replaceall(proxy_class_code, "$module", shadow_module_name);
-      Replaceall(proxy_class_constants_code, "$module", shadow_module_name);
+      Replaceall(proxy_class_def, "$module", proxy_module_name);
+      Replaceall(proxy_class_code, "$module", proxy_module_name);
+      Replaceall(proxy_class_constants_code, "$module", proxy_module_name);
       Replaceall(proxy_class_def, "$imclassname", imclass_name);
       Replaceall(proxy_class_code, "$imclassname", imclass_name);
       Replaceall(proxy_class_constants_code, "$imclassname", imclass_name);
@@ -2486,10 +2486,10 @@ public:
   }
 
   /* -----------------------------------------------------------------------------
-   * writeShadowModuleFunction()
+   * writeProxyModuleFunction()
    * ----------------------------------------------------------------------------- */
 
-  void writeShadowModuleFunction(Node *n) {
+  void writeProxyModuleFunction(Node *n) {
     SwigType *t = Getattr(n, "type");
     ParmList *l = Getattr(n, "parms");
     String *tm;
@@ -2693,11 +2693,11 @@ public:
 	}
 	const String *csattributes = Getattr(n, "feature:cs:attributes");
 	if (csattributes)
-	  Printf(shadow_functions_code, "%s\n", csattributes);
+	  Printf(proxy_functions_code, "%s\n", csattributes);
 	const String *methodmods = Getattr(n, "feature:cs:methodmodifiers");
 	if (!methodmods)
 	  methodmods = (is_public(n) ? public_string : protected_string);
-	Printf(shadow_functions_code, "  %s static %s %s {", methodmods, variable_type, variable_name);
+	Printf(proxy_functions_code, "  %s static %s %s {", methodmods, variable_type, variable_name);
       }
       generate_property_declaration_flag = false;
 
@@ -2710,7 +2710,7 @@ public:
 	  Replaceall(tm, "$csinput", "value");
 	  Replaceall(tm, "$imcall", imcall);
 	  excodeSubstitute(n, tm, "csvarin", p);
-	  Printf(shadow_functions_code, "%s", tm);
+	  Printf(proxy_functions_code, "%s", tm);
 	} else {
 	  Swig_warning(WARN_CSHARP_TYPEMAP_CSOUT_UNDEF, input_file, line_number, "No csvarin typemap defined for %s\n", SwigType_str(pt, 0));
 	}
@@ -2724,7 +2724,7 @@ public:
 	  substituteClassname(t, tm);
 	  Replaceall(tm, "$imcall", imcall);
 	  excodeSubstitute(n, tm, "csvarout", n);
-	  Printf(shadow_functions_code, "%s", tm);
+	  Printf(proxy_functions_code, "%s", tm);
 	} else {
 	  Swig_warning(WARN_CSHARP_TYPEMAP_CSOUT_UNDEF, input_file, line_number, "No csvarout typemap defined for %s\n", SwigType_str(t, 0));
 	}
@@ -2734,7 +2734,7 @@ public:
       // The whole function code is now in stored tm (if any, of course), so
       // simply append it to the code buffer.
       Printf(function_code, " %s\n\n", tm ? (const String *) tm : empty_string);
-      Printv(shadow_functions_code, function_code, NIL);
+      Printv(proxy_functions_code, function_code, NIL);
     }
 
     Delete(pre_code);
@@ -3003,7 +3003,7 @@ public:
 	   "}\n", NIL);
 
     Replaceall(swigtype, "$csclassname", classname);
-    Replaceall(swigtype, "$module", shadow_module_name);
+    Replaceall(swigtype, "$module", proxy_module_name);
     Replaceall(swigtype, "$imclassname", imclass_name);
     Replaceall(swigtype, "$dllimport", dllimport);
 
@@ -3439,7 +3439,7 @@ public:
 	    String *din = Copy(Getattr(p, "tmap:csdirectorin"));
 
 	    if (din) {
-	      Replaceall(din, "$module", shadow_module_name);
+	      Replaceall(din, "$module", proxy_module_name);
 	      Replaceall(din, "$imclassname", imclass_name);
 	      substituteClassname(pt, din);
 	      Replaceall(din, "$iminput", ln);
