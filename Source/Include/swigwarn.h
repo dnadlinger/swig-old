@@ -1,4 +1,4 @@
-/* ----------------------------------------------------------------------------- 
+/* -----------------------------------------------------------------------------
  * See the LICENSE file for information on copyright, usage and redistribution
  * of SWIG, and the README file for authors - http://www.swig.org/release.html.
  *
@@ -254,6 +254,25 @@
 #define WARN_PHP_PUBLIC_BASE                  872
 
 /* please leave 870-889 free for PHP */
+
+#define WARN_D_TYPEMAP_CTYPE_UNDEF       890
+#define WARN_D_TYPEMAP_CSTYPE_UNDEF      891
+#define WARN_D_TYPEMAP_CSWTYPE_UNDEF     892
+#define WARN_D_MULTIPLE_INHERITANCE      893
+#define WARN_D_TYPEMAP_GETCPTR_UNDEF     894
+#define WARN_D_TYPEMAP_CLASSMOD_UNDEF    895
+#define WARN_D_TYPEMAP_CSBODY_UNDEF      896
+#define WARN_D_TYPEMAP_CSOUT_UNDEF       897
+#define WARN_D_TYPEMAP_CSIN_UNDEF        898
+#define WARN_D_TYPEMAP_CSDIRECTORIN_UNDEF    899
+#define WARN_D_TYPEMAP_CSDIRECTOROUT_UNDEF   900
+#define WARN_D_COVARIANT_RET             901
+#define WARN_D_TYPEMAP_CSCONSTRUCT_UNDEF 902
+#define WARN_D_EXCODE                    903
+#define WARN_D_CANTHROW                  904
+#define WARN_D_NO_DIRECTORCONNECT_ATTR   905
+
+/* please leave 890-909 free for D */
 
 
 /* Feel free to claim any number in this space that's not currently being used. Just make sure you
