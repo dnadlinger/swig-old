@@ -26,15 +26,15 @@ static SWIG_CSharpWStringHelperCallback SWIG_csharp_wstring_callback = NULL;
     public delegate string SWIGWStringDelegate(IntPtr message);
     static SWIGWStringDelegate wstringDelegate = new SWIGWStringDelegate(CreateWString);
 
-    [DllImport("$dllimport", EntryPoint="SWIGRegisterWStringCallback_$module")]
-    public static extern void SWIGRegisterWStringCallback_$module(SWIGWStringDelegate wstringDelegate);
+    [DllImport("$dllimport", EntryPoint="SWIGRegisterWStringCallback_$proxydmodule")]
+    public static extern void SWIGRegisterWStringCallback_$proxydmodule(SWIGWStringDelegate wstringDelegate);
 
     static string CreateWString([MarshalAs(UnmanagedType.LPWStr)]IntPtr cString) {
       return System.Runtime.InteropServices.Marshal.PtrToStringUni(cString);
     }
 
     static SWIGWStringHelper() {
-      SWIGRegisterWStringCallback_$module(wstringDelegate);
+      SWIGRegisterWStringCallback_$proxydmodule(wstringDelegate);
     }
   }
 
@@ -45,7 +45,7 @@ static SWIG_CSharpWStringHelperCallback SWIG_csharp_wstring_callback = NULL;
 #ifdef __cplusplus
 extern "C"
 #endif
-SWIGEXPORT void SWIGSTDCALL SWIGRegisterWStringCallback_$module(SWIG_CSharpWStringHelperCallback callback) {
+SWIGEXPORT void SWIGSTDCALL SWIGRegisterWStringCallback_$proxydmodule(SWIG_CSharpWStringHelperCallback callback) {
   SWIG_csharp_wstring_callback = callback;
 }
 %}

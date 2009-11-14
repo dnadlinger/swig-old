@@ -582,8 +582,8 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
  * method can throw any exceptions from unmanaged code, otherwise replaced by nothing. */
 
 // Macro used by the $excode special variable
-%define SWIGEXCODE "\n    if ($imclassname.SWIGPendingException.Pending) throw $imclassname.SWIGPendingException.Retrieve();" %enddef
-%define SWIGEXCODE2 "\n      if ($imclassname.SWIGPendingException.Pending) throw $imclassname.SWIGPendingException.Retrieve();" %enddef
+%define SWIGEXCODE "\n    if ($wrapdmodule.SWIGPendingException.Pending) throw $wrapdmodule.SWIGPendingException.Retrieve();" %enddef
+%define SWIGEXCODE2 "\n      if ($wrapdmodule.SWIGPendingException.Pending) throw $wrapdmodule.SWIGPendingException.Retrieve();" %enddef
 
 %typemap(csout, excode=SWIGEXCODE) bool,               const bool &               {
   bool ret = $imcall;$excode
@@ -844,7 +844,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %typemap(csbody_derived) SWIGTYPE %{
   private HandleRef swigCPtr;
 
-  internal $csclassname(IntPtr cPtr, bool cMemoryOwn) : base($imclassname.$csclassnameUpcast(cPtr), cMemoryOwn) {
+  internal $csclassname(IntPtr cPtr, bool cMemoryOwn) : base($wrapdmodule.$csclassnameUpcast(cPtr), cMemoryOwn) {
     swigCPtr = new HandleRef(this, cPtr);
   }
 
@@ -976,7 +976,7 @@ using System.Runtime.InteropServices;
 
 %typemap(imtype, out="IntPtr") char *, char[ANY], char[]   "HandleRef"
 %typemap(out) char *, char[ANY], char[] %{ $result = $1; %}
-%typemap(csin) char *, char[ANY], char[] "new $imclassname.SWIGStringMarshal($csinput).swigCPtr"
+%typemap(csin) char *, char[ANY], char[] "new $wrapdmodule.SWIGStringMarshal($csinput).swigCPtr"
 %typemap(csout, excode=SWIGEXCODE) char *, char[ANY], char[] {
     string ret = System.Runtime.InteropServices.Marshal.PtrToStringAnsi($imcall);$excode
     return ret;

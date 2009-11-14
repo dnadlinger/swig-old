@@ -2,10 +2,10 @@
  * See the LICENSE file for information on copyright, usage and redistribution
  * of SWIG, and the README file for authors - http://www.swig.org/release.html.
  *
- * csharphead.swg
+ * dhead.swg
  *
- * Support code for exceptions if the SWIG_CSHARP_NO_EXCEPTION_HELPER is not defined
- * Support code for strings if the SWIG_CSHARP_NO_STRING_HELPER is not defined
+ * Support code for exceptions if the SWIG_D_NO_EXCEPTION_HELPER is not defined
+ * Support code for strings if the SWIG_D_NO_STRING_HELPER is not defined
  * ----------------------------------------------------------------------------- */
 
 %insert(runtime) %{
@@ -14,7 +14,10 @@
 #include <stdio.h>
 %}
 
-#if !defined(SWIG_CSHARP_NO_EXCEPTION_HELPER)
+// Disabled as long as it has not been ported to D.
+#if 0
+
+#if !defined(SWIG_D_NO_EXCEPTION_HELPER)
 %insert(runtime) %{
 /* Support for throwing C# exceptions from C/C++. There are two types:
  * Exceptions that take a message and ArgumentExceptions that take a message and a parameter name. */
@@ -92,7 +95,7 @@ static void SWIGUNUSED SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpExcepti
 #ifdef __cplusplus
 extern "C"
 #endif
-SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionCallbacks_$module(
+SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionCallbacks_$proxydmodule(
                                                 SWIG_CSharpExceptionCallback_t applicationCallback,
                                                 SWIG_CSharpExceptionCallback_t arithmeticCallback,
                                                 SWIG_CSharpExceptionCallback_t divideByZeroCallback,
@@ -120,7 +123,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionCallbacks_$module(
 #ifdef __cplusplus
 extern "C"
 #endif
-SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
+SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$proxydmodule(
                                                 SWIG_CSharpExceptionArgumentCallback_t argumentCallback,
                                                 SWIG_CSharpExceptionArgumentCallback_t argumentNullCallback,
                                                 SWIG_CSharpExceptionArgumentCallback_t argumentOutOfRangeCallback) {
@@ -152,8 +155,8 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
     static ExceptionArgumentDelegate argumentNullDelegate = new ExceptionArgumentDelegate(SetPendingArgumentNullException);
     static ExceptionArgumentDelegate argumentOutOfRangeDelegate = new ExceptionArgumentDelegate(SetPendingArgumentOutOfRangeException);
 
-    [DllImport("$dllimport", EntryPoint="SWIGRegisterExceptionCallbacks_$module")]
-    public static extern void SWIGRegisterExceptionCallbacks_$module(
+    [DllImport("$dllimport", EntryPoint="SWIGRegisterExceptionCallbacks_$proxydmodule")]
+    public static extern void SWIGRegisterExceptionCallbacks_$proxydmodule(
                                 ExceptionDelegate applicationDelegate,
                                 ExceptionDelegate arithmeticDelegate,
                                 ExceptionDelegate divideByZeroDelegate,
@@ -166,8 +169,8 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
                                 ExceptionDelegate overflowDelegate,
                                 ExceptionDelegate systemExceptionDelegate);
 
-    [DllImport("$dllimport", EntryPoint="SWIGRegisterExceptionArgumentCallbacks_$module")]
-    public static extern void SWIGRegisterExceptionCallbacksArgument_$module(
+    [DllImport("$dllimport", EntryPoint="SWIGRegisterExceptionArgumentCallbacks_$proxydmodule")]
+    public static extern void SWIGRegisterExceptionCallbacksArgument_$proxydmodule(
                                 ExceptionArgumentDelegate argumentDelegate,
                                 ExceptionArgumentDelegate argumentNullDelegate,
                                 ExceptionArgumentDelegate argumentOutOfRangeDelegate);
@@ -221,7 +224,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
     }
 
     static SWIGExceptionHelper() {
-      SWIGRegisterExceptionCallbacks_$module(
+      SWIGRegisterExceptionCallbacks_$proxydmodule(
                                 applicationDelegate,
                                 arithmeticDelegate,
                                 divideByZeroDelegate,
@@ -234,7 +237,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
                                 overflowDelegate,
                                 systemDelegate);
 
-      SWIGRegisterExceptionCallbacksArgument_$module(
+      SWIGRegisterExceptionCallbacksArgument_$proxydmodule(
                                 argumentDelegate,
                                 argumentNullDelegate,
                                 argumentOutOfRangeDelegate);
@@ -262,7 +265,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
       if (pendingException != null)
         throw new ApplicationException("FATAL: An earlier pending exception from unmanaged code was missed and thus not thrown (" + pendingException.ToString() + ")", e);
       pendingException = e;
-      lock(typeof($imclassname)) {
+      lock(typeof($wrapdmodule)) {
         numExceptionsPending++;
       }
     }
@@ -273,7 +276,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
         if (pendingException != null) {
           e = pendingException;
           pendingException = null;
-          lock(typeof($imclassname)) {
+          lock(typeof($wrapdmodule)) {
             numExceptionsPending--;
           }
         }
@@ -282,9 +285,9 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
     }
   }
 %}
-#endif // SWIG_CSHARP_NO_EXCEPTION_HELPER
+#endif // SWIG_D_NO_EXCEPTION_HELPER
 
-#if !defined(SWIG_CSHARP_NO_STRING_HELPER)
+#if !defined(SWIG_D_NO_STRING_HELPER)
 %insert(runtime) %{
 /* Callback for returning strings to C# without leaking memory */
 typedef char * (SWIGSTDCALL* SWIG_CSharpStringHelperCallback)(const char *);
@@ -297,15 +300,15 @@ static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback = NULL;
     public delegate string SWIGStringDelegate(string message);
     static SWIGStringDelegate stringDelegate = new SWIGStringDelegate(CreateString);
 
-    [DllImport("$dllimport", EntryPoint="SWIGRegisterStringCallback_$module")]
-    public static extern void SWIGRegisterStringCallback_$module(SWIGStringDelegate stringDelegate);
+    [DllImport("$dllimport", EntryPoint="SWIGRegisterStringCallback_$proxydmodule")]
+    public static extern void SWIGRegisterStringCallback_$proxydmodule(SWIGStringDelegate stringDelegate);
 
     static string CreateString(string cString) {
       return cString;
     }
 
     static SWIGStringHelper() {
-      SWIGRegisterStringCallback_$module(stringDelegate);
+      SWIGRegisterStringCallback_$proxydmodule(stringDelegate);
     }
   }
 
@@ -316,14 +319,16 @@ static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback = NULL;
 #ifdef __cplusplus
 extern "C"
 #endif
-SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_CSharpStringHelperCallback callback) {
+SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$proxydmodule(SWIG_CSharpStringHelperCallback callback) {
   SWIG_csharp_string_callback = callback;
 }
 %}
-#endif // SWIG_CSHARP_NO_STRING_HELPER
+#endif // SWIG_D_NO_STRING_HELPER
 
 %insert(runtime) %{
 /* Contract support */
 
 #define SWIG_contract_assert(nullreturn, expr, msg) if (!(expr)) {SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentOutOfRangeException, msg, ""); return nullreturn; } else
 %}
+
+#endif
