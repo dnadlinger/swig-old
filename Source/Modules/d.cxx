@@ -1055,10 +1055,6 @@ public:
     global_variable_flag = false;
     generate_property_declaration_flag = false;
 
-    if (proxy_flag) {
-      Printf(proxy_functions_code, "\n  }\n\n");
-    }
-
     return ret;
   }
 
@@ -2531,15 +2527,10 @@ public:
 
     /* Change function name for global variables */
     if (proxy_flag && global_variable_flag) {
-      // Capitalize the first letter in the variable to create the getter/setter function name
-      func_name = NewString("");
-      setter_flag = (Cmp(Getattr(n, "sym:name"), Swig_name_set(variable_name)) == 0);
-      if (setter_flag)
-	Printf(func_name, "set");
-      else
-	Printf(func_name, "get");
-      Putc(toupper((int) *Char(variable_name)), func_name);
-      Printf(func_name, "%s", Char(variable_name) + 1);
+      // RESEARCH: Is the Copy() needed here?
+      func_name = Copy(variable_name);
+
+      // RESEARCH: What is this good for?
       if (setter_flag)
         Swig_typemap_attach_parms("csvarin", l, NULL);
     } else {
@@ -2675,67 +2666,10 @@ public:
       Swig_warning(WARN_CSHARP_TYPEMAP_CSOUT_UNDEF, input_file, line_number, "No csout typemap defined for %s\n", SwigType_str(t, 0));
     }
 
-    if (proxy_flag && global_variable_flag) {
-      // Properties
-      if (generate_property_declaration_flag) {	// Ensure the declaration is generated just once should the property contain both a set and get
-	// Get the C# variable type - obtained differently depending on whether a setter is required.
-	String *variable_type = return_type;
-	if (setter_flag) {
-	  p = last_parm;	// (last parameter is the only parameter for properties)
-	  SwigType *pt = Getattr(p, "type");
-	  if ((tm = Getattr(p, "tmap:cstype"))) {
-	    substituteClassname(pt, tm);
-            String *cstypeout = Getattr(p, "tmap:cstype:out");	// the type in the cstype typemap's out attribute overrides the type in the typemap
-	    variable_type = cstypeout ? cstypeout : tm;
-	  } else {
-	    Swig_warning(WARN_CSHARP_TYPEMAP_CSOUT_UNDEF, input_file, line_number, "No csvarin typemap defined for %s\n", SwigType_str(pt, 0));
-	  }
-	}
-	const String *csattributes = Getattr(n, "feature:cs:attributes");
-	if (csattributes)
-	  Printf(proxy_functions_code, "%s\n", csattributes);
-	const String *methodmods = Getattr(n, "feature:cs:methodmodifiers");
-	if (!methodmods)
-	  methodmods = (is_public(n) ? public_string : protected_string);
-	Printf(proxy_functions_code, "  %s static %s %s {", methodmods, variable_type, variable_name);
-      }
-      generate_property_declaration_flag = false;
-
-      if (setter_flag) {
-	// Setter method
-	p = last_parm;		// (last parameter is the only parameter for properties)
-	SwigType *pt = Getattr(p, "type");
-	if ((tm = Getattr(p, "tmap:csvarin"))) {
-	  substituteClassname(pt, tm);
-	  Replaceall(tm, "$csinput", "value");
-	  Replaceall(tm, "$imcall", imcall);
-	  excodeSubstitute(n, tm, "csvarin", p);
-	  Printf(proxy_functions_code, "%s", tm);
-	} else {
-	  Swig_warning(WARN_CSHARP_TYPEMAP_CSOUT_UNDEF, input_file, line_number, "No csvarin typemap defined for %s\n", SwigType_str(pt, 0));
-	}
-      } else {
-	// Getter method
-	if ((tm = Swig_typemap_lookup("csvarout", n, "", 0))) {
-	  if (GetFlag(n, "feature:new"))
-	    Replaceall(tm, "$owner", "true");
-	  else
-	    Replaceall(tm, "$owner", "false");
-	  substituteClassname(t, tm);
-	  Replaceall(tm, "$imcall", imcall);
-	  excodeSubstitute(n, tm, "csvarout", n);
-	  Printf(proxy_functions_code, "%s", tm);
-	} else {
-	  Swig_warning(WARN_CSHARP_TYPEMAP_CSOUT_UNDEF, input_file, line_number, "No csvarout typemap defined for %s\n", SwigType_str(t, 0));
-	}
-      }
-    } else {
-      // Normal function call.
-      // The whole function code is now in stored tm (if any, of course), so
-      // simply append it to the code buffer.
-      Printf(function_code, " %s\n\n", tm ? (const String *) tm : empty_string);
-      Printv(proxy_functions_code, function_code, NIL);
-    }
+    // The whole function code is now in stored tm (if there was a matching
+    // type map, of course), so	 simply append it to the code buffer.
+    Printf(function_code, " %s\n\n", tm ? (const String *) tm : empty_string);
+    Printv(proxy_functions_code, function_code, NIL);
 
     Delete(pre_code);
     Delete(post_code);
