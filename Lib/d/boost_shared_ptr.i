@@ -169,42 +169,42 @@
 
 // Proxy classes (base classes, ie, not derived classes)
 %typemap(csbody) TYPE %{
-  private HandleRef swigCPtr;
+  private HandleRef __swig_cObject;
   private bool swigCMemOwnBase;
 
   internal $dclassname(IntPtr cPtr, bool cMemoryOwn) {
     swigCMemOwnBase = cMemoryOwn;
-    swigCPtr = new HandleRef(this, cPtr);
+    __swig_cObject = new HandleRef(this, cPtr);
   }
 
   internal static HandleRef getCPtr($dclassname obj) {
-    return (obj == null) ? new HandleRef(null, IntPtr.Zero) : obj.swigCPtr;
+    return (obj == null) ? new HandleRef(null, IntPtr.Zero) : obj.__swig_cObject;
   }
 %}
 
 // Derived proxy classes
 %typemap(csbody_derived) TYPE %{
-  private HandleRef swigCPtr;
+  private HandleRef __swig_cObject;
   private bool swigCMemOwnDerived;
 
   internal $dclassname(IntPtr cPtr, bool cMemoryOwn) : base($wrapdmodule.$dclassname_SWIGSharedPtrUpcast(cPtr), true) {
     swigCMemOwnDerived = cMemoryOwn;
-    swigCPtr = new HandleRef(this, cPtr);
+    __swig_cObject = new HandleRef(this, cPtr);
   }
 
   internal static HandleRef getCPtr($dclassname obj) {
-    return (obj == null) ? new HandleRef(null, IntPtr.Zero) : obj.swigCPtr;
+    return (obj == null) ? new HandleRef(null, IntPtr.Zero) : obj.__swig_cObject;
   }
 %}
 
 %typemap(csdestruct, methodname="Dispose", methodmodifiers="public") TYPE {
     lock(this) {
-      if (swigCPtr.Handle != IntPtr.Zero) {
+      if (__swig_cObject.Handle != IntPtr.Zero) {
         if (swigCMemOwnBase) {
           swigCMemOwnBase = false;
           $imcall;
         }
-        swigCPtr = new HandleRef(null, IntPtr.Zero);
+        __swig_cObject = new HandleRef(null, IntPtr.Zero);
       }
       GC.SuppressFinalize(this);
     }
@@ -212,12 +212,12 @@
 
 %typemap(csdestruct_derived, methodname="Dispose", methodmodifiers="public") TYPE {
     lock(this) {
-      if (swigCPtr.Handle != IntPtr.Zero) {
+      if (__swig_cObject.Handle != IntPtr.Zero) {
         if (swigCMemOwnDerived) {
           swigCMemOwnDerived = false;
           $imcall;
         }
-        swigCPtr = new HandleRef(null, IntPtr.Zero);
+        __swig_cObject = new HandleRef(null, IntPtr.Zero);
       }
       GC.SuppressFinalize(this);
       base.Dispose();

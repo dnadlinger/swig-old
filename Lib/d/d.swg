@@ -847,18 +847,18 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 
 // Typewrapper classes
 %typemap(csbody) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] %{
-  private HandleRef swigCPtr;
+  private HandleRef __swig_cObject;
 
   internal $dclassname(IntPtr cPtr, bool futureUse) {
-    swigCPtr = new HandleRef(this, cPtr);
+    __swig_cObject = new HandleRef(this, cPtr);
   }
 
   protected $dclassname() {
-    swigCPtr = new HandleRef(null, IntPtr.Zero);
+    __swig_cObject = new HandleRef(null, IntPtr.Zero);
   }
 
   internal static HandleRef getCPtr($dclassname obj) {
-    return (obj == null) ? new HandleRef(null, IntPtr.Zero) : obj.swigCPtr;
+    return (obj == null) ? new HandleRef(null, IntPtr.Zero) : obj.__swig_cObject;
   }
 %}
 
@@ -936,12 +936,12 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 // Alternative char * typemaps.
 %pragma(d) imclasscode=%{
   public class SWIGStringMarshal : IDisposable {
-    public readonly HandleRef swigCPtr;
+    public readonly HandleRef __swig_cObject;
     public SWIGStringMarshal(string str) {
-      swigCPtr = new HandleRef(this, System.Runtime.InteropServices.Marshal.StringToHGlobalAnsi(str));
+      __swig_cObject = new HandleRef(this, System.Runtime.InteropServices.Marshal.StringToHGlobalAnsi(str));
     }
     public virtual void Dispose() {
-      System.Runtime.InteropServices.Marshal.FreeHGlobal(swigCPtr.Handle);
+      System.Runtime.InteropServices.Marshal.FreeHGlobal(__swig_cObject.Handle);
       GC.SuppressFinalize(this);
     }
   }
@@ -949,7 +949,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 
 %typemap(imtype, out="IntPtr") char *, char[ANY], char[]   "HandleRef"
 %typemap(out) char *, char[ANY], char[] %{ $result = $1; %}
-%typemap(csin) char *, char[ANY], char[] "new $wrapdmodule.SWIGStringMarshal($csinput).swigCPtr"
+%typemap(csin) char *, char[ANY], char[] "new $wrapdmodule.SWIGStringMarshal($csinput).__swig_cObject"
 %typemap(csout, excode=SWIGEXCODE) char *, char[ANY], char[] {
     string ret = System.Runtime.InteropServices.Marshal.PtrToStringAnsi($imcall);$excode
     return ret;

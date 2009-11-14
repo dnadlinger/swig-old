@@ -1535,7 +1535,7 @@ public:
 	Printf(proxy_class_code, "    if (SwigDerivedClassHasMethod(\"%s\", swigMethodTypes%s))\n", method, methid);
 	Printf(proxy_class_code, "      swigDelegate%s = new SwigDelegate%s_%s(SwigDirector%s);\n", methid, proxy_class_name, methid, overname);
       }
-      Printf(proxy_class_code, "    %s.%s_director_connect(swigCPtr", wrap_dmodule_name, proxy_class_name);
+      Printf(proxy_class_code, "    %s.%s_director_connect(__swig_cObject", wrap_dmodule_name, proxy_class_name);
       for (i = first_class_dmethod; i < curr_class_dmethod; ++i) {
 	UpcallData *udata = Getitem(dmethods_seq, i);
 	String *methid = Getattr(udata, "class_methodidx");
@@ -1881,7 +1881,7 @@ public:
 
     Printv(imcall, wrap_dmodule_name, ".$imfuncname(", NIL);
     if (!static_flag)
-      Printf(imcall, "swigCPtr");
+      Printf(imcall, "__swig_cObject");
 
     emit_mark_varargs(l);
 
@@ -2325,7 +2325,7 @@ public:
     String *symname = Getattr(n, "sym:name");
 
     if (proxy_flag) {
-      Printv(destructor_call, wrap_dmodule_name, ".", Swig_name_destroy(symname), "(swigCPtr)", NIL);
+      Printv(destructor_call, wrap_dmodule_name, ".", Swig_name_destroy(symname), "(__swig_cObject)", NIL);
     }
     return SWIG_OK;
   }
