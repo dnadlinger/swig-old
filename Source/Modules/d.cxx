@@ -46,7 +46,7 @@ class D:public Language {
 
   String *wrap_dmodule_name;	// The name of the D module containing the interface to the C wrapper.
   String *proxy_dmodule_name;	// The name of the proxy module which exposes the (SWIG) module contents as a D module.
-  String *imclass_class_code;	// intermediary class code
+  String *wrap_dmodule_code;	// The D code declaring the wrapper functions.
   String *proxy_class_def;
   String *proxy_class_code;
   String *proxy_functions_code;	// The D code which mirrors global functions and is inserted into the proxy module.
@@ -57,13 +57,13 @@ class D:public Language {
   String *enum_code;
   String *dllimport;		// DllImport attribute name
   String *namespce;		// Optional namespace name
-  String *imclass_imports;	//intermediary class imports from %pragma
-  String *module_imports;	//module imports from %pragma
+  String *wrap_dmodule_imports;	//intermediary class imports from %pragma
+  String *proxy_dmodule_imports;	//module imports from %pragma
   String *imclass_baseclass;	//inheritance for intermediary class class from %pragma
   String *imclass_interfaces;	//interfaces for intermediary class class from %pragma
   String *imclass_class_modifiers;	//class modifiers for intermediary class overriden by %pragma
   String *upcasts_code;		//C++ casts for inheritance hierarchies C++ code
-  String *imclass_cppcasts_code;	//C++ casts up inheritance hierarchies intermediary class code
+  String *wrap_dmodule_cppcasts_code;	//C++ casts up inheritance hierarchies intermediary class code
   String *director_callback_typedefs;	// Director function pointer typedefs for callbacks
   String *director_callbacks;	// Director callback function pointer member variables
   String *director_delegate_callback;	// Director callback method that delegates are set to call
@@ -120,7 +120,7 @@ public:
       generate_property_declaration_flag(false),
       wrap_dmodule_name(NULL),
       proxy_dmodule_name(NULL),
-      imclass_class_code(NULL),
+      wrap_dmodule_code(NULL),
       proxy_class_def(NULL),
       proxy_class_code(NULL),
       proxy_functions_code(NULL),
@@ -131,13 +131,13 @@ public:
       enum_code(NULL),
       dllimport(NULL),
       namespce(NULL),
-      imclass_imports(NULL),
-      module_imports(NULL),
+      wrap_dmodule_imports(NULL),
+      proxy_dmodule_imports(NULL),
       imclass_baseclass(NULL),
       imclass_interfaces(NULL),
       imclass_class_modifiers(NULL),
       upcasts_code(NULL),
-      imclass_cppcasts_code(NULL),
+      wrap_dmodule_cppcasts_code(NULL),
       director_callback_typedefs(NULL),
       director_callbacks(NULL),
       director_delegate_callback(NULL),
@@ -332,7 +332,7 @@ public:
 	proxy_dmodule_name = Copy(Getattr(n, "name"));
     }
 
-    imclass_class_code = NewString("");
+    wrap_dmodule_code = NewString("");
     proxy_class_def = NewString("");
     proxy_class_code = NewString("");
     module_class_constants_code = NewString("");
@@ -340,9 +340,9 @@ public:
     imclass_interfaces = NewString("");
     imclass_class_modifiers = NewString("");
     proxy_functions_code = NewString("");
-    module_imports = NewString("");
-    imclass_imports = NewString("");
-    imclass_cppcasts_code = NewString("");
+    proxy_dmodule_imports = NewString("");
+    wrap_dmodule_imports = NewString("");
+    wrap_dmodule_cppcasts_code = NewString("");
     director_connect_parms = NewString("");
     upcasts_code = NewString("");
     dmethods_seq = NewList();
@@ -396,12 +396,12 @@ public:
       Swig_insert_file("director.swg", f_runtime);
     }
 
-    // Generate the interface module.
+    // Generate the wrap D module.
     // TODO: Add support for »dynamic« linking.
     {
       String *filen = NewStringf("%s%s.d", SWIG_output_directory(), wrap_dmodule_name);
-      File *f_im = NewFile(filen, "w", SWIG_output_files());
-      if (!f_im) {
+      File *f_wrapd = NewFile(filen, "w", SWIG_output_files());
+      if (!f_wrapd) {
 	FileErrorDisplay(filen);
 	SWIG_exit(EXIT_FAILURE);
       }
@@ -409,36 +409,21 @@ public:
       Delete(filen);
       filen = NULL;
 
-      // Start writing out the intermediary class file
-      emitBanner(f_im);
+      // Start writing out the intermediary class file.
+      emitBanner(f_wrapd);
 
-      addOpenNamespace(namespce, f_im);
+      Printf(f_wrapd, "module %s;\n", wrap_dmodule_name);
 
-      if (imclass_imports)
-	Printf(f_im, "%s\n", imclass_imports);
+      if (wrap_dmodule_imports)
+	Printf(f_wrapd, "%s\n", wrap_dmodule_imports);
 
-      if (Len(imclass_class_modifiers) > 0)
-	Printf(f_im, "%s ", imclass_class_modifiers);
-      Printf(f_im, "%s ", wrap_dmodule_name);
+      // Add the wrapper function declarations.
+      Replaceall(wrap_dmodule_code, "$proxydmodule", proxy_dmodule_name);
+      Replaceall(wrap_dmodule_code, "$wrapdmodule", wrap_dmodule_name);
+      Printv(f_wrapd, wrap_dmodule_code, NIL);
+      Printv(f_wrapd, wrap_dmodule_cppcasts_code, NIL);
 
-      if (imclass_baseclass && *Char(imclass_baseclass))
-	Printf(f_im, ": %s ", imclass_baseclass);
-      if (Len(imclass_interfaces) > 0)
-	Printv(f_im, "implements ", imclass_interfaces, " ", NIL);
-      Printf(f_im, "{\n");
-
-      // Add the intermediary class methods
-      Replaceall(imclass_class_code, "$proxydmodule", proxy_dmodule_name);
-      Replaceall(imclass_class_code, "$wrapdmodule", wrap_dmodule_name);
-      Replaceall(imclass_class_code, "$dllimport", dllimport);
-      Printv(f_im, imclass_class_code, NIL);
-      Printv(f_im, imclass_cppcasts_code, NIL);
-
-      // Finish off the class
-      Printf(f_im, "}\n");
-      addCloseNamespace(namespce, f_im);
-
-      Close(f_im);
+      Close(f_wrapd);
     }
 
     // Generate the D proxy module for the wrapped module.
@@ -454,13 +439,15 @@ public:
       Delete(filen);
       filen = NULL;
 
-      // Start writing out the module class file
+      // Start writing out the module class file.
       emitBanner(f_module);
 
-      Printf(f_module, "module %s;\n", proxy_dmodule_name);
+      Printf(f_module, "module %s;\n\n", proxy_dmodule_name);
 
-      if (module_imports)
-        Printf(f_module, "%s\n", module_imports);
+      Printf(f_module, "static import %s;\n", wrap_dmodule_name);
+
+      if (proxy_dmodule_imports)
+        Printf(f_module, "%s\n", proxy_dmodule_imports);
 
       Replaceall(proxy_functions_code, "$proxydmodule", proxy_dmodule_name);
       Replaceall(module_class_constants_code, "$proxydmodule", proxy_dmodule_name);
@@ -468,15 +455,11 @@ public:
       Replaceall(proxy_functions_code, "$wrapdmodule", wrap_dmodule_name);
       Replaceall(module_class_constants_code, "$wrapdmodule", wrap_dmodule_name);
 
-      Replaceall(proxy_functions_code, "$dllimport", dllimport);
-      Replaceall(module_class_constants_code, "$dllimport", dllimport);
-
-      // Add the wrapper methods
+      // Add the proxy functions.
       Printv(f_module, proxy_functions_code, NIL);
 
       // Write out all the global constants
       Printv(f_module, module_class_constants_code, NIL);
-
 
       Close(f_module);
     }
@@ -518,8 +501,8 @@ public:
     filenames_list = NULL;
     Delete(wrap_dmodule_name);
     wrap_dmodule_name = NULL;
-    Delete(imclass_class_code);
-    imclass_class_code = NULL;
+    Delete(wrap_dmodule_code);
+    wrap_dmodule_code = NULL;
     Delete(proxy_class_def);
     proxy_class_def = NULL;
     Delete(proxy_class_code);
@@ -536,12 +519,12 @@ public:
     proxy_dmodule_name = NULL;
     Delete(proxy_functions_code);
     proxy_functions_code = NULL;
-    Delete(module_imports);
-    module_imports = NULL;
-    Delete(imclass_imports);
-    imclass_imports = NULL;
-    Delete(imclass_cppcasts_code);
-    imclass_cppcasts_code = NULL;
+    Delete(proxy_dmodule_imports);
+    proxy_dmodule_imports = NULL;
+    Delete(wrap_dmodule_imports);
+    wrap_dmodule_imports = NULL;
+    Delete(wrap_dmodule_cppcasts_code);
+    wrap_dmodule_cppcasts_code = NULL;
     Delete(upcasts_code);
     upcasts_code = NULL;
     Delete(dmethods_seq);
@@ -758,12 +741,10 @@ public:
 	return SWIG_OK;
     }
 
-    Printv(imclass_class_code, "\n  [DllImport(\"", dllimport, "\", EntryPoint=\"CSharp_", overloaded_name, "\")]\n", NIL);
-
     if (im_outattributes)
-      Printf(imclass_class_code, "  %s\n", im_outattributes);
+      Printf(wrap_dmodule_code, "  %s\n", im_outattributes);
 
-    Printf(imclass_class_code, "  public static extern %s %s(", im_return_type, overloaded_name);
+    Printf(wrap_dmodule_code, "extern( C ) %s %s(", im_return_type, overloaded_name);
 
 
     /* Get number of required and total arguments */
@@ -803,8 +784,8 @@ public:
 
       /* Add parameter to intermediary class method */
       if (gencomma)
-	Printf(imclass_class_code, ", ");
-      Printf(imclass_class_code, "%s %s", im_param_type, arg);
+	Printf(wrap_dmodule_code, ", ");
+      Printf(wrap_dmodule_code, "%s %s", im_param_type, arg);
 
       // Add parameter to C function
       Printv(f->def, gencomma ? ", " : "", c_param_type, " ", arg, NIL);
@@ -950,8 +931,8 @@ public:
     }
 
     /* Finish C function and intermediary class function definitions */
-    Printf(imclass_class_code, ")");
-    Printf(imclass_class_code, ";\n");
+    Printf(wrap_dmodule_code, ")");
+    Printf(wrap_dmodule_code, ";\n");
 
     Printf(f->def, ") {");
 
@@ -1401,17 +1382,11 @@ public:
    * pragmaDirective()
    *
    * Valid Pragmas:
-   * imclassbase            - base (extends) for the intermediary class
-   * imclassclassmodifiers  - class modifiers for the intermediary class
-   * imclasscode            - text (C# code) is copied verbatim to the intermediary class
-   * imclassimports         - import statements for the intermediary class
-   * imclassinterfaces      - interface (implements) for the intermediary class
+   * wrapdmodulecode        - text (D code) is copied verbatim to the wrap module
+   * wrapdmoduleimports     - import statements for the wrap module
    *
-   * modulebase              - base (extends) for the module class
-   * moduleclassmodifiers    - class modifiers for the module class
-   * modulecode              - text (C# code) is copied verbatim to the module class
-   * moduleimports           - import statements for the module class
-   * moduleinterfaces        - interface (implements) for the module class
+   * proxydmodulecode        - text (D code) is copied verbatim to the proxy module
+   * proxydmoduleimports     - import statements for the proxy module
    *
    * ----------------------------------------------------------------------------- */
 
@@ -1426,25 +1401,16 @@ public:
 	String *strvalue = NewString(value);
 	Replaceall(strvalue, "\\\"", "\"");
 
-	if (Strcmp(code, "imclassbase") == 0) {
-	  Delete(imclass_baseclass);
-	  imclass_baseclass = Copy(strvalue);
-	} else if (Strcmp(code, "imclassclassmodifiers") == 0) {
-	  Delete(imclass_class_modifiers);
-	  imclass_class_modifiers = Copy(strvalue);
-	} else if (Strcmp(code, "imclasscode") == 0) {
-	  Printf(imclass_class_code, "%s\n", strvalue);
-	} else if (Strcmp(code, "imclassimports") == 0) {
-	  Delete(imclass_imports);
-	  imclass_imports = Copy(strvalue);
-	} else if (Strcmp(code, "imclassinterfaces") == 0) {
-	  Delete(imclass_interfaces);
-	  imclass_interfaces = Copy(strvalue);
-	} else if (Strcmp(code, "modulecode") == 0) {
+	if (Strcmp(code, "wrapdmodulecode") == 0) {
+	  Printf(wrap_dmodule_code, "%s\n", strvalue);
+	} else if (Strcmp(code, "wrapdmoduleimports") == 0) {
+	  Delete(wrap_dmodule_imports);
+	  wrap_dmodule_imports = Copy(strvalue);
+	} else if (Strcmp(code, "proxydmodulecode") == 0) {
 	  Printf(proxy_functions_code, "%s\n", strvalue);
-	} else if (Strcmp(code, "moduleimports") == 0) {
-	  Delete(module_imports);
-	  module_imports = Copy(strvalue);
+	} else if (Strcmp(code, "proxydmoduleimports") == 0) {
+	  Delete(proxy_dmodule_imports);
+	  proxy_dmodule_imports = Copy(strvalue);
 	} else {
 	  Printf(stderr, "%s : Line %d. Unrecognized pragma.\n", input_file, line_number);
 	}
@@ -1681,10 +1647,10 @@ public:
 
     // Add code to do C++ casting to base class (only for classes in an inheritance hierarchy)
     if (derived) {
-      Printv(imclass_cppcasts_code, "\n  [DllImport(\"", dllimport, "\", EntryPoint=\"CSharp_", proxy_class_name, "Upcast", "\")]\n", NIL);
-      Printf(imclass_cppcasts_code, "  public static extern IntPtr $csclassnameUpcast(IntPtr objectRef);\n");
+      Printv(wrap_dmodule_cppcasts_code, "\n  [DllImport(\"", dllimport, "\", EntryPoint=\"CSharp_", proxy_class_name, "Upcast", "\")]\n", NIL);
+      Printf(wrap_dmodule_cppcasts_code, "  public static extern IntPtr $csclassnameUpcast(IntPtr objectRef);\n");
 
-      Replaceall(imclass_cppcasts_code, "$csclassname", proxy_class_name);
+      Replaceall(wrap_dmodule_cppcasts_code, "$csclassname", proxy_class_name);
 
       Printv(upcasts_code,
 	     "SWIGEXPORT $cbaseclass * SWIGSTDCALL CSharp_$imclazznameUpcast",
@@ -1776,7 +1742,7 @@ public:
       if (GetFlag(n, "feature:javadowncast")) {
 	String *norm_name = SwigType_namestr(Getattr(n, "name"));
 
-	Printf(imclass_class_code, "  public final static native %s downcast%s(long cPtrBase, boolean cMemoryOwn);\n", proxy_class_name, proxy_class_name);
+	Printf(wrap_dmodule_code, "  public final static native %s downcast%s(long cPtrBase, boolean cMemoryOwn);\n", proxy_class_name, proxy_class_name);
 
 	Wrapper *dcast_wrap = NewWrapper();
 
@@ -3090,8 +3056,8 @@ public:
     String *sym_name = Getattr(n, "sym:name");
     Wrapper *code_wrap;
 
-    Printv(imclass_class_code, "\n  [DllImport(\"", dllimport, "\", EntryPoint=\"CSharp_", swig_director_connect, "\")]\n", NIL);
-    Printf(imclass_class_code, "  public static extern void %s(HandleRef jarg1", swig_director_connect);
+    Printv(wrap_dmodule_code, "\n  [DllImport(\"", dllimport, "\", EntryPoint=\"CSharp_", swig_director_connect, "\")]\n", NIL);
+    Printf(wrap_dmodule_code, "  public static extern void %s(HandleRef jarg1", swig_director_connect);
 
     code_wrap = NewWrapper();
     Printf(code_wrap->def, "SWIGEXPORT void SWIGSTDCALL CSharp_%s(void *objarg", swig_director_connect);
@@ -3111,12 +3077,12 @@ public:
 	Printf(code_wrap->code, ", ");
       Printf(code_wrap->def, "SwigDirector_%s::SWIG_Callback%s_t callback%s", sym_name, methid, methid);
       Printf(code_wrap->code, "callback%s", methid);
-      Printf(imclass_class_code, ", %s.SwigDelegate%s_%s delegate%s", sym_name, sym_name, methid, methid);
+      Printf(wrap_dmodule_code, ", %s.SwigDelegate%s_%s delegate%s", sym_name, sym_name, methid, methid);
     }
 
     Printf(code_wrap->def, ") {\n");
     Printf(code_wrap->code, ");\n");
-    Printf(imclass_class_code, ");\n");
+    Printf(wrap_dmodule_code, ");\n");
     Printf(code_wrap->code, "  }\n");
     Printf(code_wrap->code, "}\n");
 

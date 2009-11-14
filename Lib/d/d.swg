@@ -938,14 +938,10 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 #define %csnothrowexception         %feature("except")
 #define %csattributes               %feature("cs:attributes")
 
-%pragma(d) imclassclassmodifiers="class"
-
-%pragma(d) moduleimports=%{
+%pragma(d) proxydmoduleimports=%{
 %}
 
-%pragma(d) imclassimports=%{
-using System;
-using System.Runtime.InteropServices;
+%pragma(d) wrapdmoduleimports=%{
 %}
 
 /* Some ANSI C typemaps */

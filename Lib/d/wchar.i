@@ -20,7 +20,7 @@ typedef void * (SWIGSTDCALL* SWIG_CSharpWStringHelperCallback)(const wchar_t *);
 static SWIG_CSharpWStringHelperCallback SWIG_csharp_wstring_callback = NULL;
 %}
 
-%pragma(d) imclasscode=%{
+%pragma(d) wrapdmodulecode=%{
   protected class SWIGWStringHelper {
 
     public delegate string SWIGWStringDelegate(IntPtr message);
