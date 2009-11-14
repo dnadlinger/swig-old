@@ -378,7 +378,7 @@ public:
 
     Printf(f_runtime, "\n");
 
-    Swig_name_register((char *) "wrapper", (char *) "CSharp_%f");
+    Swig_name_register((char *) "wrapper", (char *) "D_%f");
     if (old_variable_names) {
       Swig_name_register((char *) "set", (char *) "set_%v");
       Swig_name_register((char *) "get", (char *) "get_%v");
@@ -1647,13 +1647,13 @@ public:
 
     // Add code to do C++ casting to base class (only for classes in an inheritance hierarchy)
     if (derived) {
-      Printv(wrap_dmodule_cppcasts_code, "\n  [DllImport(\"", dllimport, "\", EntryPoint=\"CSharp_", proxy_class_name, "Upcast", "\")]\n", NIL);
+      Printv(wrap_dmodule_cppcasts_code, "\n  [DllImport(\"", dllimport, "\", EntryPoint=\"D_", proxy_class_name, "Upcast", "\")]\n", NIL);
       Printf(wrap_dmodule_cppcasts_code, "  public static extern IntPtr $csclassnameUpcast(IntPtr objectRef);\n");
 
       Replaceall(wrap_dmodule_cppcasts_code, "$csclassname", proxy_class_name);
 
       Printv(upcasts_code,
-	     "SWIGEXPORT $cbaseclass * SWIGSTDCALL CSharp_$imclazznameUpcast",
+	     "SWIGEXPORT $cbaseclass * SWIGSTDCALL D_$imclazznameUpcast",
 	     "($cclass *objectRef) {\n", "    return ($cbaseclass *)objectRef;\n" "}\n", "\n", NIL);
 
       Replaceall(upcasts_code, "$cbaseclass", c_baseclass);
@@ -1746,7 +1746,7 @@ public:
 
 	Wrapper *dcast_wrap = NewWrapper();
 
-	Printf(dcast_wrap->def, "SWIGEXPORT jobject SWIGSTDCALL CSharp_downcast%s(JNIEnv *jenv, jclass jcls, jlong jCPtrBase, jboolean cMemoryOwn) {",
+	Printf(dcast_wrap->def, "SWIGEXPORT jobject SWIGSTDCALL D_downcast%s(JNIEnv *jenv, jclass jcls, jlong jCPtrBase, jboolean cMemoryOwn) {",
 	       proxy_class_name);
 	Printf(dcast_wrap->code, "  Swig::Director *director = (Swig::Director *) 0;\n");
 	Printf(dcast_wrap->code, "  jobject jresult = (jobject) 0;\n");
@@ -3056,11 +3056,11 @@ public:
     String *sym_name = Getattr(n, "sym:name");
     Wrapper *code_wrap;
 
-    Printv(wrap_dmodule_code, "\n  [DllImport(\"", dllimport, "\", EntryPoint=\"CSharp_", swig_director_connect, "\")]\n", NIL);
+    Printv(wrap_dmodule_code, "\n  [DllImport(\"", dllimport, "\", EntryPoint=\"D_", swig_director_connect, "\")]\n", NIL);
     Printf(wrap_dmodule_code, "  public static extern void %s(HandleRef jarg1", swig_director_connect);
 
     code_wrap = NewWrapper();
-    Printf(code_wrap->def, "SWIGEXPORT void SWIGSTDCALL CSharp_%s(void *objarg", swig_director_connect);
+    Printf(code_wrap->def, "SWIGEXPORT void SWIGSTDCALL D_%s(void *objarg", swig_director_connect);
 
     Printf(code_wrap->code, "  %s *obj = (%s *)objarg;\n", norm_name, norm_name);
     Printf(code_wrap->code, "  SwigDirector_%s *director = dynamic_cast<SwigDirector_%s *>(obj);\n", sym_name, sym_name);
