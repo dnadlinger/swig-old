@@ -59,9 +59,6 @@ class D:public Language {
   String *namespce;		// Optional namespace name
   String *wrap_dmodule_imports;	//intermediary class imports from %pragma
   String *proxy_dmodule_imports;	//module imports from %pragma
-  String *imclass_baseclass;	//inheritance for intermediary class class from %pragma
-  String *imclass_interfaces;	//interfaces for intermediary class class from %pragma
-  String *imclass_class_modifiers;	//class modifiers for intermediary class overriden by %pragma
   String *upcasts_code;		//C++ casts for inheritance hierarchies C++ code
   String *wrap_dmodule_cppcasts_code;	//C++ casts up inheritance hierarchies intermediary class code
   String *director_callback_typedefs;	// Director function pointer typedefs for callbacks
@@ -133,9 +130,6 @@ public:
       namespce(NULL),
       wrap_dmodule_imports(NULL),
       proxy_dmodule_imports(NULL),
-      imclass_baseclass(NULL),
-      imclass_interfaces(NULL),
-      imclass_class_modifiers(NULL),
       upcasts_code(NULL),
       wrap_dmodule_cppcasts_code(NULL),
       director_callback_typedefs(NULL),
@@ -336,9 +330,6 @@ public:
     proxy_class_def = NewString("");
     proxy_class_code = NewString("");
     module_class_constants_code = NewString("");
-    imclass_baseclass = NewString("");
-    imclass_interfaces = NewString("");
-    imclass_class_modifiers = NewString("");
     proxy_functions_code = NewString("");
     proxy_dmodule_imports = NewString("");
     wrap_dmodule_imports = NewString("");
@@ -509,12 +500,6 @@ public:
     proxy_class_code = NULL;
     Delete(module_class_constants_code);
     module_class_constants_code = NULL;
-    Delete(imclass_baseclass);
-    imclass_baseclass = NULL;
-    Delete(imclass_interfaces);
-    imclass_interfaces = NULL;
-    Delete(imclass_class_modifiers);
-    imclass_class_modifiers = NULL;
     Delete(proxy_dmodule_name);
     proxy_dmodule_name = NULL;
     Delete(proxy_functions_code);
