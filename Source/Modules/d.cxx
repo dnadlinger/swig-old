@@ -676,7 +676,6 @@ public:
     String *cleanup = NewString("");
     String *outarg = NewString("");
     String *body = NewString("");
-    String *im_outattributes = 0;
     int num_arguments = 0;
     int num_required = 0;
     bool is_void_return;
@@ -718,7 +717,6 @@ public:
       if (imtypeout)
 	tm = imtypeout;
       Printf(im_return_type, "%s", tm);
-      im_outattributes = Getattr(n, "tmap:imtype:outattributes");
     } else {
       Swig_warning(WARN_CSHARP_TYPEMAP_CSTYPE_UNDEF, input_file, line_number, "No imtype typemap defined for %s\n", SwigType_str(t, 0));
     }
@@ -746,9 +744,6 @@ public:
       if (Getattr(n, "overload:ignore"))
 	return SWIG_OK;
     }
-
-    if (im_outattributes)
-      Printf(wrap_dmodule_code, "  %s\n", im_outattributes);
 
     // Emit a function pointer to the D wrap module.
     Printf(wrap_dmodule_code, "extern( C ) %s function(", im_return_type);
