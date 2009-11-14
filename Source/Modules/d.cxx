@@ -979,31 +979,20 @@ public:
       }
     }
 
+    // If we are not processing an enum or constant, and we were not generating
+    // a wrapper function which will be accessed via a proxy class, write a
+    // function to the proxy D module.
     if (!(proxy_flag && is_wrapping_class()) && !enum_constant_flag) {
       writeProxyDModuleFunction(n);
     }
 
-    /*
-     * Generate the proxy class properties for public member variables.
-     * Not for enums and constants.
-     */
+    // If we are processing a public member variable, write the property-style
+    // member function to the proxy class.
     if (proxy_flag && wrapping_member_flag && !enum_constant_flag) {
-      // Capitalize the first letter in the variable in the getter/setter function name
-      bool getter_flag = Cmp(symname, Swig_name_set(Swig_name_member(proxy_class_name, variable_name))) != 0;
-
-      String *getter_setter_name = NewString("");
-      if (!getter_flag)
-	Printf(getter_setter_name, "set");
-      else
-	Printf(getter_setter_name, "get");
-      Putc(toupper((int) *Char(variable_name)), getter_setter_name);
-      Printf(getter_setter_name, "%s", Char(variable_name) + 1);
-
-      Setattr(n, "proxyfuncname", getter_setter_name);
+      Setattr(n, "proxyfuncname", variable_name);
       Setattr(n, "imfuncname", symname);
 
-      proxyClassFunctionHandler(n);
-      Delete(getter_setter_name);
+      writeProxyClassFunction(n);
     }
 
     Delete(c_return_type);
@@ -1739,7 +1728,7 @@ public:
       String *intermediary_function_name = Swig_name_member(proxy_class_name, overloaded_name);
       Setattr(n, "proxyfuncname", Getattr(n, "sym:name"));
       Setattr(n, "imfuncname", intermediary_function_name);
-      proxyClassFunctionHandler(n);
+      writeProxyClassFunction(n);
       Delete(overloaded_name);
     }
     return SWIG_OK;
@@ -1759,7 +1748,7 @@ public:
       String *intermediary_function_name = Swig_name_member(proxy_class_name, overloaded_name);
       Setattr(n, "proxyfuncname", Getattr(n, "sym:name"));
       Setattr(n, "imfuncname", intermediary_function_name);
-      proxyClassFunctionHandler(n);
+      writeProxyClassFunction(n);
       Delete(overloaded_name);
     }
     static_flag = false;
@@ -1769,7 +1758,7 @@ public:
 
 
   /* -----------------------------------------------------------------------------
-   * proxyClassFunctionHandler()
+   * writeProxyClassFunction()
    *
    * Function called for creating a C# wrapper function around a c++ function in the
    * proxy class. Used for both static and non-static C++ class functions.
@@ -1779,7 +1768,7 @@ public:
    * the intermediary (PInvoke) function name in the intermediary class.
    * ----------------------------------------------------------------------------- */
 
-  void proxyClassFunctionHandler(Node *n) {
+  void writeProxyClassFunction(Node *n) {
     SwigType *t = Getattr(n, "type");
     ParmList *l = Getattr(n, "parms");
     String *intermediary_function_name = Getattr(n, "imfuncname");
@@ -1807,6 +1796,7 @@ public:
     if (GetFlag(n, "explicitcall"))
       return;
 
+    // RESEARCH: What is this good for?
     if (l) {
       if (SwigType_type(Getattr(l, "type")) == T_VOID) {
 	l = nextSibling(l);
@@ -2030,64 +2020,10 @@ public:
       Swig_warning(WARN_CSHARP_TYPEMAP_CSOUT_UNDEF, input_file, line_number, "No csout typemap defined for %s\n", SwigType_str(t, 0));
     }
 
-    if (wrapping_member_flag && !enum_constant_flag) {
-      // Properties
-      if (generate_property_declaration_flag) {	// Ensure the declaration is generated just once should the property contain both a set and get
-	// Get the C# variable type - obtained differently depending on whether a setter is required.
-	String *variable_type = return_type;
-	if (setter_flag) {
-	  p = last_parm;	// (last parameter is the only parameter for properties)
-	  SwigType *pt = Getattr(p, "type");
-	  if ((tm = Getattr(p, "tmap:cstype"))) {
-	    substituteClassname(pt, tm);
-            String *cstypeout = Getattr(p, "tmap:cstype:out");	// the type in the cstype typemap's out attribute overrides the type in the typemap
-	    variable_type = cstypeout ? cstypeout : tm;
-	  } else {
-	    Swig_warning(WARN_CSHARP_TYPEMAP_CSOUT_UNDEF, input_file, line_number, "No csvarin typemap defined for %s\n", SwigType_str(pt, 0));
-	  }
-	}
-	const String *csattributes = Getattr(n, "feature:cs:attributes");
-	if (csattributes)
-	  Printf(proxy_class_code, "  %s\n", csattributes);
-	const String *methodmods = Getattr(n, "feature:cs:methodmodifiers");
-	if (!methodmods)
-	  methodmods = (is_public(n) ? public_string : protected_string);
-	Printf(proxy_class_code, "  %s %s%s %s {", methodmods, static_flag ? "static " : "", variable_type, variable_name);
-      }
-      generate_property_declaration_flag = false;
-
-      if (setter_flag) {
-	// Setter method
-	p = last_parm;		// (last parameter is the only parameter for properties)
-	SwigType *pt = Getattr(p, "type");
-	if ((tm = Getattr(p, "tmap:csvarin"))) {
-	  substituteClassname(pt, tm);
-	  Replaceall(tm, "$imcall", imcall);
-	  excodeSubstitute(n, tm, "csvarin", p);
-	  Printf(proxy_class_code, "%s", tm);
-	} else {
-	  Swig_warning(WARN_CSHARP_TYPEMAP_CSOUT_UNDEF, input_file, line_number, "No csvarin typemap defined for %s\n", SwigType_str(pt, 0));
-	}
-      } else {
-	// Getter method
-	if ((tm = Swig_typemap_lookup("csvarout", n, "", 0))) {
-	  if (GetFlag(n, "feature:new"))
-	    Replaceall(tm, "$owner", "true");
-	  else
-	    Replaceall(tm, "$owner", "false");
-	  substituteClassname(t, tm);
-	  Replaceall(tm, "$imcall", imcall);
-	  excodeSubstitute(n, tm, "csvarout", n);
-	  Printf(proxy_class_code, "%s", tm);
-	} else {
-	  Swig_warning(WARN_CSHARP_TYPEMAP_CSOUT_UNDEF, input_file, line_number, "No csvarout typemap defined for %s\n", SwigType_str(t, 0));
-	}
-      }
-    } else {
-      // Normal function call
-      Printf(function_code, " %s\n\n", tm ? (const String *) tm : empty_string);
-      Printv(proxy_class_code, function_code, NIL);
-    }
+    // The whole function code is now in stored tm (if there was a matching
+    // type map, of course), so simply append it to the code buffer.
+    Printf(function_code, " %s\n\n", tm ? (const String *) tm : empty_string);
+    Printv(proxy_class_code, function_code, NIL);
 
     Delete(pre_code);
     Delete(post_code);
@@ -2335,7 +2271,6 @@ public:
    * ---------------------------------------------------------------------- */
 
   virtual int membervariableHandler(Node *n) {
-
     generate_property_declaration_flag = true;
     variable_name = Getattr(n, "sym:name");
     wrapping_member_flag = true;
@@ -2345,8 +2280,6 @@ public:
     variable_wrapper_flag = false;
     generate_property_declaration_flag = false;
 
-    Printf(proxy_class_code, "\n  }\n\n");
-
     return SWIG_OK;
   }
 
@@ -2355,9 +2288,6 @@ public:
    * ---------------------------------------------------------------------- */
 
   virtual int staticmembervariableHandler(Node *n) {
-
-    bool static_const_member_flag = (Getattr(n, "value") == 0);
-
     generate_property_declaration_flag = true;
     variable_name = Getattr(n, "sym:name");
     wrapping_member_flag = true;
@@ -2366,9 +2296,6 @@ public:
     wrapping_member_flag = false;
     static_flag = false;
     generate_property_declaration_flag = false;
-
-    if (static_const_member_flag)
-      Printf(proxy_class_code, "\n  }\n\n");
 
     return SWIG_OK;
   }
@@ -2449,6 +2376,7 @@ public:
     String *post_code = NewString("");
     String *terminator_code = NewString("");
 
+    // RESEARCH: What is this good for?
     if (l) {
       if (SwigType_type(Getattr(l, "type")) == T_VOID) {
 	l = nextSibling(l);
@@ -2612,7 +2540,7 @@ public:
     }
 
     // The whole function code is now in stored tm (if there was a matching
-    // type map, of course), so	 simply append it to the code buffer.
+    // type map, of course), so simply append it to the code buffer.
     Printf(function_code, " %s\n\n", tm ? (const String *) tm : empty_string);
     Printv(proxy_dmodule_code, function_code, NIL);
 
