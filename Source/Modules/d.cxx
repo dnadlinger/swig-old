@@ -1060,11 +1060,6 @@ public:
 	const String *pure_baseclass = typemapLookup(n, "csbase", typemap_lookup_type, WARN_NONE);
 	const String *pure_interfaces = typemapLookup(n, "dinterfaces", typemap_lookup_type, WARN_NONE);
 
-	// Class attributes
-	const String *csattributes = typemapLookup(n, "csattributes", typemap_lookup_type, WARN_NONE);
-	if (csattributes && *Char(csattributes))
-	  Printf(enum_code, "%s\n", csattributes);
-
 	// Emit the enum
 	Printv(enum_code, typemapLookup(n, "csclassmodifiers", typemap_lookup_type, WARN_CSHARP_TYPEMAP_CLASSMOD_UNDEF),	// Class modifiers (enum modifiers really)
 	       " ", symname, (*Char(pure_baseclass) || *Char(pure_interfaces)) ? " : " : "", pure_baseclass, ((*Char(pure_baseclass)) && *Char(pure_interfaces)) ?	// Interfaces
@@ -1168,16 +1163,12 @@ public:
 
     {
       EnumFeature enum_feature = decodeEnumFeature(parent);
-      const String *csattributes = Getattr(n, "feature:cs:attributes");
 
       if ((enum_feature == ProperEnum) && parent_name && !unnamedinstance) {
 	// Wrap (non-anonymous) C/C++ enum with a proper C# enum
 	// Emit the enum item.
 	if (!GetFlag(n, "firstenumitem"))
 	  Printf(enum_code, ",\n");
-
-	if (csattributes)
-	  Printf(enum_code, "  %s\n", csattributes);
 
 	Printf(enum_code, "  %s", symname);
 
@@ -1198,9 +1189,6 @@ public:
 	String *return_type = Copy(tm);
         const String *methodmods = Getattr(n, "feature:cs:methodmodifiers");
         methodmods = methodmods ? methodmods : (is_public(n) ? public_string : protected_string);
-
-	if (csattributes)
-	  Printf(enum_code, "  %s\n", csattributes);
 
 	if ((enum_feature == TypesafeEnum) && parent_name && !unnamedinstance) {
 	  // Wrap (non-anonymous) enum using the typesafe enum pattern
@@ -2392,9 +2380,6 @@ public:
     const String *outattributes = Getattr(n, "tmap:cstype:outattributes");
     if (outattributes)
       Printf(function_code, "  %s\n", outattributes);
-    const String *csattributes = Getattr(n, "feature:cs:attributes");
-    if (csattributes)
-      Printf(function_code, "  %s\n", csattributes);
 
     const String *methodmods = Getattr(n, "feature:d:methodmodifiers");
     // TODO: Check if is_public(n) could possibly make any sense here
@@ -2776,11 +2761,6 @@ public:
     // Emit the class
     Printv(swigtype, typemapLookup(n, "dimports", type, WARN_NONE),	// Import statements
 	   "\n", NIL);
-
-    // Class attributes
-    const String *csattributes = typemapLookup(n, "csattributes", type, WARN_NONE);
-    if (csattributes && *Char(csattributes))
-      Printf(swigtype, "%s\n", csattributes);
 
     Printv(swigtype, typemapLookup(n, "csclassmodifiers", type, WARN_CSHARP_TYPEMAP_CLASSMOD_UNDEF),	// Class modifiers
 	   " $dclassname",	// Class name and base class

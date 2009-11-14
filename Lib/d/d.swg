@@ -802,7 +802,6 @@
 #define %csenum(wrapapproach)       %feature("cs:enum","wrapapproach")
 #define %dmethodmodifiers           %feature("d:methodmodifiers")
 #define %csnothrowexception         %feature("except")
-#define %csattributes               %feature("cs:attributes")
 
 %pragma(d) proxydmoduleimports=%{
 %}
