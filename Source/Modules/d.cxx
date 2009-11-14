@@ -1622,8 +1622,8 @@ public:
       Printv( upcast_name, proxy_class_name, "Upcast", NIL );
       String *upcast_wrapper_name = Swig_name_wrapper( upcast_name );
 
-      writeWrapDModuleFunction( upcast_name, "IntPtr",
-	"(IntPtr objectRef)", upcast_wrapper_name );
+      writeWrapDModuleFunction( upcast_name, "void*",
+	"(void* objectRef)", upcast_wrapper_name );
 
       Printv(upcasts_code,
 	"SWIGEXPORT $cbaseclass * SWIGSTDCALL ", upcast_wrapper_name,
