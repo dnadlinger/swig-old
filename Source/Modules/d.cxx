@@ -427,7 +427,6 @@ public:
       Replaceall(wrap_dmodule_code, "$proxydmodule", proxy_dmodule_name);
       Replaceall(wrap_dmodule_code, "$wrapdmodule", wrap_dmodule_name);
       Printv(f_wrapd, wrap_dmodule_code, NIL);
-      Printv(f_wrapd, wrap_dmodule_cppcasts_code, NIL);
 
       Close(f_wrapd);
     }
@@ -523,8 +522,6 @@ public:
     proxy_dmodule_imports = NULL;
     Delete(wrap_dmodule_imports);
     wrap_dmodule_imports = NULL;
-    Delete(wrap_dmodule_cppcasts_code);
-    wrap_dmodule_cppcasts_code = NULL;
     Delete(upcasts_code);
     upcasts_code = NULL;
     Delete(wrapper_loader_code);
@@ -746,7 +743,7 @@ public:
     }
 
     // Emit a function pointer to the D wrap module.
-    Printf(wrap_dmodule_code, "extern( C ) %s function(", im_return_type);
+    String *wrap_dmodule_parameters = NewString( "(" );
 
     /* Get number of required and total arguments */
     num_arguments = emit_num_arguments(l);
@@ -785,8 +782,8 @@ public:
 
       /* Add parameter to intermediary class method */
       if (gencomma)
-	Printf(wrap_dmodule_code, ", ");
-      Printf(wrap_dmodule_code, "%s %s", im_param_type, arg);
+	Printf(wrap_dmodule_parameters, ", ");
+      Printf(wrap_dmodule_parameters, "%s %s", im_param_type, arg);
 
       // Add parameter to C function
       Printv(f->def, gencomma ? ", " : "", c_param_type, " ", arg, NIL);
@@ -932,10 +929,9 @@ public:
     }
 
     // Complete D wrapper function pointer and emit the corresponding binding code.
-    Printf(wrap_dmodule_code, ") %s;\n", overloaded_name);
-    Printv(wrapper_loader_bind_code, wrapper_loader_bind_command, NIL);
-    Replaceall(wrapper_loader_bind_code, "$function", overloaded_name);
-    Replaceall(wrapper_loader_bind_code, "$symbol", wname);
+    Printv(wrap_dmodule_parameters, ")", NIL);
+    writeWrapDModuleFunction( overloaded_name, im_return_type,
+      wrap_dmodule_parameters, wname );
 
     // Finish C function header.
     Printf(f->def, ") {");
@@ -1657,18 +1653,22 @@ public:
 
     // Add code to do C++ casting to base class (only for classes in an inheritance hierarchy)
     if (derived) {
-      Printv(wrap_dmodule_cppcasts_code, "\n  [DllImport(\"", wrap_library_name, "\", EntryPoint=\"D_", proxy_class_name, "Upcast", "\")]\n", NIL);
-      Printf(wrap_dmodule_cppcasts_code, "  public static extern IntPtr $csclassnameUpcast(IntPtr objectRef);\n");
+      String *upcast_name = NewString( "" );
+      Printv( upcast_name, proxy_class_name, "Upcast", NIL );
+      String *upcast_wrapper_name = Swig_name_wrapper( upcast_name );
 
-      Replaceall(wrap_dmodule_cppcasts_code, "$csclassname", proxy_class_name);
+      writeWrapDModuleFunction( upcast_name, "IntPtr",
+	"(IntPtr objectRef)", upcast_wrapper_name );
 
       Printv(upcasts_code,
-	     "SWIGEXPORT $cbaseclass * SWIGSTDCALL D_$imclazznameUpcast",
-	     "($cclass *objectRef) {\n", "    return ($cbaseclass *)objectRef;\n" "}\n", "\n", NIL);
+	"SWIGEXPORT $cbaseclass * SWIGSTDCALL ", upcast_wrapper_name,
+	"($cclass *objectRef) {\n", "    return ($cbaseclass *)objectRef;\n" "}\n", "\n", NIL);
 
       Replaceall(upcasts_code, "$cbaseclass", c_baseclass);
-      Replaceall(upcasts_code, "$imclazzname", proxy_class_name);
       Replaceall(upcasts_code, "$cclass", c_classname);
+
+      Delete( upcast_name );
+      Delete( upcast_wrapper_name );
     }
     Delete(baseclass);
   }
@@ -2457,6 +2457,29 @@ public:
     }
 
     return overloaded_name;
+  }
+
+
+  /* ---------------------------------------------------------------------------
+   * writeWrapDModuleFunction()
+   *
+   * Writes a function declaration for the given (C) wrapper function to the
+   * wrap D module.
+   *
+   * d_name - The name the function in the D wrap module will get.
+   * wrapper_function_name - The name of the exported function in the C wrapper
+   *                         (usually d_name prefixed by »D_«).
+   * --------------------------------------------------------------------------- */
+  void writeWrapDModuleFunction( const_String_or_char_ptr d_name,
+    const_String_or_char_ptr return_type, const_String_or_char_ptr parameters,
+    const_String_or_char_ptr wrapper_function_name ) {
+
+    // TODO: Add support for static linking here.
+    Printf(wrap_dmodule_code, "extern( C ) %s function%s %s;\n", return_type,
+      parameters, d_name);
+    Printv(wrapper_loader_bind_code, wrapper_loader_bind_command, NIL);
+    Replaceall(wrapper_loader_bind_code, "$function", d_name);
+    Replaceall(wrapper_loader_bind_code, "$symbol", wrapper_function_name);
   }
 
   /* -----------------------------------------------------------------------------
