@@ -49,7 +49,7 @@ class D:public Language {
   String *wrap_dmodule_code;	// The D code declaring the wrapper functions.
   String *proxy_class_def;
   String *proxy_class_code;
-  String *proxy_functions_code;	// The D code which mirrors global functions and is inserted into the proxy module.
+  String *proxy_dmodule_code;	// The D code for proxy functions/classes which is written to the proxy D module.
   String *proxy_class_name;
   String *variable_name;	//Name of a variable being wrapped
   String *proxy_class_constants_code;
@@ -125,7 +125,7 @@ public:
       wrap_dmodule_code(NULL),
       proxy_class_def(NULL),
       proxy_class_code(NULL),
-      proxy_functions_code(NULL),
+      proxy_dmodule_code(NULL),
       proxy_class_name(NULL),
       variable_name(NULL),
       proxy_class_constants_code(NULL),
@@ -328,6 +328,7 @@ public:
       proxy_dmodule_name = Copy(Getattr(n, "name"));
     } else {
       // Rename the module name if it is the same as intermediary class name - a backwards compatibility solution
+      // RESEARCH: Is this needed?
       if (Cmp(wrap_dmodule_name, Getattr(n, "name")) == 0)
 	proxy_dmodule_name = NewStringf("%sModule", Getattr(n, "name"));
       else
@@ -338,7 +339,7 @@ public:
     proxy_class_def = NewString("");
     proxy_class_code = NewString("");
     module_class_constants_code = NewString("");
-    proxy_functions_code = NewString("");
+    proxy_dmodule_code = NewString("");
     proxy_dmodule_imports = NewString("");
     wrap_dmodule_imports = NewString("");
     wrap_dmodule_cppcasts_code = NewString("");
@@ -454,14 +455,14 @@ public:
       if (proxy_dmodule_imports)
         Printf(f_module, "%s\n", proxy_dmodule_imports);
 
-      Replaceall(proxy_functions_code, "$proxydmodule", proxy_dmodule_name);
+      Replaceall(proxy_dmodule_code, "$proxydmodule", proxy_dmodule_name);
       Replaceall(module_class_constants_code, "$proxydmodule", proxy_dmodule_name);
 
-      Replaceall(proxy_functions_code, "$wrapdmodule", wrap_dmodule_name);
+      Replaceall(proxy_dmodule_code, "$wrapdmodule", wrap_dmodule_name);
       Replaceall(module_class_constants_code, "$wrapdmodule", wrap_dmodule_name);
 
       // Add the proxy functions.
-      Printv(f_module, proxy_functions_code, NIL);
+      Printv(f_module, proxy_dmodule_code, NIL);
 
       // Write out all the global constants
       Printv(f_module, module_class_constants_code, NIL);
@@ -516,8 +517,8 @@ public:
     module_class_constants_code = NULL;
     Delete(proxy_dmodule_name);
     proxy_dmodule_name = NULL;
-    Delete(proxy_functions_code);
-    proxy_functions_code = NULL;
+    Delete(proxy_dmodule_code);
+    proxy_dmodule_code = NULL;
     Delete(proxy_dmodule_imports);
     proxy_dmodule_imports = NULL;
     Delete(wrap_dmodule_imports);
@@ -1068,7 +1069,7 @@ public:
 
 	// Pure C# baseclass and interfaces
 	const String *pure_baseclass = typemapLookup(n, "csbase", typemap_lookup_type, WARN_NONE);
-	const String *pure_interfaces = typemapLookup(n, "csinterfaces", typemap_lookup_type, WARN_NONE);
+	const String *pure_interfaces = typemapLookup(n, "dinterfaces", typemap_lookup_type, WARN_NONE);
 
 	// Class attributes
 	const String *csattributes = typemapLookup(n, "csattributes", typemap_lookup_type, WARN_NONE);
@@ -1092,11 +1093,11 @@ public:
 	// Wrap (non-anonymous) C/C++ enum within a typesafe, typeunsafe or proper C# enum
 	// Finish the enum declaration
 	// Typemaps are used to generate the enum definition in a similar manner to proxy classes.
-	Printv(enum_code, (enum_feature == ProperEnum) ? "\n" : typemapLookup(n, "csbody", typemap_lookup_type, WARN_CSHARP_TYPEMAP_CSBODY_UNDEF),	// main body of class
+	Printv(enum_code, (enum_feature == ProperEnum) ? "\n" : typemapLookup(n, "dbody", typemap_lookup_type, WARN_D_TYPEMAP_DBODY_UNDEF),	// main body of class
 	       typemapLookup(n, "cscode", typemap_lookup_type, WARN_NONE),	// extra C# code
 	       "}", NIL);
 
-	Replaceall(enum_code, "$csclassname", symname);
+	Replaceall(enum_code, "$dclassname", symname);
 
 	// Substitute $enumvalues - intended usage is for typesafe enums
 	if (Getattr(n, "enumvalues"))
@@ -1129,7 +1130,7 @@ public:
 
 	  addOpenNamespace(namespce, f_enum);
 
-	  Printv(f_enum, typemapLookup(n, "csimports", typemap_lookup_type, WARN_NONE), // Import statements
+	  Printv(f_enum, typemapLookup(n, "dimports", typemap_lookup_type, WARN_NONE), // Import statements
 		 "\n", enum_code, "\n", NIL);
 
 	  addCloseNamespace(namespce, f_enum);
@@ -1406,7 +1407,7 @@ public:
 	  Delete(wrap_dmodule_imports);
 	  wrap_dmodule_imports = Copy(strvalue);
 	} else if (Strcmp(code, "proxydmodulecode") == 0) {
-	  Printf(proxy_functions_code, "%s\n", strvalue);
+	  Printf(proxy_dmodule_code, "%s\n", strvalue);
 	} else if (Strcmp(code, "proxydmoduleimports") == 0) {
 	  Delete(proxy_dmodule_imports);
 	  proxy_dmodule_imports = Copy(strvalue);
@@ -1426,10 +1427,10 @@ public:
   }
 
   /* -----------------------------------------------------------------------------
-   * emitProxyClassDefAndCPPCasts()
+   * writeProxyClassAndUpcasts()
    * ----------------------------------------------------------------------------- */
 
-  void emitProxyClassDefAndCPPCasts(Node *n) {
+  void writeProxyClassAndUpcasts(Node *n) {
     String *c_classname = SwigType_namestr(Getattr(n, "name"));
     String *c_baseclass = NULL;
     String *baseclass = NULL;
@@ -1467,7 +1468,7 @@ public:
             String *proxyclassname = SwigType_str(Getattr(n, "classtypeobj"), 0);
             String *baseclassname = SwigType_str(Getattr(base.item, "name"), 0);
             Swig_warning(WARN_CSHARP_MULTIPLE_INHERITANCE, input_file, line_number,
-                         "Warning for %s proxy: Base %s ignored. Multiple inheritance is not supported in C#.\n", proxyclassname, baseclassname);
+                         "Warning for %s proxy: Base %s ignored. Multiple inheritance is not supported in D.\n", proxyclassname, baseclassname);
             base = Next(base);
           }
         }
@@ -1493,63 +1494,31 @@ public:
     }
 
     // Pure C# interfaces
-    const String *pure_interfaces = typemapLookup(n, derived ? "csinterfaces_derived" : "csinterfaces", typemap_lookup_type, WARN_NONE);
-    // Start writing the proxy class
-    Printv(proxy_class_def, typemapLookup(n, "csimports", typemap_lookup_type, WARN_NONE),	// Import statements
-	   "\n", NIL);
+    const String *pure_interfaces = typemapLookup(n, derived ? "dinterfaces_derived" : "dinterfaces", typemap_lookup_type, WARN_NONE);
 
-    // Class attributes
-    const String *csattributes = typemapLookup(n, "csattributes", typemap_lookup_type, WARN_NONE);
-    if (csattributes && *Char(csattributes))
-      Printf(proxy_class_def, "%s\n", csattributes);
+    /*
+     * Start emitting the proxy class.
+     */
 
-    Printv(proxy_class_def, typemapLookup(n, "csclassmodifiers", typemap_lookup_type, WARN_CSHARP_TYPEMAP_CLASSMOD_UNDEF),	// Class modifiers
-	   " $csclassname",	// Class name and base class
-	   (*Char(wanted_base) || *Char(pure_interfaces)) ? " : " : "", wanted_base, (*Char(wanted_base) && *Char(pure_interfaces)) ?	// Interfaces
-	   ", " : "", pure_interfaces, " {", derived ? typemapLookup(n, "csbody_derived", typemap_lookup_type, WARN_CSHARP_TYPEMAP_CSBODY_UNDEF) :	// main body of class
-	   typemapLookup(n, "csbody", typemap_lookup_type, WARN_CSHARP_TYPEMAP_CSBODY_UNDEF),	// main body of class
-	   NIL);
+    // Import statements.
+    Printv(proxy_dmodule_imports,
+      typemapLookup(n, "dimports", typemap_lookup_type, WARN_NONE), "\n", NIL);
 
-    // C++ destructor is wrapped by the Dispose method
-    // Note that the method name is specified in a typemap attribute called methodname
-    String *destruct = NewString("");
-    const String *tm = NULL;
-    attributes = NewHash();
-    String *destruct_methodname = NULL;
-    String *destruct_methodmodifiers = NULL;
-    if (derived) {
-      tm = typemapLookup(n, "csdestruct_derived", typemap_lookup_type, WARN_NONE, attributes);
-      destruct_methodname = Getattr(attributes, "tmap:csdestruct_derived:methodname");
-      destruct_methodmodifiers = Getattr(attributes, "tmap:csdestruct_derived:methodmodifiers");
-    } else {
-      tm = typemapLookup(n, "csdestruct", typemap_lookup_type, WARN_NONE, attributes);
-      destruct_methodname = Getattr(attributes, "tmap:csdestruct:methodname");
-      destruct_methodmodifiers = Getattr(attributes, "tmap:csdestruct:methodmodifiers");
-    }
-    if (tm && *Char(tm)) {
-      if (!destruct_methodname) {
-	Swig_error(input_file, line_number, "No methodname attribute defined in csdestruct%s typemap for %s\n", (derived ? "_derived" : ""), proxy_class_name);
-      }
-      if (!destruct_methodmodifiers) {
-	Swig_error(input_file, line_number,
-		   "No methodmodifiers attribute defined in csdestruct%s typemap for %s.\n", (derived ? "_derived" : ""), proxy_class_name);
-      }
-    }
-    // Emit the Finalize and Dispose methods
-    if (tm) {
-      // Finalize method
-      if (*Char(destructor_call)) {
-	Printv(proxy_class_def, typemapLookup(n, "csfinalize", typemap_lookup_type, WARN_NONE), NIL);
-      }
-      // Dispose method
-      Printv(destruct, tm, NIL);
-      if (*Char(destructor_call))
-	Replaceall(destruct, "$imcall", destructor_call);
-      else
-	Replaceall(destruct, "$imcall", "throw new MethodAccessException(\"C++ destructor does not have public access\")");
-      if (*Char(destruct))
-	Printv(proxy_class_def, "\n  ", destruct_methodmodifiers, " ", derived ? "override" : "virtual", " void ", destruct_methodname, "() ", destruct, "\n",
-	       NIL);
+    // Class modifiers.
+    Printv(proxy_class_def, typemapLookup(n, "dclassmodifiers",
+      typemap_lookup_type, WARN_D_TYPEMAP_CLASSMOD_UNDEF), NIL);
+
+    Printv( proxy_class_def,
+      " $dclassname", // Class name and base class
+      (*Char(wanted_base) || *Char(pure_interfaces)) ? " : " : "", wanted_base, (*Char(wanted_base) && *Char(pure_interfaces)) ?	// Interfaces
+      ", " : "", pure_interfaces, " {", derived ? typemapLookup(n, "dbody_derived", typemap_lookup_type, WARN_D_TYPEMAP_DBODY_UNDEF) :	// main body of class
+      typemapLookup(n, "dbody", typemap_lookup_type, WARN_D_TYPEMAP_DBODY_UNDEF),	// main body of class
+      NIL);
+
+    // Destructor.
+    if (*Char(destructor_call)) {
+      Printv(proxy_class_def, typemapLookup(n, "ddestructor", typemap_lookup_type, WARN_NONE), NIL);
+      Replaceall(proxy_class_def, "$imcall", destructor_call);
     }
 
     if (feature_director) {
@@ -1630,16 +1599,13 @@ public:
       director_connect_parms = NULL;
     }
 
-    Delete(attributes);
-    Delete(destruct);
-
     // Emit extra user code
     Printv(proxy_class_def, typemapLookup(n, "cscode", typemap_lookup_type, WARN_NONE),	// extra C# code
 	   "\n", NIL);
 
     // Substitute various strings into the above template
-    Replaceall(proxy_class_code, "$csclassname", proxy_class_name);
-    Replaceall(proxy_class_def, "$csclassname", proxy_class_name);
+    Replaceall(proxy_class_code, "$dclassname", proxy_class_name);
+    Replaceall(proxy_class_def, "$dclassname", proxy_class_name);
 
     Replaceall(proxy_class_def, "$proxydmodule", proxy_dmodule_name);
     Replaceall(proxy_class_code, "$proxydmodule", proxy_dmodule_name);
@@ -1677,8 +1643,6 @@ public:
    * ---------------------------------------------------------------------- */
 
   virtual int classHandler(Node *n) {
-
-    File *f_proxy = NULL;
     if (proxy_flag) {
       proxy_class_name = NewString(Getattr(n, "sym:name"));
 
@@ -1695,21 +1659,6 @@ public:
 	SWIG_exit(EXIT_FAILURE);
       }
 
-      String *filen = NewStringf("%s%s.cs", SWIG_output_directory(), proxy_class_name);
-      f_proxy = NewFile(filen, "w", SWIG_output_files());
-      if (!f_proxy) {
-	FileErrorDisplay(filen);
-	SWIG_exit(EXIT_FAILURE);
-      }
-      Append(filenames_list, Copy(filen));
-      Delete(filen);
-      filen = NULL;
-
-      // Start writing out the proxy class file
-      emitBanner(f_proxy);
-
-      addOpenNamespace(namespce, f_proxy);
-
       Clear(proxy_class_def);
       Clear(proxy_class_code);
 
@@ -1720,8 +1669,7 @@ public:
     Language::classHandler(n);
 
     if (proxy_flag) {
-
-      emitProxyClassDefAndCPPCasts(n);
+      writeProxyClassAndUpcasts(n);
 
       Replaceall(proxy_class_def, "$proxydmodule", proxy_dmodule_name);
       Replaceall(proxy_class_code, "$proxydmodule", proxy_dmodule_name);
@@ -1733,16 +1681,13 @@ public:
       Replaceall(proxy_class_code, "$dllimport", wrap_library_name);
       Replaceall(proxy_class_constants_code, "$dllimport", wrap_library_name);
 
-      Printv(f_proxy, proxy_class_def, proxy_class_code, NIL);
+      // Write the accumulated proxy class code and the closing curly bracket.
+      Printv(proxy_dmodule_code, proxy_class_def, proxy_class_code, "}\n\n", NIL);
 
       // Write out all the constants
       if (Len(proxy_class_constants_code) != 0)
-	Printv(f_proxy, proxy_class_constants_code, NIL);
+	Printv(proxy_dmodule_code, proxy_class_constants_code, NIL);
 
-      Printf(f_proxy, "}\n");
-      addCloseNamespace(namespce, f_proxy);
-      Close(f_proxy);
-      f_proxy = NULL;
 
       /* Output the downcast method, if necessary. Note: There's no other really
          good place to put this code, since Abstract Base Classes (ABCs) can and should have
@@ -2173,7 +2118,7 @@ public:
 
     Language::constructorHandler(n);
 
-    // Wrappers not wanted for some methods where the parameters cannot be overloaded in C#
+    // Wrappers not wanted for some methods where the parameters cannot be overloaded in D.
     if (Getattr(n, "overload:ignore"))
       return SWIG_OK;
 
@@ -2301,10 +2246,10 @@ public:
       Printf(function_code, ")");
       Printf(helper_code, ")");
 
-      /* Insert the csconstruct typemap, doing the replacement for $directorconnect, as needed */
+      // Insert the dconstructor typemap (replacing $directorconnect as needed).
       Hash *attributes = NewHash();
-      String *construct_tm = Copy(typemapLookup(n, "csconstruct", Getattr(n, "name"),
-						WARN_CSHARP_TYPEMAP_CSCONSTRUCT_UNDEF, attributes));
+      String *construct_tm = Copy( typemapLookup( n, "dconstructor",
+	Getattr( n, "name" ), WARN_D_TYPEMAP_DCONSTRUCTOR_UNDEF, attributes ) );
       if (construct_tm) {
 	if (!feature_director) {
 	  Replaceall(construct_tm, "$directorconnect", "");
@@ -2323,7 +2268,7 @@ public:
 	Printv(function_code, " ", construct_tm, NIL);
       }
 
-      excodeSubstitute(n, function_code, "csconstruct", attributes);
+      excodeSubstitute(n, function_code, "dconstructor", attributes);
 
       bool is_pre_code = Len(pre_code) > 0;
       bool is_post_code = Len(post_code) > 0;
@@ -2669,7 +2614,7 @@ public:
     // The whole function code is now in stored tm (if there was a matching
     // type map, of course), so	 simply append it to the code buffer.
     Printf(function_code, " %s\n\n", tm ? (const String *) tm : empty_string);
-    Printv(proxy_functions_code, function_code, NIL);
+    Printv(proxy_dmodule_code, function_code, NIL);
 
     Delete(pre_code);
     Delete(post_code);
@@ -2783,9 +2728,9 @@ public:
   /* -----------------------------------------------------------------------------
    * substituteClassname()
    *
-   * Substitute the special variable $csclassname with the proxy class name for classes/structs/unions
+   * Substitute the special variable $dclassname with the proxy class name for classes/structs/unions
    * that SWIG knows about. Also substitutes enums with enum name.
-   * Otherwise use the $descriptor name for the C# class name. Note that the $&csclassname substitution
+   * Otherwise use the $descriptor name for the D class name. Note that the $&dclassname substitution
    * is the same as a $&descriptor substitution, ie one pointer added to descriptor name.
    * Inputs:
    *   pt - parameter type
@@ -2801,23 +2746,23 @@ public:
     SwigType *type = Copy(SwigType_typedef_resolve_all(pt));
     SwigType *strippedtype = SwigType_strip_qualifiers(type);
 
-    if (Strstr(tm, "$csclassname")) {
+    if (Strstr(tm, "$dclassname")) {
       SwigType *classnametype = Copy(strippedtype);
-      substituteClassnameSpecialVariable(classnametype, tm, "$csclassname");
+      substituteClassnameSpecialVariable(classnametype, tm, "$dclassname");
       substitution_performed = true;
       Delete(classnametype);
     }
-    if (Strstr(tm, "$*csclassname")) {
+    if (Strstr(tm, "$*dclassname")) {
       SwigType *classnametype = Copy(strippedtype);
       Delete(SwigType_pop(classnametype));
-      substituteClassnameSpecialVariable(classnametype, tm, "$*csclassname");
+      substituteClassnameSpecialVariable(classnametype, tm, "$*dclassname");
       substitution_performed = true;
       Delete(classnametype);
     }
-    if (Strstr(tm, "$&csclassname")) {
+    if (Strstr(tm, "$&dclassname")) {
       SwigType *classnametype = Copy(strippedtype);
       SwigType_add_pointer(classnametype);
-      substituteClassnameSpecialVariable(classnametype, tm, "$&csclassname");
+      substituteClassnameSpecialVariable(classnametype, tm, "$&dclassname");
       substitution_performed = true;
       Delete(classnametype);
     }
@@ -2918,10 +2863,10 @@ public:
 
     // Pure C# baseclass and interfaces
     const String *pure_baseclass = typemapLookup(n, "csbase", type, WARN_NONE);
-    const String *pure_interfaces = typemapLookup(n, "csinterfaces", type, WARN_NONE);
+    const String *pure_interfaces = typemapLookup(n, "dinterfaces", type, WARN_NONE);
 
     // Emit the class
-    Printv(swigtype, typemapLookup(n, "csimports", type, WARN_NONE),	// Import statements
+    Printv(swigtype, typemapLookup(n, "dimports", type, WARN_NONE),	// Import statements
 	   "\n", NIL);
 
     // Class attributes
@@ -2930,13 +2875,13 @@ public:
       Printf(swigtype, "%s\n", csattributes);
 
     Printv(swigtype, typemapLookup(n, "csclassmodifiers", type, WARN_CSHARP_TYPEMAP_CLASSMOD_UNDEF),	// Class modifiers
-	   " $csclassname",	// Class name and base class
+	   " $dclassname",	// Class name and base class
 	   (*Char(pure_baseclass) || *Char(pure_interfaces)) ? " : " : "", pure_baseclass, ((*Char(pure_baseclass)) && *Char(pure_interfaces)) ?	// Interfaces
-	   ", " : "", pure_interfaces, " {", typemapLookup(n, "csbody", type, WARN_CSHARP_TYPEMAP_CSBODY_UNDEF),	// main body of class
+	   ", " : "", pure_interfaces, " {", typemapLookup(n, "dbody", type, WARN_D_TYPEMAP_DBODY_UNDEF),	// main body of class
 	   typemapLookup(n, "cscode", type, WARN_NONE),	// extra C# code
 	   "}\n", NIL);
 
-    Replaceall(swigtype, "$csclassname", classname);
+    Replaceall(swigtype, "$dclassname", classname);
     Replaceall(swigtype, "$proxydmodule", proxy_dmodule_name);
     Replaceall(swigtype, "$wrapdmodule", wrap_dmodule_name);
     Replaceall(swigtype, "$dllimport", wrap_library_name);

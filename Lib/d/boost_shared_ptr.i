@@ -143,13 +143,13 @@
 
 %typemap(csvarout, excode=SWIGEXCODE2) CONST TYPE & %{
     get {
-      $csclassname ret = new $csclassname($imcall, true);$excode
+      $dclassname ret = new $dclassname($imcall, true);$excode
       return ret;
     } %}
 %typemap(csvarout, excode=SWIGEXCODE2) CONST TYPE * %{
     get {
       IntPtr cPtr = $imcall;
-      $csclassname ret = (cPtr == IntPtr.Zero) ? null : new $csclassname(cPtr, true);$excode
+      $dclassname ret = (cPtr == IntPtr.Zero) ? null : new $dclassname(cPtr, true);$excode
       return ret;
     } %}
 
@@ -172,12 +172,12 @@
   private HandleRef swigCPtr;
   private bool swigCMemOwnBase;
 
-  internal $csclassname(IntPtr cPtr, bool cMemoryOwn) {
+  internal $dclassname(IntPtr cPtr, bool cMemoryOwn) {
     swigCMemOwnBase = cMemoryOwn;
     swigCPtr = new HandleRef(this, cPtr);
   }
 
-  internal static HandleRef getCPtr($csclassname obj) {
+  internal static HandleRef getCPtr($dclassname obj) {
     return (obj == null) ? new HandleRef(null, IntPtr.Zero) : obj.swigCPtr;
   }
 %}
@@ -187,12 +187,12 @@
   private HandleRef swigCPtr;
   private bool swigCMemOwnDerived;
 
-  internal $csclassname(IntPtr cPtr, bool cMemoryOwn) : base($wrapdmodule.$csclassname_SWIGSharedPtrUpcast(cPtr), true) {
+  internal $dclassname(IntPtr cPtr, bool cMemoryOwn) : base($wrapdmodule.$dclassname_SWIGSharedPtrUpcast(cPtr), true) {
     swigCMemOwnDerived = cMemoryOwn;
     swigCPtr = new HandleRef(this, cPtr);
   }
 
-  internal static HandleRef getCPtr($csclassname obj) {
+  internal static HandleRef getCPtr($dclassname obj) {
     return (obj == null) ? new HandleRef(null, IntPtr.Zero) : obj.swigCPtr;
   }
 %}

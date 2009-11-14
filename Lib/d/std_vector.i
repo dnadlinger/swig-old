@@ -7,12 +7,12 @@
  * SWIG typemaps for std::vector<T>
  * C# implementation
  * The C# wrapper is made to look and feel like a C# System.Collections.Generic.List<> collection.
- * For .NET 1 compatibility, define SWIG_DOTNET_1 when compiling the C# code; then the C# wrapper is 
+ * For .NET 1 compatibility, define SWIG_DOTNET_1 when compiling the C# code; then the C# wrapper is
  * made to look and feel like a typesafe C# System.Collections.ArrayList.
  *
- * Note that IEnumerable<> is implemented in the proxy class which is useful for using LINQ with 
+ * Note that IEnumerable<> is implemented in the proxy class which is useful for using LINQ with
  * C++ std::vector wrappers. The IList<> interface is also implemented to provide enhanced functionality
- * whenever we are confident that the required C++ operator== is available. This is the case for when 
+ * whenever we are confident that the required C++ operator== is available. This is the case for when
  * T is a primitive type or a pointer. If T does define an operator==, then use the SWIG_STD_VECTOR_ENHANCED
  * macro to obtain this enhanced functionality, for example:
  *
@@ -29,9 +29,9 @@
 
 // MACRO for use within the std::vector class body
 %define SWIG_STD_VECTOR_MINIMUM_INTERNAL(CSINTERFACE, CONST_REFERENCE_TYPE, CTYPE...)
-%typemap(csinterfaces) std::vector<CTYPE > "IDisposable, System.Collections.IEnumerable\n#if !SWIG_DOTNET_1\n    , System.Collections.Generic.CSINTERFACE<$typemap(cstype, CTYPE)>\n#endif\n";
+%typemap(dinterfaces) std::vector<CTYPE > "IDisposable, System.Collections.IEnumerable\n#if !SWIG_DOTNET_1\n    , System.Collections.Generic.CSINTERFACE<$typemap(cstype, CTYPE)>\n#endif\n";
 %typemap(cscode) std::vector<CTYPE > %{
-  public $csclassname(System.Collections.ICollection c) : this() {
+  public $dclassname(System.Collections.ICollection c) : this() {
     if (c == null)
       throw new ArgumentNullException("c");
     foreach ($typemap(cstype, CTYPE) element in c) {
@@ -125,16 +125,16 @@
 
 #if !SWIG_DOTNET_1
   System.Collections.Generic.IEnumerator<$typemap(cstype, CTYPE)> System.Collections.Generic.IEnumerable<$typemap(cstype, CTYPE)>.GetEnumerator() {
-    return new $csclassnameEnumerator(this);
+    return new $dclassnameEnumerator(this);
   }
 #endif
 
   System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
-    return new $csclassnameEnumerator(this);
+    return new $dclassnameEnumerator(this);
   }
 
-  public $csclassnameEnumerator GetEnumerator() {
-    return new $csclassnameEnumerator(this);
+  public $dclassnameEnumerator GetEnumerator() {
+    return new $dclassnameEnumerator(this);
   }
 
   // Type-safe enumerator
@@ -142,17 +142,17 @@
   /// whenever the collection is modified. This has been done for changes in the size of the
   /// collection but not when one of the elements of the collection is modified as it is a bit
   /// tricky to detect unmanaged code that modifies the collection under our feet.
-  public sealed class $csclassnameEnumerator : System.Collections.IEnumerator
+  public sealed class $dclassnameEnumerator : System.Collections.IEnumerator
 #if !SWIG_DOTNET_1
     , System.Collections.Generic.IEnumerator<$typemap(cstype, CTYPE)>
 #endif
   {
-    private $csclassname collectionRef;
+    private $dclassname collectionRef;
     private int currentIndex;
     private object currentObject;
     private int currentSize;
 
-    public $csclassnameEnumerator($csclassname collection) {
+    public $dclassnameEnumerator($dclassname collection) {
       collectionRef = collection;
       currentIndex = -1;
       currentObject = null;

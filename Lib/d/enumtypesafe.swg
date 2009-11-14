@@ -12,18 +12,18 @@
 // const enum SWIGTYPE & typemaps
 %typemap(ctype) const enum SWIGTYPE & "int"
 %typemap(imtype) const enum SWIGTYPE & "int"
-%typemap(cstype) const enum SWIGTYPE & "$*csclassname"
+%typemap(cstype) const enum SWIGTYPE & "$*dclassname"
 
 %typemap(in) const enum SWIGTYPE & ($*1_ltype temp)
-%{ temp = ($*1_ltype)$input; 
+%{ temp = ($*1_ltype)$input;
    $1 = &temp; %}
 %typemap(out) const enum SWIGTYPE & %{ $result = *$1; %}
 
 %typemap(directorout,warning=SWIGWARN_TYPEMAP_THREAD_UNSAFE_MSG) const enum SWIGTYPE &
-%{ static $*1_ltype temp = ($*1_ltype)$input; 
+%{ static $*1_ltype temp = ($*1_ltype)$input;
    $result = &temp; %}
 %typemap(directorin) const enum SWIGTYPE &    "$input = $1_name;"
-%typemap(csdirectorin) const enum SWIGTYPE & "$*csclassname.swigToEnum($iminput)"
+%typemap(csdirectorin) const enum SWIGTYPE & "$*dclassname.swigToEnum($iminput)"
 %typemap(csdirectorout) const enum SWIGTYPE & "$cscall.swigValue"
 
 %typecheck(SWIG_TYPECHECK_POINTER) const enum SWIGTYPE & ""
@@ -35,13 +35,13 @@
 
 %typemap(csin) const enum SWIGTYPE & "$csinput.swigValue"
 %typemap(csout, excode=SWIGEXCODE) const enum SWIGTYPE & {
-    $*csclassname ret = $*csclassname.swigToEnum($imcall);$excode
+    $*dclassname ret = $*dclassname.swigToEnum($imcall);$excode
     return ret;
   }
 
 %typemap(csvarout, excode=SWIGEXCODE2) const enum SWIGTYPE & %{
     get {
-      $*csclassname ret = $*csclassname.swigToEnum($imcall);$excode
+      $*dclassname ret = $*dclassname.swigToEnum($imcall);$excode
       return ret;
     } %}
 
@@ -49,14 +49,14 @@
 // enum SWIGTYPE typemaps
 %typemap(ctype) enum SWIGTYPE "int"
 %typemap(imtype) enum SWIGTYPE "int"
-%typemap(cstype) enum SWIGTYPE "$csclassname"
+%typemap(cstype) enum SWIGTYPE "$dclassname"
 
 %typemap(in) enum SWIGTYPE %{ $1 = ($1_ltype)$input; %}
 %typemap(out) enum SWIGTYPE %{ $result = $1; %}
 
 %typemap(directorout) enum SWIGTYPE  %{ $result = ($1_ltype)$input; %}
 %typemap(directorin) enum SWIGTYPE    "$input = $1;"
-%typemap(csdirectorin) enum SWIGTYPE "$csclassname.swigToEnum($iminput)"
+%typemap(csdirectorin) enum SWIGTYPE "$dclassname.swigToEnum($iminput)"
 %typemap(csdirectorout) enum SWIGTYPE "$cscall.swigValue"
 
 %typecheck(SWIG_TYPECHECK_POINTER) enum SWIGTYPE ""
@@ -68,24 +68,24 @@
 
 %typemap(csin) enum SWIGTYPE "$csinput.swigValue"
 %typemap(csout, excode=SWIGEXCODE) enum SWIGTYPE {
-    $csclassname ret = $csclassname.swigToEnum($imcall);$excode
+    $dclassname ret = $dclassname.swigToEnum($imcall);$excode
     return ret;
   }
 
 %typemap(csvarout, excode=SWIGEXCODE2) enum SWIGTYPE %{
     get {
-      $csclassname ret = $csclassname.swigToEnum($imcall);$excode
+      $dclassname ret = $dclassname.swigToEnum($imcall);$excode
       return ret;
     } %}
 
 %typemap(csbase)           enum SWIGTYPE ""
 %typemap(csclassmodifiers) enum SWIGTYPE "public sealed class"
 %typemap(cscode)           enum SWIGTYPE ""
-%typemap(csimports)        enum SWIGTYPE ""
-%typemap(csinterfaces)     enum SWIGTYPE ""
+%typemap(dimports)        enum SWIGTYPE ""
+%typemap(dinterfaces)     enum SWIGTYPE ""
 
 /*
- * The swigToEnum method is used to find the C# enum from a C++ enum integer value. The default one here takes 
+ * The swigToEnum method is used to find the C# enum from a C++ enum integer value. The default one here takes
  * advantage of the fact that most enums do not have initial values specified, so the lookup is fast. If initial
  * values are specified then a lengthy linear search through all possible enums might occur. Specific typemaps could be
  * written to possibly optimise this lookup by taking advantage of characteristics peculiar to the targeted enum.
@@ -94,37 +94,37 @@
 %typemap(csbody) enum SWIGTYPE %{
   public readonly int swigValue;
 
-  public static $csclassname swigToEnum(int swigValue) {
+  public static $dclassname swigToEnum(int swigValue) {
     if (swigValue < swigValues.Length && swigValue >= 0 && swigValues[swigValue].swigValue == swigValue)
       return swigValues[swigValue];
     for (int i = 0; i < swigValues.Length; i++)
       if (swigValues[i].swigValue == swigValue)
         return swigValues[i];
-    throw new System.ArgumentOutOfRangeException("No enum $csclassname with value " + swigValue);
+    throw new System.ArgumentOutOfRangeException("No enum $dclassname with value " + swigValue);
   }
 
   public override string ToString() {
     return swigName;
   }
 
-  private $csclassname(string swigName) {
+  private $dclassname(string swigName) {
     this.swigName = swigName;
     this.swigValue = swigNext++;
   }
 
-  private $csclassname(string swigName, int swigValue) {
+  private $dclassname(string swigName, int swigValue) {
     this.swigName = swigName;
     this.swigValue = swigValue;
     swigNext = swigValue+1;
   }
 
-  private $csclassname(string swigName, $csclassname swigEnum) {
+  private $dclassname(string swigName, $dclassname swigEnum) {
     this.swigName = swigName;
     this.swigValue = swigEnum.swigValue;
     swigNext = this.swigValue+1;
   }
 
-  private static $csclassname[] swigValues = { $enumvalues };
+  private static $dclassname[] swigValues = { $enumvalues };
   private static int swigNext = 0;
   private readonly string swigName;
 %}

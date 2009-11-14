@@ -7,16 +7,16 @@
  * SWIG typemaps for std::map< K, T >
  *
  * The C# wrapper is made to look and feel like a C# System.Collections.Generic.IDictionary<>.
- * 
+ *
  * Using this wrapper is fairly simple. For example, to create a map from integers to doubles use:
  *
  *   %include <std_map.i>
  *   %template(MapIntDouble) std::map<int, double>
  *
  * Notes:
- * 1) For .NET 1 compatibility, define SWIG_DOTNET_1 when compiling the C# code. In this case 
+ * 1) For .NET 1 compatibility, define SWIG_DOTNET_1 when compiling the C# code. In this case
  *    the C# wrapper has only basic functionality.
- * 2) IEnumerable<> is implemented in the proxy class which is useful for using LINQ with 
+ * 2) IEnumerable<> is implemented in the proxy class which is useful for using LINQ with
  *    C++ std::map wrappers.
  *
  * Warning: heavy macro usage in this file. Use swig -E to get a sane view on the real file contents!
@@ -31,7 +31,7 @@
 /* K is the C++ key type, T is the C++ value type */
 %define SWIG_STD_MAP_INTERNAL(K, T)
 
-%typemap(csinterfaces) std::map< K, T > "IDisposable \n#if !SWIG_DOTNET_1\n    , System.Collections.Generic.IDictionary<$typemap(cstype, K), $typemap(cstype, T)>\n#endif\n";
+%typemap(dinterfaces) std::map< K, T > "IDisposable \n#if !SWIG_DOTNET_1\n    , System.Collections.Generic.IDictionary<$typemap(cstype, K), $typemap(cstype, T)>\n#endif\n";
 %typemap(cscode) std::map<K, T > %{
 
   public $typemap(cstype, T) this[$typemap(cstype, K) key] {
@@ -60,8 +60,8 @@
   }
 
   public bool IsReadOnly {
-    get { 
-      return false; 
+    get {
+      return false;
     }
   }
 
@@ -90,7 +90,7 @@
       return vals;
     }
   }
-  
+
   public void Add(System.Collections.Generic.KeyValuePair<$typemap(cstype, K), $typemap(cstype, T)> item) {
     Add(item.Key, item.Value);
   }
@@ -133,15 +133,15 @@
   }
 
   System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<$typemap(cstype, K), $typemap(cstype, T)>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<$typemap(cstype, K), $typemap(cstype, T)>>.GetEnumerator() {
-    return new $csclassnameEnumerator(this);
+    return new $dclassnameEnumerator(this);
   }
 
   System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
-    return new $csclassnameEnumerator(this);
+    return new $dclassnameEnumerator(this);
   }
 
-  public $csclassnameEnumerator GetEnumerator() {
-    return new $csclassnameEnumerator(this);
+  public $dclassnameEnumerator GetEnumerator() {
+    return new $dclassnameEnumerator(this);
   }
 
   // Type-safe enumerator
@@ -149,16 +149,16 @@
   /// whenever the collection is modified. This has been done for changes in the size of the
   /// collection but not when one of the elements of the collection is modified as it is a bit
   /// tricky to detect unmanaged code that modifies the collection under our feet.
-  public sealed class $csclassnameEnumerator : System.Collections.IEnumerator, 
+  public sealed class $dclassnameEnumerator : System.Collections.IEnumerator,
       System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<$typemap(cstype, K), $typemap(cstype, T)>>
   {
-    private $csclassname collectionRef;
+    private $dclassname collectionRef;
     private System.Collections.Generic.IList<$typemap(cstype, K)> keyCollection;
     private int currentIndex;
     private object currentObject;
     private int currentSize;
 
-    public $csclassnameEnumerator($csclassname collection) {
+    public $dclassnameEnumerator($dclassname collection) {
       collectionRef = collection;
       keyCollection = new System.Collections.Generic.List<$typemap(cstype, K)>(collection.Keys);
       currentIndex = -1;
@@ -213,7 +213,7 @@
     }
   }
 #endif
-  
+
 %}
 
   public:
@@ -257,7 +257,7 @@
         if (iter != $self->end()) {
           $self->erase(iter);
           return true;
-        }                
+        }
         return false;
       }
 
@@ -290,12 +290,12 @@
 %csmethodmodifiers std::map::get_next_key "private"
 
 // Default implementation
-namespace std {   
-  template<class K, class T> class map {    
+namespace std {
+  template<class K, class T> class map {
     SWIG_STD_MAP_INTERNAL(K, T)
   };
 }
- 
+
 
 // Legacy macros (deprecated)
 %define specialize_std_map_on_key(K,CHECK,CONVERT_FROM,CONVERT_TO)

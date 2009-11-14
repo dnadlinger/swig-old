@@ -16,12 +16,12 @@
 %typemap(cstype) const enum SWIGTYPE & "int"
 
 %typemap(in) const enum SWIGTYPE & ($*1_ltype temp)
-%{ temp = ($*1_ltype)$input; 
+%{ temp = ($*1_ltype)$input;
    $1 = &temp; %}
 %typemap(out) const enum SWIGTYPE & %{ $result = *$1; %}
 
 %typemap(directorout,warning=SWIGWARN_TYPEMAP_THREAD_UNSAFE_MSG) const enum SWIGTYPE &
-%{ static $*1_ltype temp = ($*1_ltype)$input; 
+%{ static $*1_ltype temp = ($*1_ltype)$input;
    $result = &temp; %}
 %typemap(directorin) const enum SWIGTYPE &    "$input = $1_name;"
 %typemap(csdirectorin) const enum SWIGTYPE & "$iminput"
@@ -83,7 +83,7 @@
 %typemap(csclassmodifiers) enum SWIGTYPE ""
 %typemap(cscode)           enum SWIGTYPE ""
 %typemap(csimports)        enum SWIGTYPE ""
-%typemap(csinterfaces)     enum SWIGTYPE ""
+%typemap(dinterfaces)     enum SWIGTYPE ""
 
 %typemap(csbody) enum SWIGTYPE ""
 
