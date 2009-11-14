@@ -1834,17 +1834,13 @@ public:
     const String *outattributes = Getattr(n, "tmap:cstype:outattributes");
     if (outattributes)
       Printf(function_code, "  %s\n", outattributes);
-    const String *csattributes = Getattr(n, "feature:cs:attributes");
-    if (csattributes)
-      Printf(function_code, "  %s\n", csattributes);
     const String *methodmods = Getattr(n, "feature:cs:methodmodifiers");
     if (methodmods) {
       if (is_smart_pointer()) {
-	// Smart pointer classes do not mirror the inheritance hierarchy of the underlying pointer type, so no virtual/override/new required.
+	// Smart pointer classes do not mirror the inheritance hierarchy of the
+	// underlying pointer type, so no override required.
 	String *mmods = Copy(methodmods);
 	Replaceall(mmods, "override", "");
-	Replaceall(mmods, "virtual", "");
-	Replaceall(mmods, "new", "");
 	Chop(mmods);		// remove trailing whitespace
 	Printf(function_code, "  %s ", mmods);
 	Delete(mmods);
@@ -1855,13 +1851,10 @@ public:
       methodmods = (is_public(n) ? public_string : protected_string);
       Printf(function_code, "  %s ", methodmods);
       if (!is_smart_pointer()) {
-	// Smart pointer classes do not mirror the inheritance hierarchy of the underlying pointer type, so no virtual/override/new required.
+	// Smart pointer classes do not mirror the inheritance hierarchy of the
+	// underlying pointer type, so no override required.
 	if (Getattr(n, "override"))
 	  Printf(function_code, "override ");
-	else if (checkAttribute(n, "storage", "virtual"))
-	  Printf(function_code, "virtual ");
-	if (Getattr(n, "hides"))
-	  Printf(function_code, "new ");
       }
     }
     if (static_flag)
