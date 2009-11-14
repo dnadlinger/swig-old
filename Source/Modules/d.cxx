@@ -1757,16 +1757,16 @@ public:
   }
 
 
-  /* -----------------------------------------------------------------------------
+  /* ---------------------------------------------------------------------------
    * writeProxyClassFunction()
    *
-   * Function called for creating a C# wrapper function around a c++ function in the
-   * proxy class. Used for both static and non-static C++ class functions.
-   * C++ class static functions map to C# static functions.
-   * Two extra attributes in the Node must be available. These are "proxyfuncname" -
-   * the name of the C# class proxy function, which in turn will call "imfuncname" -
-   * the intermediary (PInvoke) function name in the intermediary class.
-   * ----------------------------------------------------------------------------- */
+   * Creates a D proxy function for a C++ function in the wrapped class. Used
+   * for both static and non-static C++ class functions.
+   *
+   * The Node must contain two extra attributes.
+   *  - "proxyfuncname": The name of the D proxy function.
+   *  - "imfuncname": The corresponding function in the wrap D module.
+   * --------------------------------------------------------------------------- */
 
   void writeProxyClassFunction(Node *n) {
     SwigType *t = Getattr(n, "type");
@@ -1775,7 +1775,6 @@ public:
     String *proxy_function_name = Getattr(n, "proxyfuncname");
     String *tm;
     Parm *p;
-    Parm *last_parm = 0;
     int i;
     String *imcall = NewString("");
     String *return_type = NewString("");
@@ -1785,6 +1784,7 @@ public:
     String *post_code = NewString("");
     String *terminator_code = NewString("");
 
+    // RESEARCH: We shouldn't even get here then?
     if (!proxy_flag)
       return;
 
@@ -1825,10 +1825,9 @@ public:
     }
 
     if (wrapping_member_flag && !enum_constant_flag) {
-      // Properties
-      setter_flag = (Cmp(Getattr(n, "sym:name"), Swig_name_set(Swig_name_member(proxy_class_name, variable_name))) == 0);
-      if (setter_flag)
-        Swig_typemap_attach_parms("csvarin", l, NULL);
+      // Check if this is a setter method for a public member.
+      setter_flag = (Cmp(Getattr(n, "sym:name"),
+	Swig_name_set(Swig_name_member(proxy_class_name, variable_name))) == 0);
     }
 
     /* Start generating the proxy function */
@@ -1896,8 +1895,6 @@ public:
       if (!(variable_wrapper_flag && i == 0)) {
 	SwigType *pt = Getattr(p, "type");
 	String *param_type = NewString("");
-        if (setter_flag)
-          last_parm = p;
 
 	/* Get the C# parameter type */
 	if ((tm = Getattr(p, "tmap:cstype"))) {
@@ -2362,7 +2359,6 @@ public:
     ParmList *l = Getattr(n, "parms");
     String *tm;
     Parm *p;
-    Parm *last_parm = 0;
     int i;
     String *imcall = NewString("");
     String *return_type = NewString("");
@@ -2371,7 +2367,6 @@ public:
     int num_required = 0;
     String *overloaded_name = getOverloadedName(n);
     String *func_name = NULL;
-    bool setter_flag = false;
     String *pre_code = NewString("");
     String *post_code = NewString("");
     String *terminator_code = NewString("");
@@ -2402,10 +2397,6 @@ public:
     if (proxy_flag && global_variable_flag) {
       // RESEARCH: Is the Copy() needed here?
       func_name = Copy(variable_name);
-
-      // RESEARCH: What is this good for?
-      if (setter_flag)
-        Swig_typemap_attach_parms("csvarin", l, NULL);
     } else {
       func_name = Copy(Getattr(n, "sym:name"));
     }
@@ -2443,7 +2434,6 @@ public:
 
       SwigType *pt = Getattr(p, "type");
       String *param_type = NewString("");
-      last_parm = p;
 
       /* Get the C# parameter type */
       if ((tm = Getattr(p, "tmap:cstype"))) {
@@ -2727,7 +2717,7 @@ public:
     }
   }
 
-  /* -----------------------------------------------------------------------------
+  /* ---------------------------------------------------------------------------
    * makeParameterName()
    *
    * Inputs:
@@ -2737,7 +2727,7 @@ public:
    *   setter  - set this flag when wrapping variables
    * Return:
    *   arg - a unique parameter name
-   * ----------------------------------------------------------------------------- */
+   * --------------------------------------------------------------------------- */
 
   String *makeParameterName(Node *n, Parm *p, int arg_num, bool setter) {
 
@@ -2756,7 +2746,10 @@ public:
     arg = (!pn || (count > 1) || wrn) ? NewStringf("arg%d", arg_num) : Copy(pn);
 
     if (setter && Cmp(arg, "self") != 0) {
-      // Note that in C# properties, the input variable name is always called 'value'
+      // In theory, we could use the normal parameter name for setter functions.
+      // Unfortunately, it is set to "Class::VariableName" for static public
+      // members by the parser, which is not legal D syntax. Thus, we just force
+      // it to "value".
       Delete(arg);
       arg = NewString("value");
     }
