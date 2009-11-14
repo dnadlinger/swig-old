@@ -657,9 +657,12 @@ public:
     return SWIG_OK;
   }
 
-  /* ----------------------------------------------------------------------
+  /* ---------------------------------------------------------------------------
    * functionWrapper()
-   * ---------------------------------------------------------------------- */
+   *
+   * Generates the C wrapper code for a function and the corresponding
+   * declaration in the wrap D module.
+   * --------------------------------------------------------------------------- */
 
   virtual int functionWrapper(Node *n) {
     String *symname = Getattr(n, "sym:name");
@@ -682,12 +685,6 @@ public:
       if (!addSymbol(Getattr(n, "sym:name"), n))
 	return SWIG_ERROR;
     }
-
-    /*
-       The rest of this function deals with generating the intermediary class wrapper function (that wraps
-       a c/c++ function) and generating the PInvoke c code. Each C# wrapper function has a
-       matching PInvoke c function call.
-     */
 
     // A new wrapper function object
     Wrapper *f = NewWrapper();
@@ -742,7 +739,8 @@ public:
 	return SWIG_OK;
     }
 
-    // Emit a function pointer to the D wrap module.
+    // Collect the parameter list for the wrap D module declaration of the
+    // generated wrapper function.
     String *wrap_dmodule_parameters = NewString( "(" );
 
     /* Get number of required and total arguments */
@@ -928,10 +926,11 @@ public:
       }
     }
 
-    // Complete D wrapper function pointer and emit the corresponding binding code.
+    // Complete D wrapper parameter list and emit the declaration/binding code.
     Printv(wrap_dmodule_parameters, ")", NIL);
     writeWrapDModuleFunction( overloaded_name, im_return_type,
       wrap_dmodule_parameters, wname );
+    Delete( wrap_dmodule_parameters );
 
     // Finish C function header.
     Printf(f->def, ") {");
