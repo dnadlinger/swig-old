@@ -551,13 +551,18 @@
 %typemap(csin) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] "$dclassname.__swig_getCObject($csinput)"
 %typemap(csin) SWIGTYPE (CLASS::*) "$dclassname.getCMemberPtr($csinput)"
 
-/* The csout typemap is used for converting function return types from the return type
- * used in the PInvoke class to the type returned by the proxy, module or type wrapper class.
- * The $excode special variable is replaced by the excode typemap attribute code if the
- * method can throw any exceptions from unmanaged code, otherwise replaced by nothing. */
 
-// Macro used by the $excode special variable
+// The csout typemap is used for converting function return values from the
+// return type used in the wrap D module to the type returned by the proxy
+// function.
+// The $excode special variable is replaced by the excode typemap attribute code
+// if the method can throw any exceptions from unmanaged code, otherwise
+// replaced by nothing (not yet ported).
+
+// Code which is inserted via excode if exceptions can be thrown.
 %define SWIGEXCODE "\n    if ($wrapdmodule.SWIGPendingException.Pending) throw $wrapdmodule.SWIGPendingException.Retrieve();" %enddef
+
+// Indented version of the above.
 %define SWIGEXCODE2 "\n      if ($wrapdmodule.SWIGPendingException.Pending) throw $wrapdmodule.SWIGPendingException.Retrieve();" %enddef
 
 %typemap(csout, excode=SWIGEXCODE) bool,               const bool &               {
@@ -616,7 +621,7 @@
   double ret = $imcall;$excode
   return ret;
 }
-%typemap(csout, excode=SWIGEXCODE) long double,             const long double &   {
+%typemap(csout, excode=SWIGEXCODE) long double,        const long double &        {
   real ret = $imcall;$excode
   return ret;
 }
