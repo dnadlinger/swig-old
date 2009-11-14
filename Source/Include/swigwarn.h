@@ -272,7 +272,8 @@
 #define WARN_D_CANTHROW                  904
 #define WARN_D_NO_DIRECTORCONNECT_ATTR   905
 
-/* please leave 890-909 free for D */
+/* please leave 890-905 free for D */
+/* FIXME: Used defined warnings start at 900! */
 
 
 /* Feel free to claim any number in this space that's not currently being used. Just make sure you
