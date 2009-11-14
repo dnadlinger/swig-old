@@ -55,7 +55,7 @@ class D:public Language {
   String *proxy_class_constants_code;
   String *module_class_constants_code;
   String *enum_code;
-  String *dllimport;		// DllImport attribute name
+  String *wrap_library_name;		// The name of the library which contains the C wrapper (used for dynamic linking).
   String *namespce;		// Optional namespace name
   String *wrap_dmodule_imports;	//intermediary class imports from %pragma
   String *proxy_dmodule_imports;	//module imports from %pragma
@@ -69,6 +69,11 @@ class D:public Language {
   String *director_method_types;	// Director method types
   String *director_connect_parms;	// Director delegates parameter list for director connect call
   String *destructor_call;	//C++ destructor call if any
+
+  // Dynamic linking:
+  String *wrapper_loader_code;		// The D code which is inserted into the wrapper module if dynamic linking is used.
+  String *wrapper_loader_bind_command;	// The D code to bind a function pointer to a library symbol.
+  String *wrapper_loader_bind_code;	// The cumulated binding commands for the wrapper library.
 
   // Director method stuff:
   List *dmethods_seq;
@@ -126,7 +131,7 @@ public:
       proxy_class_constants_code(NULL),
       module_class_constants_code(NULL),
       enum_code(NULL),
-      dllimport(NULL),
+      wrap_library_name(NULL),
       namespce(NULL),
       wrap_dmodule_imports(NULL),
       proxy_dmodule_imports(NULL),
@@ -140,6 +145,9 @@ public:
       director_method_types(NULL),
       director_connect_parms(NULL),
       destructor_call(NULL),
+      wrapper_loader_code(NULL),
+      wrapper_loader_bind_command(NULL),
+      wrapper_loader_bind_code(NULL),
       dmethods_seq(NULL),
       dmethods_table(NULL),
       n_dmethods(0),
@@ -196,10 +204,10 @@ public:
     // Look for certain command line options
     for (int i = 1; i < argc; i++) {
       if (argv[i]) {
-	if (strcmp(argv[i], "-dllimport") == 0) {
+	if (strcmp(argv[i], "-wrapperlibrary") == 0) {
 	  if (argv[i + 1]) {
-	    dllimport = NewString("");
-	    Printf(dllimport, argv[i + 1]);
+	    wrap_library_name = NewString("");
+	    Printf(wrap_library_name, argv[i + 1]);
 	    Swig_mark_arg(i);
 	    Swig_mark_arg(i + 1);
 	    i++;
@@ -336,14 +344,17 @@ public:
     wrap_dmodule_cppcasts_code = NewString("");
     director_connect_parms = NewString("");
     upcasts_code = NewString("");
+    wrapper_loader_code = NewString("");
+    wrapper_loader_bind_command = NewString("");
+    wrapper_loader_bind_code = NewString("");
     dmethods_seq = NewList();
     dmethods_table = NewHash();
     n_dmethods = 0;
     n_directors = 0;
     if (!namespce)
       namespce = NewString("");
-    if (!dllimport)
-      dllimport = Copy(proxy_dmodule_name);
+    if (!wrap_library_name)
+      wrap_library_name = Copy(wrap_dmodule_name);
 
     Swig_banner(f_begin);
 
@@ -388,7 +399,7 @@ public:
     }
 
     // Generate the wrap D module.
-    // TODO: Add support for »dynamic« linking.
+    // TODO: Add support for »static« linking.
     {
       String *filen = NewStringf("%s%s.d", SWIG_output_directory(), wrap_dmodule_name);
       File *f_wrapd = NewFile(filen, "w", SWIG_output_files());
@@ -405,8 +416,12 @@ public:
 
       Printf(f_wrapd, "module %s;\n", wrap_dmodule_name);
 
-      if (wrap_dmodule_imports)
-	Printf(f_wrapd, "%s\n", wrap_dmodule_imports);
+      // RESEARCH: Can this actually be null?
+      Printv(f_wrapd, wrap_dmodule_imports, NIL);
+
+      Replaceall(wrapper_loader_code, "$wraplibrary", wrap_library_name);
+      Replaceall(wrapper_loader_code, "$wrapperloaderbindcode", wrapper_loader_bind_code);
+      Printf(f_wrapd, "%s\n", wrapper_loader_code);
 
       // Add the wrapper function declarations.
       Replaceall(wrap_dmodule_code, "$proxydmodule", proxy_dmodule_name);
@@ -512,6 +527,12 @@ public:
     wrap_dmodule_cppcasts_code = NULL;
     Delete(upcasts_code);
     upcasts_code = NULL;
+    Delete(wrapper_loader_code);
+    wrapper_loader_code = NULL;
+    Delete(wrapper_loader_bind_code);
+    wrapper_loader_bind_code = NULL;
+    Delete(wrapper_loader_bind_command);
+    wrapper_loader_bind_command = NULL;
     Delete(dmethods_seq);
     dmethods_seq = NULL;
     Delete(dmethods_table);
@@ -729,8 +750,8 @@ public:
     if (im_outattributes)
       Printf(wrap_dmodule_code, "  %s\n", im_outattributes);
 
-    Printf(wrap_dmodule_code, "extern( C ) %s %s(", im_return_type, overloaded_name);
-
+    // Emit a function pointer to the D wrap module.
+    Printf(wrap_dmodule_code, "extern( C ) %s function(", im_return_type);
 
     /* Get number of required and total arguments */
     num_arguments = emit_num_arguments(l);
@@ -915,10 +936,13 @@ public:
       }
     }
 
-    /* Finish C function and intermediary class function definitions */
-    Printf(wrap_dmodule_code, ")");
-    Printf(wrap_dmodule_code, ";\n");
+    // Complete D wrapper function pointer and emit the corresponding binding code.
+    Printf(wrap_dmodule_code, ") %s;\n", overloaded_name);
+    Printv(wrapper_loader_bind_code, wrapper_loader_bind_command, NIL);
+    Replaceall(wrapper_loader_bind_code, "$function", overloaded_name);
+    Replaceall(wrapper_loader_bind_code, "$symbol", wname);
 
+    // Finish C function header.
     Printf(f->def, ") {");
 
     if (!is_void_return)
@@ -1359,7 +1383,7 @@ public:
     String *code = Getattr(n, "code");
     Replaceall(code, "$proxydmodule", proxy_dmodule_name);
     Replaceall(code, "$wrapdmodule", wrap_dmodule_name);
-    Replaceall(code, "$dllimport", dllimport);
+    Replaceall(code, "$dllimport", wrap_library_name);
     return Language::insertDirective(n);
   }
 
@@ -1396,7 +1420,13 @@ public:
 	} else if (Strcmp(code, "proxydmoduleimports") == 0) {
 	  Delete(proxy_dmodule_imports);
 	  proxy_dmodule_imports = Copy(strvalue);
-	} else {
+	} else if (Strcmp(code, "wrapperloadercode") == 0) {
+	  Delete(wrapper_loader_code);
+	  wrapper_loader_code = Copy(strvalue);
+	} else if (Strcmp(code, "wrapperloaderbindcommand") == 0) {
+	  Delete(wrapper_loader_bind_command);
+	  wrapper_loader_bind_command = Copy(strvalue);
+	}else {
 	  Printf(stderr, "%s : Line %d. Unrecognized pragma.\n", input_file, line_number);
 	}
 	Delete(strvalue);
@@ -1627,12 +1657,12 @@ public:
     Replaceall(proxy_class_def, "$wrapdmodule", wrap_dmodule_name);
     Replaceall(proxy_class_code, "$wrapdmodule", wrap_dmodule_name);
 
-    Replaceall(proxy_class_def, "$dllimport", dllimport);
-    Replaceall(proxy_class_code, "$dllimport", dllimport);
+    Replaceall(proxy_class_def, "$dllimport", wrap_library_name);
+    Replaceall(proxy_class_code, "$dllimport", wrap_library_name);
 
     // Add code to do C++ casting to base class (only for classes in an inheritance hierarchy)
     if (derived) {
-      Printv(wrap_dmodule_cppcasts_code, "\n  [DllImport(\"", dllimport, "\", EntryPoint=\"D_", proxy_class_name, "Upcast", "\")]\n", NIL);
+      Printv(wrap_dmodule_cppcasts_code, "\n  [DllImport(\"", wrap_library_name, "\", EntryPoint=\"D_", proxy_class_name, "Upcast", "\")]\n", NIL);
       Printf(wrap_dmodule_cppcasts_code, "  public static extern IntPtr $csclassnameUpcast(IntPtr objectRef);\n");
 
       Replaceall(wrap_dmodule_cppcasts_code, "$csclassname", proxy_class_name);
@@ -1705,9 +1735,9 @@ public:
       Replaceall(proxy_class_def, "$wrapdmodule", wrap_dmodule_name);
       Replaceall(proxy_class_code, "$wrapdmodule", wrap_dmodule_name);
       Replaceall(proxy_class_constants_code, "$wrapdmodule", wrap_dmodule_name);
-      Replaceall(proxy_class_def, "$dllimport", dllimport);
-      Replaceall(proxy_class_code, "$dllimport", dllimport);
-      Replaceall(proxy_class_constants_code, "$dllimport", dllimport);
+      Replaceall(proxy_class_def, "$dllimport", wrap_library_name);
+      Replaceall(proxy_class_code, "$dllimport", wrap_library_name);
+      Replaceall(proxy_class_constants_code, "$dllimport", wrap_library_name);
 
       Printv(f_proxy, proxy_class_def, proxy_class_code, NIL);
 
@@ -2892,7 +2922,7 @@ public:
     Replaceall(swigtype, "$csclassname", classname);
     Replaceall(swigtype, "$proxydmodule", proxy_dmodule_name);
     Replaceall(swigtype, "$wrapdmodule", wrap_dmodule_name);
-    Replaceall(swigtype, "$dllimport", dllimport);
+    Replaceall(swigtype, "$dllimport", wrap_library_name);
 
     Printv(f_swigtype, swigtype, NIL);
 
@@ -3041,7 +3071,7 @@ public:
     String *sym_name = Getattr(n, "sym:name");
     Wrapper *code_wrap;
 
-    Printv(wrap_dmodule_code, "\n  [DllImport(\"", dllimport, "\", EntryPoint=\"D_", swig_director_connect, "\")]\n", NIL);
+    Printv(wrap_dmodule_code, "\n  [DllImport(\"", wrap_library_name, "\", EntryPoint=\"D_", swig_director_connect, "\")]\n", NIL);
     Printf(wrap_dmodule_code, "  public static extern void %s(HandleRef jarg1", swig_director_connect);
 
     code_wrap = NewWrapper();
@@ -3819,9 +3849,9 @@ extern "C" Language *swig_d(void) {
 
 const char *D::usage = (char *) "\
 D Options (available with -d)\n\
-     -dllimport <dl> - Override DllImport attribute name to <dl>\n\
-     -namespace <nm> - Generate wrappers into C# namespace <nm>\n\
-     -noproxy        - Generate the low-level functional interface instead\n\
-                       of proxy classes\n\
-     -oldvarnames    - old intermediary method names for variable wrappers\n\
+     -wrapperlibrary <wl> - Sets the name of the wrapper library to <wl>\n\
+     -namespace <nm>      - Generate wrappers into C# namespace <nm>\n\
+     -noproxy             - Generate the low-level functional interface instead\n\
+                            of proxy classes\n\
+     -oldvarnames         - old intermediary method names for variable wrappers\n\
 \n";

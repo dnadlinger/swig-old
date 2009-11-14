@@ -945,7 +945,6 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %}
 
 /* Some ANSI C typemaps */
-
 %apply unsigned long { size_t };
 %apply const unsigned long & { const size_t & };
 
@@ -954,6 +953,9 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 
 // Default enum handling
 %include <enums.swg>
+
+// Wrapper loader code for dynamically linking the C wrapper library from the D wrapper module.
+%include <wrapperloader.swg>
 
 /*
 // Alternative char * typemaps.
