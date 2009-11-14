@@ -710,7 +710,7 @@
 %}
 
 %typemap(ddestructor) SWIGTYPE %{
-  ~$dclassname() {
+  ~this() {
     synchronized( this ) {
       if ( __swig_cObject !is null ) {
         if ( __swig_ownCObject ) {
@@ -736,7 +736,7 @@
   private void* __swig_cObject;
   protected bool __swig_ownCObject;
 
-  protected $dclassname( void* cObject, bool ownCObject ) {
+  protected this( void* cObject, bool ownCObject ) {
     __swig_cObject = cObject;
     __swig_ownCObject = ownCObject;
   }
@@ -750,7 +750,7 @@
 %typemap(dbody_derived) SWIGTYPE %{
   private void* __swig_cObject;
 
-  protected $dclassname( void* cObject, bool ownCObject ) {
+  protected this( void* cObject, bool ownCObject ) {
     super( $wrapdmodule.$dclassnameUpcast( cObject ), ownCObject );
     __swig_cObject = cObject;
   }

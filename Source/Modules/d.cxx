@@ -2035,12 +2035,11 @@ public:
    * ---------------------------------------------------------------------- */
 
   virtual int constructorHandler(Node *n) {
-
     ParmList *l = Getattr(n, "parms");
     String *tm;
     Parm *p;
     int i;
-    String *function_code = NewString("");
+    String *proxy_constructor_code = NewString("");
     String *helper_code = NewString(""); // Holds code for the constructor helper method generated only when the csin typemap has code in the pre or post attributes
     String *helper_args = NewString("");
     String *pre_code = NewString("");
@@ -2060,12 +2059,7 @@ public:
       String *mangled_overname = Swig_name_construct(overloaded_name);
       String *imcall = NewString("");
 
-      const String *csattributes = Getattr(n, "feature:cs:attributes");
-      if (csattributes) {
-	Printf(function_code, "  %s\n", csattributes);
-	Printf(helper_code, "  %s\n", csattributes);
-      }
-      const String *methodmods = Getattr(n, "feature:cs:methodmodifiers");
+      const String *methodmods = Getattr(n, "feature:d:methodmodifiers");
       methodmods = methodmods ? methodmods : (is_public(n) ? public_string : protected_string);
 
       tm = Getattr(n, "tmap:imtype"); // typemaps were attached earlier to the node
@@ -2074,7 +2068,7 @@ public:
 	tm = imtypeout;
       Printf(im_return_type, "%s", tm);
 
-      Printf(function_code, "  %s %s(", methodmods, proxy_class_name);
+      Printf(proxy_constructor_code, "  %s this(", methodmods);
       Printf(helper_code, "  static private %s SwigConstruct%s(", im_return_type, proxy_class_name);
 
       Printv(imcall, wrap_dmodule_name, ".", mangled_overname, "(", NIL);
@@ -2159,11 +2153,11 @@ public:
 
 	/* Add parameter to proxy function */
 	if (gencomma) {
-	  Printf(function_code, ", ");
+	  Printf(proxy_constructor_code, ", ");
 	  Printf(helper_code, ", ");
 	  Printf(helper_args, ", ");
         }
-	Printf(function_code, "%s %s", param_type, arg);
+	Printf(proxy_constructor_code, "%s %s", param_type, arg);
 	Printf(helper_code, "%s %s", param_type, arg);
 	Printf(helper_args, "%s", cshin ? cshin : arg);
 	++gencomma;
@@ -2176,7 +2170,7 @@ public:
 
       Printf(imcall, ")");
 
-      Printf(function_code, ")");
+      Printf(proxy_constructor_code, ")");
       Printf(helper_code, ")");
 
       // Insert the dconstructor typemap (replacing $directorconnect as needed).
@@ -2198,10 +2192,10 @@ public:
 	  }
 	}
 
-	Printv(function_code, " ", construct_tm, NIL);
+	Printv(proxy_constructor_code, " ", construct_tm, NIL);
       }
 
-      excodeSubstitute(n, function_code, "dconstructor", attributes);
+      excodeSubstitute(n, proxy_constructor_code, "dconstructor", attributes);
 
       bool is_pre_code = Len(pre_code) > 0;
       bool is_post_code = Len(post_code) > 0;
@@ -2227,13 +2221,13 @@ public:
         if (im_outattributes)
           Printf(proxy_class_code, "  %s\n", im_outattributes);
         Printv(proxy_class_code, helper_code, "\n", NIL);
-        Replaceall(function_code, "$imcall", helper_name);
+        Replaceall(proxy_constructor_code, "$imcall", helper_name);
         Delete(helper_name);
       } else {
-        Replaceall(function_code, "$imcall", imcall);
+        Replaceall(proxy_constructor_code, "$imcall", imcall);
       }
 
-      Printv(proxy_class_code, function_code, "\n", NIL);
+      Printv(proxy_class_code, proxy_constructor_code, "\n", NIL);
 
       Delete(helper_args);
       Delete(im_return_type);
