@@ -79,7 +79,7 @@ Point *new_Point(int x, int y) {
 char * Point_print(Point *p) {
   static char buffer[256];
   if (p) {
-    sprintf(buffer,"(%d,%d)", p->x,p->y);
+    sprintf(buffer,"(%d, %d)", p->x,p->y);
   } else {
     sprintf(buffer,"null");
   }
