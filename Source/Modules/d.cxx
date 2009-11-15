@@ -83,8 +83,6 @@ class D:public Language {
   int first_class_dmethod;
   int curr_class_dmethod;
 
-  enum EnumFeature { SimpleEnum, TypeunsafeEnum, TypesafeEnum, ProperEnum };
-
   static Parm *NewParmFromNode(SwigType *type, const_String_or_char_ptr name, Node *n) {
     Parm *p = NewParm(type, name);
     Setfile(p, Getfile(n));
@@ -1031,109 +1029,62 @@ public:
     return ret;
   }
 
-  /* ----------------------------------------------------------------------
+  /* ---------------------------------------------------------------------------
    * enumDeclaration()
    *
-   * C/C++ enums can be mapped in one of 4 ways, depending on the cs:enum feature specified:
-   * 1) Simple enums - simple constant within the proxy class or module class
-   * 2) Typeunsafe enums - simple constant in a C# class (class named after the c++ enum name)
-   * 3) Typesafe enum - typesafe enum pattern (class named after the c++ enum name)
-   * 4) Proper enums - proper C# enum
-   * Anonymous enums always default to 1)
-   * ---------------------------------------------------------------------- */
+   * Wraps C/C++ enums as D enums.
+   * --------------------------------------------------------------------------- */
 
   virtual int enumDeclaration(Node *n) {
+    if (ImportMode)
+      return SWIG_OK;
 
-    if (!ImportMode) {
-      if (getCurrentClass() && (cplus_mode != PUBLIC))
-	return SWIG_NOWRAP;
+    if (getCurrentClass() && (cplus_mode != PUBLIC))
+      return SWIG_NOWRAP;
 
-      enum_code = NewString("");
-      String *symname = Getattr(n, "sym:name");
-      String *constants_code = (proxy_flag && is_wrapping_class())? proxy_class_constants_code : module_class_constants_code;
-      EnumFeature enum_feature = decodeEnumFeature(n);
-      String *typemap_lookup_type = Getattr(n, "name");
+    enum_code = NewString("");
+    String *symname = Getattr(n, "sym:name");
+    String *typemap_lookup_type = Getattr(n, "name");
 
-      if ((enum_feature != SimpleEnum) && symname && typemap_lookup_type) {
-	// Wrap (non-anonymous) C/C++ enum within a typesafe, typeunsafe or proper C# enum
+    // Pure D baseclass and interfaces.
+    const String *enummodifiers = typemapLookup(n, "dclassmodifiers", typemap_lookup_type, WARN_D_TYPEMAP_CLASSMOD_UNDEF);
 
-	// Pure C# baseclass and interfaces
-	const String *pure_baseclass = typemapLookup(n, "csbase", typemap_lookup_type, WARN_NONE);
-	const String *pure_interfaces = typemapLookup(n, "dinterfaces", typemap_lookup_type, WARN_NONE);
+    // Emit the enum
+    Printv(enum_code, enummodifiers, " ", symname, " {\n", NIL);
 
-	// Emit the enum
-	Printv(enum_code, typemapLookup(n, "csclassmodifiers", typemap_lookup_type, WARN_CSHARP_TYPEMAP_CLASSMOD_UNDEF),	// Class modifiers (enum modifiers really)
-	       " ", symname, (*Char(pure_baseclass) || *Char(pure_interfaces)) ? " : " : "", pure_baseclass, ((*Char(pure_baseclass)) && *Char(pure_interfaces)) ?	// Interfaces
-	       ", " : "", pure_interfaces, " {\n", NIL);
-      } else {
-	// Wrap C++ enum with integers - just indicate start of enum with a comment, no comment for anonymous enums of any sort
-	if (symname && !Getattr(n, "unnamedinstance"))
-	  Printf(constants_code, "  // %s \n", symname);
-      }
+    // Emit each enum item
+    Language::enumDeclaration(n);
 
-      // Emit each enum item
-      Language::enumDeclaration(n);
+    Printv(enum_code,
+      typemapLookup(n, "dcode", typemap_lookup_type, WARN_NONE), // Extra D code
+      "\n}", NIL);
 
-      if ((enum_feature != SimpleEnum) && symname && typemap_lookup_type) {
-	// Wrap (non-anonymous) C/C++ enum within a typesafe, typeunsafe or proper C# enum
-	// Finish the enum declaration
-	// Typemaps are used to generate the enum definition in a similar manner to proxy classes.
-	Printv(enum_code, (enum_feature == ProperEnum) ? "\n" : typemapLookup(n, "dbody", typemap_lookup_type, WARN_D_TYPEMAP_DBODY_UNDEF),	// main body of class
-	       typemapLookup(n, "cscode", typemap_lookup_type, WARN_NONE),	// extra C# code
-	       "}", NIL);
+    Replaceall(enum_code, "$dclassname", symname);
 
-	Replaceall(enum_code, "$dclassname", symname);
+    // Substitute $enumvalues - intended usage is for typesafe enums
+    if (Getattr(n, "enumvalues"))
+      Replaceall(enum_code, "$enumvalues", Getattr(n, "enumvalues"));
+    else
+      Replaceall(enum_code, "$enumvalues", "");
 
-	// Substitute $enumvalues - intended usage is for typesafe enums
-	if (Getattr(n, "enumvalues"))
-	  Replaceall(enum_code, "$enumvalues", Getattr(n, "enumvalues"));
-	else
-	  Replaceall(enum_code, "$enumvalues", "");
+    if (proxy_flag && is_wrapping_class()) {
+      // Enums defined within the C++ class are written into the proxy
+      // class.
 
-	if (proxy_flag && is_wrapping_class()) {
-	  // Enums defined within the C++ class are defined within the proxy class
+      // Add extra indentation
+      Replaceall(enum_code, "\n", "\n  ");
+      Replaceall(enum_code, "  \n", "\n");
 
-	  // Add extra indentation
-	  Replaceall(enum_code, "\n", "\n  ");
-	  Replaceall(enum_code, "  \n", "\n");
-
-	  Printv(proxy_class_constants_code, "  ", enum_code, "\n\n", NIL);
-	} else {
-	  // Global enums are defined in their own file
-	  String *filen = NewStringf("%s%s.cs", SWIG_output_directory(), symname);
-	  File *f_enum = NewFile(filen, "w", SWIG_output_files());
-	  if (!f_enum) {
-	    FileErrorDisplay(filen);
-	    SWIG_exit(EXIT_FAILURE);
-	  }
-	  Append(filenames_list, Copy(filen));
-	  Delete(filen);
-	  filen = NULL;
-
-	  // Start writing out the enum file
-	  emitBanner(f_enum);
-
-	  addOpenNamespace(namespce, f_enum);
-
-	  Printv(f_enum, typemapLookup(n, "dimports", typemap_lookup_type, WARN_NONE), // Import statements
-		 "\n", enum_code, "\n", NIL);
-
-	  addCloseNamespace(namespce, f_enum);
-
-	  Close(f_enum);
-	}
-      } else {
-	// Wrap C++ enum with simple constant
-	Printf(enum_code, "\n");
-	if (proxy_flag && is_wrapping_class())
-	  Printv(proxy_class_constants_code, enum_code, NIL);
-	else
-	  Printv(module_class_constants_code, enum_code, NIL);
-      }
-
-      Delete(enum_code);
-      enum_code = NULL;
+      Printv(proxy_class_constants_code, "  ", enum_code, "\n\n", NIL);
+    } else {
+      // Global enums are just written to the proxy module.
+      Printv( proxy_dmodule_imports,
+	typemapLookup(n, "dimports", typemap_lookup_type, WARN_NONE), NIL);
+      Printv( proxy_dmodule_code, enum_code, "\n", NIL);
     }
+
+    Delete(enum_code);
+    enum_code = NULL;
     return SWIG_OK;
   }
 
@@ -1150,8 +1101,6 @@ public:
     String *value = Getattr(n, "value");
     String *name = Getattr(n, "name");
     Node *parent = parentNode(n);
-    int unnamedinstance = GetFlag(parent, "unnamedinstance");
-    String *parent_name = Getattr(parent, "name");
     String *tmpValue;
 
     // Strange hack from parent method
@@ -1163,56 +1112,21 @@ public:
     Setattr(n, "value", tmpValue);
 
     {
-      EnumFeature enum_feature = decodeEnumFeature(parent);
+      // Wrap (non-anonymous) C/C++ enum with a proper C# enum
+      // Emit the enum item.
+      if (!GetFlag(n, "firstenumitem"))
+	Printf(enum_code, ",\n");
 
-      if ((enum_feature == ProperEnum) && parent_name && !unnamedinstance) {
-	// Wrap (non-anonymous) C/C++ enum with a proper C# enum
-	// Emit the enum item.
-	if (!GetFlag(n, "firstenumitem"))
-	  Printf(enum_code, ",\n");
+      Printf(enum_code, "  %s", symname);
 
-	Printf(enum_code, "  %s", symname);
+      // Check for the %csconstvalue feature
+      String *value = Getattr(n, "feature:cs:constvalue");
 
-	// Check for the %csconstvalue feature
-	String *value = Getattr(n, "feature:cs:constvalue");
-
-	// Note that the enum value must be a true constant and cannot be set from a PINVOKE call, thus no support for %csconst(0)
-	value = value ? value : Getattr(n, "enumvalue");
-	if (value) {
-	  Printf(enum_code, " = %s", value);
-	}
-      } else {
-	// Wrap C/C++ enums with constant integers or use the typesafe enum pattern
-	String *type = Getattr(n, "type"); /* should be int unless explicitly specified in a C++0x enum class */
-	SwigType *typemap_lookup_type = parent_name ? parent_name : type;
-	const String *tm = typemapLookup(n, "cstype", typemap_lookup_type, WARN_CSHARP_TYPEMAP_CSTYPE_UNDEF);
-
-	String *return_type = Copy(tm);
-        const String *methodmods = Getattr(n, "feature:cs:methodmodifiers");
-        methodmods = methodmods ? methodmods : (is_public(n) ? public_string : protected_string);
-
-	if ((enum_feature == TypesafeEnum) && parent_name && !unnamedinstance) {
-	  // Wrap (non-anonymous) enum using the typesafe enum pattern
-	  if (Getattr(n, "enumvalue")) {
-	    String *value = enumValue(n);
-	    Printf(enum_code, "  %s static readonly %s %s = new %s(\"%s\", %s);\n", methodmods, return_type, symname, return_type, symname, value);
-	    Delete(value);
-	  } else {
-	    Printf(enum_code, "  %s static readonly %s %s = new %s(\"%s\");\n", methodmods, return_type, symname, return_type, symname);
-	  }
-	} else {
-	  // Simple integer constants
-	  // Note these are always generated for anonymous enums, no matter what enum_feature is specified
-	  // Code generated is the same for SimpleEnum and TypeunsafeEnum -> the class it is generated into is determined later
-
-	  // The %csconst feature determines how the constant value is obtained
-	  int const_feature_flag = GetFlag(n, "feature:cs:const");
-
-	  const char *const_readonly = const_feature_flag ? "const" : "static readonly";
-	  String *value = enumValue(n);
-	  Printf(enum_code, "  %s %s %s %s = %s;\n", methodmods, const_readonly, return_type, symname, value);
-	  Delete(value);
-	}
+      // Note that in D, enum values must be compile-time constants. Thus,
+      // %csconst(0) is not supported.
+      value = value ? value : Getattr(n, "enumvalue");
+      if (value) {
+	Printf(enum_code, " = %s", value);
       }
 
       // Add the enum value to the comma separated list being constructed in the enum declaration.
@@ -1659,12 +1573,16 @@ public:
       Replaceall(proxy_class_code, "$dllimport", wrap_library_name);
       Replaceall(proxy_class_constants_code, "$dllimport", wrap_library_name);
 
-      // Write the accumulated proxy class code and the closing curly bracket.
-      Printv(proxy_dmodule_code, proxy_class_def, proxy_class_code, "}\n\n", NIL);
+      // Write the proxy class definition (the header part).
+      Printv(proxy_dmodule_code, proxy_class_def, NIL);
 
-      // Write out all the constants
+      // Write all constants and enumerations first to prevent forward reference
+      // errors.
       if (Len(proxy_class_constants_code) != 0)
 	Printv(proxy_dmodule_code, proxy_class_constants_code, NIL);
+
+      // Write the class code and the curly bracket closing the class definition.
+      Printv(proxy_dmodule_code, proxy_class_code, "}\n\n", NIL);
 
 
       /* Output the downcast method, if necessary. Note: There's no other really
@@ -2524,29 +2442,6 @@ public:
     (void)method;
     SwigType *type = Getattr(parm, "type");
     substituteClassname(type, tm);
-  }
-
-  /*----------------------------------------------------------------------
-   * decodeEnumFeature()
-   * Decode the possible enum features, which are one of:
-   *   %csenum(simple)
-   *   %csenum(typeunsafe) - default
-   *   %csenum(typesafe)
-   *   %csenum(proper)
-   *--------------------------------------------------------------------*/
-
-  EnumFeature decodeEnumFeature(Node *n) {
-    EnumFeature enum_feature = TypeunsafeEnum;
-    String *feature = Getattr(n, "feature:cs:enum");
-    if (feature) {
-      if (Cmp(feature, "simple") == 0)
-	enum_feature = SimpleEnum;
-      else if (Cmp(feature, "typesafe") == 0)
-	enum_feature = TypesafeEnum;
-      else if (Cmp(feature, "proper") == 0)
-	enum_feature = ProperEnum;
-    }
-    return enum_feature;
   }
 
   /* -----------------------------------------------------------------------
