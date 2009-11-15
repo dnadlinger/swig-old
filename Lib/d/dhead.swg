@@ -68,36 +68,36 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionCallbacks_$proxydmodule(
 %}
 
 %pragma(d) wrapdmoduleimports=%{
-  // Exception throwing support currently requires Tango, but there is no reason
-  // why it could not support Phobos.
-  import tango.core.Exception;
-  import tango.stdc.stringz : fromStringz;
+// Exception throwing support currently requires Tango, but there is no reason
+// why it could not support Phobos.
+import tango.core.Exception;
+static import tango.stdc.stringz;
 %}
 
 %pragma(d) wrapdmodulecode=%{
 private class SWIGExceptionHelper {
   static void setException(char* message) {
-    auto exception = new Exception(fromStringz(message));
+    auto exception = new Exception(tango.stdc.stringz.fromStringz(message));
     exception.next = SWIGPendingException.retrieve();
     SWIGPendingException.set(exception);
   }
   static void setIllegalArgumentException(char* message) {
-    auto exception = new IllegalArgumentException(fromStringz(message));
+    auto exception = new IllegalArgumentException(tango.stdc.stringz.fromStringz(message));
     exception.next = SWIGPendingException.retrieve();
     SWIGPendingException.set(exception);
   }
   static void setIllegalElementException(char* message) {
-    auto exception = new IllegalElementException(fromStringz(message));
+    auto exception = new IllegalElementException(tango.stdc.stringz.fromStringz(message));
     exception.next = SWIGPendingException.retrieve();
     SWIGPendingException.set(exception);
   }
   static void setIOException(char* message) {
-    auto exception = new IOException(fromStringz(message));
+    auto exception = new IOException(tango.stdc.stringz.fromStringz(message));
     exception.next = SWIGPendingException.retrieve();
     SWIGPendingException.set(exception);
   }
   static void setNoSuchElementException(char* message) {
-    auto exception = new NoSuchElementException(fromStringz(message));
+    auto exception = new NoSuchElementException(tango.stdc.stringz.fromStringz(message));
     exception.next = SWIGPendingException.retrieve();
     SWIGPendingException.set(exception);
   }
