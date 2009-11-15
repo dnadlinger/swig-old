@@ -859,6 +859,12 @@ static String *remove_block(Node *kw, const String *inputcode) {
 
 static Node *nscope = 0;
 static Node *nscope_inner = 0;
+
+/* Remove the scope prefix from cname and return the base name without the prefix.
+ * The scopes specified in the prefix are found, or created in the current namespace.
+ * So ultimately the scope is changed to that required for the base name.
+ * For example AA::BB::CC as input returns CC and creates the namespace AA then inner 
+ * namespace BB in the current scope. If no scope separator (::) in the input, then nothing happens! */
 static String *resolve_node_scope(String *cname) {
   Symtab *gscope = 0;
   nscope = 0;
@@ -1426,6 +1432,33 @@ static void default_arguments(Node *n) {
       function = 0;
     }
   }
+}
+
+/* -----------------------------------------------------------------------------
+ * nested_forward_declaration()
+ * 
+ * Treat the nested class/struct/union as a forward declaration until a proper 
+ * nested class solution is implemented.
+ * ----------------------------------------------------------------------------- */
+
+static Node *nested_forward_declaration(const char *kind, const char *name) {
+  Node *n = new_node("classforward");
+  Setfile(n,cparse_file);
+  Setline(n,cparse_line);
+  Setattr(n,"kind", kind);
+  Setattr(n,"name", name);
+  Setattr(n,"sym:weak", "1");
+  add_symbols(n);
+
+  if (GetFlag(n, "feature:nestedworkaround")) {
+    Swig_symbol_remove(n);
+    n = 0;
+  } else {
+    SWIG_WARN_NODE_BEGIN(n);
+    Swig_warning(WARN_PARSE_NAMED_NESTED_CLASS, cparse_file, cparse_line,"Nested %s not currently supported (%s ignored)\n", kind, name);
+    SWIG_WARN_NODE_END(n);
+  }
+  return n;
 }
 
 /* -----------------------------------------------------------------------------
@@ -2821,10 +2854,10 @@ template_directive: SWIGTEMPLATE LPAREN idstringopt RPAREN idcolonnt LESSTHAN va
                               Swig_symbol_setscope(csyms);
                             }
 
-                            /* Merge in addmethods for this class */
+                            /* Merge in %extend methods for this class */
 
 			    /* !!! This may be broken.  We may have to add the
-			       addmethods at the beginning of the class */
+			       %extend methods at the beginning of the class */
 
                             if (extendhash) {
                               String *stmp = 0;
@@ -2932,7 +2965,7 @@ c_declaration   : c_decl {
 		    appendChild($$,n);
 		    while (n) {
 		      SwigType *decl = Getattr(n,"decl");
-		      if (SwigType_isfunction(decl)) {
+		      if (SwigType_isfunction(decl) && Strcmp(Getattr(n, "storage"), "typedef") != 0) {
 			Setattr(n,"storage","externc");
 		      }
 		      n = nextSibling(n);
@@ -3645,12 +3678,30 @@ cpp_template_decl : TEMPLATE LESSTHAN template_parms GREATERTHAN {
 		    if (nested_template <= 1) {
 		      int is_nested_template_class = $6 && GetFlag($6, "nestedtemplateclass");
 		      if (is_nested_template_class) {
+			$$ = 0;
 			/* Nested template classes would probably better be ignored like ordinary nested classes using cpp_nested, but that introduces shift/reduce conflicts */
 			if (cplus_mode == CPLUS_PUBLIC) {
-			  Swig_warning(WARN_PARSE_NESTED_CLASS, cparse_file, cparse_line, "Nested template %s not currently supported (%s ignored)\n", Getattr($6, "kind"), Getattr($6, "name"));
+			  /* Treat the nested class/struct/union as a forward declaration until a proper nested class solution is implemented */
+			  String *kind = Getattr($6, "kind");
+			  String *name = Getattr($6, "name");
+			  $$ = new_node("template");
+			  Setattr($$,"kind",kind);
+			  Setattr($$,"name",name);
+			  Setattr($$,"sym:weak", "1");
+			  Setattr($$,"templatetype","classforward");
+			  Setattr($$,"templateparms", $3);
+			  add_symbols($$);
+
+			  if (GetFlag($$, "feature:nestedworkaround")) {
+			    Swig_symbol_remove($$);
+			    $$ = 0;
+			  } else {
+			    SWIG_WARN_NODE_BEGIN($$);
+			    Swig_warning(WARN_PARSE_NAMED_NESTED_CLASS, cparse_file, cparse_line, "Nested template %s not currently supported (%s ignored).\n", kind, name);
+			    SWIG_WARN_NODE_END($$);
+			  }
 			}
 			Delete($6);
-			$$ = 0;
 		      } else {
 			String *tname = 0;
 			int     error = 0;
@@ -4381,21 +4432,7 @@ cpp_nested :   storage_class cpptype ID LBRACE { cparse_start_line = cparse_line
 	        $$ = 0;
 		if (cplus_mode == CPLUS_PUBLIC) {
 		  if (cparse_cplusplus) {
-		    /* Treat the nested class/struct/union as a forward declaration until a proper nested class solution is implemented */
-		    $$ = new_node("classforward");
-		    Setfile($$,cparse_file);
-		    Setline($$,cparse_line);
-		    Setattr($$,"kind",$2);
-		    Setattr($$,"name",$3);
-		    Setattr($$,"sym:weak", "1");
-		    add_symbols($$);
-
-		    if (GetFlag($$, "feature:nestedworkaround")) {
-		      Swig_symbol_remove($$);
-		      $$ = 0;
-		    } else {
-		      Swig_warning(WARN_PARSE_NESTED_CLASS, cparse_file, cparse_line, "Nested %s not currently supported (%s ignored).\n", $2, $3);
-		    }
+		    $$ = nested_forward_declaration($2, $3);
 		  } else if ($6.id) {
 		    /* Generate some code for a new struct */
 		    Nested *n = (Nested *) malloc(sizeof(Nested));
@@ -4421,21 +4458,7 @@ cpp_nested :   storage_class cpptype ID LBRACE { cparse_start_line = cparse_line
 		if (cplus_mode == CPLUS_PUBLIC) {
 		  if ($5.id) {
 		    if (cparse_cplusplus) {
-		      /* Treat the nested class/struct/union as a forward declaration until a proper nested class solution is implemented */
-		      $$ = new_node("classforward");
-		      Setfile($$,cparse_file);
-		      Setline($$,cparse_line);
-		      Setattr($$,"kind",$2);
-		      Setattr($$,"name",$5.id);
-		      Setattr($$,"sym:weak", "1");
-		      add_symbols($$);
-
-		      if (GetFlag($$, "feature:nestedworkaround")) {
-			Swig_symbol_remove($$);
-			$$ = 0;
-		      } else {
-			Swig_warning(WARN_PARSE_NESTED_CLASS, cparse_file, cparse_line,"Nested %s not currently supported (%s ignored)\n", $2, $5.id);
-		      }
+		      $$ = nested_forward_declaration($2, $5.id);
 		    } else {
 		      /* Generate some code for a new struct */
 		      Nested *n = (Nested *) malloc(sizeof(Nested));
@@ -4451,21 +4474,19 @@ cpp_nested :   storage_class cpptype ID LBRACE { cparse_start_line = cparse_line
 		      add_nested(n);
 		    }
 		  } else {
-		    Swig_warning(WARN_PARSE_NESTED_CLASS, cparse_file, cparse_line, "Nested %s not currently supported (ignored).\n", $2);
+		    Swig_warning(WARN_PARSE_UNNAMED_NESTED_CLASS, cparse_file, cparse_line, "Nested %s not currently supported (ignored).\n", $2);
 		  }
 		}
 	      }
 
-/* A  'class name : base_list { };'  declaration, always ignored */
-/*****
-     This fixes derived_nested.i, but it adds one shift/reduce. Anyway,
-     we are waiting for the nested class support.
- *****/
+/* class name : base_list { };  declaration */
+/* This adds one shift/reduce. */
+
               | storage_class cpptype idcolon COLON base_list LBRACE { cparse_start_line = cparse_line; skip_balanced('{','}');
-              } SEMI {
+              } cpp_opt_declarators {
 	        $$ = 0;
 		if (cplus_mode == CPLUS_PUBLIC) {
-		  Swig_warning(WARN_PARSE_NESTED_CLASS, cparse_file, cparse_line,"Nested %s not currently supported (%s ignored)\n", $2, $3);
+		  $$ = nested_forward_declaration($2, $3);
 		}
 	      }
 
@@ -4475,7 +4496,7 @@ cpp_nested :   storage_class cpptype ID LBRACE { cparse_start_line = cparse_line
               } SEMI {
 	        $$ = 0;
 		if (cplus_mode == CPLUS_PUBLIC) {
-		  Swig_warning(WARN_PARSE_NESTED_CLASS, cparse_file, cparse_line,"Nested %s not currently supported (%s ignored)\n", $5, $6);
+		  Swig_warning(WARN_PARSE_NAMED_NESTED_CLASS, cparse_file, cparse_line,"Nested %s not currently supported (%s ignored)\n", $5, $6);
 		}
 	      }
 */

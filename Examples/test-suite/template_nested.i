@@ -2,7 +2,23 @@
 
 // Test nested templates - that is template classes and template methods within a class.
 
-#pragma SWIG nowarn=SWIGWARN_PARSE_NESTED_CLASS
+%warnfilter(SWIGWARN_PARSE_NAMED_NESTED_CLASS) ns::OuterClass::Inner1;
+%warnfilter(SWIGWARN_PARSE_NAMED_NESTED_CLASS) ns::OuterClass::Inner2;
+%warnfilter(SWIGWARN_PARSE_NAMED_NESTED_CLASS) ns::OuterTemplate::NestedInnerTemplate1;
+%warnfilter(SWIGWARN_PARSE_NAMED_NESTED_CLASS) ns::OuterTemplate::NestedInnerTemplate2;
+%warnfilter(SWIGWARN_PARSE_NAMED_NESTED_CLASS) ns::OuterTemplate::NestedInnerTemplate3;
+%warnfilter(SWIGWARN_PARSE_NAMED_NESTED_CLASS) ns::OuterTemplate::NestedStruct;
+
+namespace ns {
+template <class T> struct ForwardTemplate;
+}
+%{
+namespace ns {
+  template <class T> struct ForwardTemplate {
+    void tmethod(T t) {}
+  };
+}
+%}
 
 %inline %{
 
@@ -33,6 +49,7 @@ namespace ns {
         void method1(Y y) {}
       };
     };
+    Inner1<int> useInner1(const Inner1<int>& inner) { return inner; }
 
     template <class Z> void InnerTMethod(Z z) {}
 
@@ -52,6 +69,7 @@ namespace ns {
         void method1(Y y) {}
       };
     };
+    Inner2<int> useInner2(const Inner2<int>& inner) { return inner; }
     int iii;
   };
   struct ABC {
@@ -74,10 +92,17 @@ namespace ns {
       void hohum() {}
     };
     UU hohum(UU u) { return u; }
+    template <typename VV> struct NestedInnerTemplate3 : public NestedInnerTemplate2<VV> {
+      void hohum() {}
+    };
     struct NestedStruct {
       NestedStruct() {}
       void hohum() {}
     };
+    NestedInnerTemplate1<short> useNestedInnerTemplate1(const NestedInnerTemplate1<short>& inner) { return inner; }
+    NestedInnerTemplate2<short> useNestedInnerTemplate2(const NestedInnerTemplate2<short>& inner) { return inner; }
+    NestedInnerTemplate3<short> useNestedInnerTemplate3(const NestedInnerTemplate3<short>& inner) { return inner; }
+    NestedStruct useNestedStruct(const NestedStruct& inner) { return inner; }
   };
 }
 
