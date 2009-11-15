@@ -1080,7 +1080,7 @@ public:
       // Global enums are just written to the proxy module.
       Printv( proxy_dmodule_imports,
 	typemapLookup(n, "dimports", typemap_lookup_type, WARN_NONE), NIL);
-      Printv( proxy_dmodule_code, enum_code, "\n", NIL);
+      Printv( proxy_dmodule_code, enum_code, "\n\n", NIL);
     }
 
     Delete(enum_code);
@@ -1919,8 +1919,13 @@ public:
 
     // The whole function code is now in stored tm (if there was a matching
     // type map, of course), so simply append it to the code buffer.
-    Printf(function_code, " %s\n\n", tm ? (const String *) tm : empty_string);
-    Printv(proxy_class_code, function_code, NIL);
+    Printv(function_code, tm, NIL);
+
+    // Add extra indentation
+    Replaceall(function_code, "\n", "\n  ");
+
+    // Write function code buffer to the class code.
+    Printv(proxy_class_code, function_code, "\n\n", NIL);
 
     Delete(pre_code);
     Delete(post_code);
