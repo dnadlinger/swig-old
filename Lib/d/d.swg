@@ -201,9 +201,9 @@
 
 /* char * - treat as String */
 %typemap(in) char * %{ $1 = ($1_ltype)$input; %}
-%typemap(out) char * %{ $result = SWIG_csharp_string_callback((const char *)$1); %}
+%typemap(out) char * %{ $result = SWIG_d_string_callback((const char *)$1); %}
 %typemap(directorout, warning=SWIGWARN_TYPEMAP_DIRECTOROUT_PTR_MSG) char * %{ $result = ($1_ltype)$input; %}
-%typemap(directorin) char * %{ $input = SWIG_csharp_string_callback((const char *)$1); %}
+%typemap(directorin) char * %{ $input = SWIG_d_string_callback((const char *)$1); %}
 %typemap(csdirectorin) char * "$iminput"
 %typemap(csdirectorout) char * "$cscall"
 
@@ -212,7 +212,7 @@
   temp = ($*1_ltype)$input;
   $1 = &temp;
 %}
-%typemap(out) char *& %{ if ($1) $result = SWIG_csharp_string_callback((const char *)*$1); %}
+%typemap(out) char *& %{ if ($1) $result = SWIG_d_string_callback((const char *)*$1); %}
 
 %typemap(out, null="") void ""
 %typemap(csdirectorin) void "$iminput"
@@ -327,14 +327,14 @@
 %typemap(in, canthrow=1) SWIGTYPE ($&1_type argp)
 %{ argp = ($&1_ltype)$input;
    if (!argp) {
-     SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "Attempt to dereference null $1_type", 0);
+     SWIG_DSetPendingException(SWIG_DIllegalArgumentException, "Attempt to dereference null $1_type");
      return $null;
    }
    $1 = *argp; %}
 
 %typemap(directorout) SWIGTYPE
 %{ if (!$input) {
-     SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "Unexpected null return for type $1_type", 0);
+     SWIG_DSetPendingException(SWIG_DIllegalArgumentException, "Unexpected null return for type $1_type");
      return $null;
    }
    $result = *($&1_ltype)$input; %}
@@ -362,7 +362,7 @@
 %}
 %typemap(in, canthrow=1) SWIGTYPE & %{ $1 = ($1_ltype)$input;
   if (!$1) {
-    SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "$1_type type is null", 0);
+    SWIG_DSetPendingException(SWIG_DIllegalArgumentException, "$1_type type is null");
     return $null;
   } %}
 %typemap(out) SWIGTYPE * %{ $result = (void *)$1; %}
@@ -370,7 +370,7 @@
   char buf[128];
   char *data = SWIG_PackData(buf, (void *)&$1, sizeof($1));
   *data = '\0';
-  $result = SWIG_csharp_string_callback(buf);
+  $result = SWIG_d_string_callback(buf);
 %}
 %typemap(out) SWIGTYPE & %{ $result = (void *)$1; %}
 
@@ -386,7 +386,7 @@
 
 %typemap(directorout, warning=SWIGWARN_TYPEMAP_DIRECTOROUT_PTR_MSG) SWIGTYPE &
 %{ if (!$input) {
-     SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "Unexpected null return for type $1_type", 0);
+     SWIG_DSetPendingException(SWIG_DIllegalArgumentException, "Unexpected null return for type $1_type");
      return $null;
    }
    $result = ($1_ltype)$input; %}
@@ -403,10 +403,10 @@
 
 // Char arrays (yet to be ported to D).
 %typemap(in) char[ANY], char[] %{ $1 = ($1_ltype)$input; %}
-%typemap(out) char[ANY], char[] %{ $result = SWIG_csharp_string_callback((const char *)$1); %}
+%typemap(out) char[ANY], char[] %{ $result = SWIG_d_string_callback((const char *)$1); %}
 
 %typemap(directorout) char[ANY], char[] %{ $result = ($1_ltype)$input; %}
-%typemap(directorin) char[ANY], char[] %{ $input = SWIG_csharp_string_callback((const char *)$1); %}
+%typemap(directorin) char[ANY], char[] %{ $input = SWIG_d_string_callback((const char *)$1); %}
 
 %typemap(csdirectorin) char[ANY], char[] "$iminput"
 %typemap(csdirectorout) char[ANY], char[] "$cscall"
@@ -512,16 +512,16 @@
                  unsigned short
 %{ char error_msg[256];
    sprintf(error_msg, "C++ $1_type exception thrown, value: %d", $1);
-   SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException, error_msg);
+   SWIG_DSetPendingException(SWIG_DException, error_msg);
    return $null; %}
 
 %typemap(throws, canthrow=1) SWIGTYPE, SWIGTYPE &, SWIGTYPE *, SWIGTYPE [ANY]
 %{ (void)$1;
-   SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException, "C++ $1_type exception thrown");
+   SWIG_DSetPendingException(SWIG_DException, "C++ $1_type exception thrown");
    return $null; %}
 
 %typemap(throws, canthrow=1) char *
-%{ SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException, $1);
+%{ SWIG_DSetPendingException(SWIG_DException, $1);
    return $null; %}
 
 
@@ -560,10 +560,10 @@
 // replaced by nothing (not yet ported).
 
 // Code which is inserted via excode if exceptions can be thrown.
-%define SWIGEXCODE "\n    if ($wrapdmodule.SWIGPendingException.Pending) throw $wrapdmodule.SWIGPendingException.Retrieve();" %enddef
+%define SWIGEXCODE "\n    if ($wrapdmodule.SWIGPendingException.isPending) throw $wrapdmodule.SWIGPendingException.retrieve();" %enddef
 
 // Indented version of the above.
-%define SWIGEXCODE2 "\n      if ($wrapdmodule.SWIGPendingException.Pending) throw $wrapdmodule.SWIGPendingException.Retrieve();" %enddef
+%define SWIGEXCODE2 "\n      if ($wrapdmodule.SWIGPendingException.isPending) throw $wrapdmodule.SWIGPendingException.retrieve();" %enddef
 
 %typemap(csout, excode=SWIGEXCODE) bool,               const bool &               {
   bool ret = $imcall;$excode

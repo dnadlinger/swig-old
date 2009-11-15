@@ -15,7 +15,7 @@
 %typemap(in, canthrow=1) CONST TYPE ($&1_type argp = 0) %{
   argp = ((SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *)$input) ? ((SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *)$input)->get() : 0;
   if (!argp) {
-    SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "Attempt to dereference null $1_type", 0);
+    SWIG_DSetPendingExceptionArgument(SWIG_DIllegalArgumentException, "Attempt to dereference null $1_type", 0);
     return $null;
   }
   $1 = *argp; %}
@@ -34,7 +34,7 @@
 %typemap(in, canthrow=1) CONST TYPE & %{
   $1 = ($1_ltype)(((SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *)$input) ? ((SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *)$input)->get() : 0);
   if (!$1) {
-    SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "$1_type reference is null", 0);
+    SWIG_DSetPendingExceptionArgument(SWIG_DIllegalArgumentException, "$1_type reference is null", 0);
     return $null;
   } %}
 %typemap(out, fragment="SWIG_null_deleter") CONST TYPE &

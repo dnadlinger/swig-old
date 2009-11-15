@@ -7,17 +7,17 @@
  * Typemaps for the wchar_t type
  * These are mapped to a C# String and are passed around by value.
  *
- * Support code for wide strings can be turned off by defining SWIG_CSHARP_NO_WSTRING_HELPER
+ * Support code for wide strings can be turned off by defining SWIG_D_NO_WSTRING_HELPER
  *
  * ----------------------------------------------------------------------------- */
 
-#if !defined(SWIG_CSHARP_NO_WSTRING_HELPER)
-#if !defined(SWIG_CSHARP_WSTRING_HELPER_)
-#define SWIG_CSHARP_WSTRING_HELPER_
+#if !defined(SWIG_D_NO_WSTRING_HELPER)
+#if !defined(SWIG_D_WSTRING_HELPER_)
+#define SWIG_D_WSTRING_HELPER_
 %insert(runtime) %{
 /* Callback for returning strings to C# without leaking memory */
-typedef void * (SWIGSTDCALL* SWIG_CSharpWStringHelperCallback)(const wchar_t *);
-static SWIG_CSharpWStringHelperCallback SWIG_csharp_wstring_callback = NULL;
+typedef void * (SWIGSTDCALL* SWIG_DWStringHelperCallback)(const wchar_t *);
+static SWIG_DWStringHelperCallback SWIG_d_wstring_callback = NULL;
 %}
 
 %pragma(d) wrapdmodulecode=%{
@@ -45,12 +45,12 @@ static SWIG_CSharpWStringHelperCallback SWIG_csharp_wstring_callback = NULL;
 #ifdef __cplusplus
 extern "C"
 #endif
-SWIGEXPORT void SWIGSTDCALL SWIGRegisterWStringCallback_$proxydmodule(SWIG_CSharpWStringHelperCallback callback) {
-  SWIG_csharp_wstring_callback = callback;
+SWIGEXPORT void SWIGSTDCALL SWIGRegisterWStringCallback_$proxydmodule(SWIG_DWStringHelperCallback callback) {
+  SWIG_d_wstring_callback = callback;
 }
 %}
-#endif // SWIG_CSHARP_WSTRING_HELPER_
-#endif // SWIG_CSHARP_NO_WSTRING_HELPER
+#endif // SWIG_D_WSTRING_HELPER_
+#endif // SWIG_D_NO_WSTRING_HELPER
 
 
 // wchar_t

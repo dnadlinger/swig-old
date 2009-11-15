@@ -7,7 +7,7 @@
  * Typemaps for std::string and const std::string&
  * These are mapped to a C# String and are passed around by value.
  *
- * To use non-const std::string references use the following %apply.  Note 
+ * To use non-const std::string references use the following %apply.  Note
  * that they are passed by value.
  * %apply const std::string & {std::string &};
  * ----------------------------------------------------------------------------- */
@@ -30,22 +30,22 @@ class string;
 %typemap(csdirectorin) string "$iminput"
 %typemap(csdirectorout) string "$cscall"
 
-%typemap(in, canthrow=1) string 
+%typemap(in, canthrow=1) string
 %{ if (!$input) {
-    SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
+    SWIG_DSetPendingExceptionArgument(SWIG_DIllegalArgumentException, "null string", 0);
     return $null;
    }
    $1.assign($input); %}
-%typemap(out) string %{ $result = SWIG_csharp_string_callback($1.c_str()); %}
+%typemap(out) string %{ $result = SWIG_d_string_callback($1.c_str()); %}
 
-%typemap(directorout, canthrow=1) string 
+%typemap(directorout, canthrow=1) string
 %{ if (!$input) {
-    SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
+    SWIG_DSetPendingExceptionArgument(SWIG_DIllegalArgumentException, "null string", 0);
     return $null;
    }
    $result.assign($input); %}
 
-%typemap(directorin) string %{ $input = SWIG_csharp_string_callback($1.c_str()); %}
+%typemap(directorin) string %{ $input = SWIG_d_string_callback($1.c_str()); %}
 
 %typemap(csin) string "$csinput"
 %typemap(csout, excode=SWIGEXCODE) string {
@@ -56,7 +56,7 @@ class string;
 %typemap(typecheck) string = char *;
 
 %typemap(throws, canthrow=1) string
-%{ SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException, $1.c_str());
+%{ SWIG_DSetPendingException(SWIG_DApplicationException, $1.c_str());
    return $null; %}
 
 // const string &
@@ -69,12 +69,12 @@ class string;
 
 %typemap(in, canthrow=1) const string &
 %{ if (!$input) {
-    SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
+    SWIG_DSetPendingExceptionArgument(SWIG_DIllegalArgumentException, "null string", 0);
     return $null;
    }
    std::string $1_str($input);
    $1 = &$1_str; %}
-%typemap(out) const string & %{ $result = SWIG_csharp_string_callback($1->c_str()); %}
+%typemap(out) const string & %{ $result = SWIG_d_string_callback($1->c_str()); %}
 
 %typemap(csin) const string & "$csinput"
 %typemap(csout, excode=SWIGEXCODE) const string & {
@@ -84,7 +84,7 @@ class string;
 
 %typemap(directorout, canthrow=1, warning=SWIGWARN_TYPEMAP_THREAD_UNSAFE_MSG) const string &
 %{ if (!$input) {
-    SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
+    SWIG_DSetPendingExceptionArgument(SWIG_DIllegalArgumentException, "null string", 0);
     return $null;
    }
    /* possible thread/reentrant code problem */
@@ -92,7 +92,7 @@ class string;
    $1_str = $input;
    $result = &$1_str; %}
 
-%typemap(directorin) const string & %{ $input = SWIG_csharp_string_callback($1.c_str()); %}
+%typemap(directorin) const string & %{ $input = SWIG_d_string_callback($1.c_str()); %}
 
 %typemap(csvarin, excode=SWIGEXCODE2) const string & %{
     set {
@@ -107,7 +107,7 @@ class string;
 %typemap(typecheck) const string & = char *;
 
 %typemap(throws, canthrow=1) const string &
-%{ SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException, $1.c_str());
+%{ SWIG_DSetPendingException(SWIG_DApplicationException, $1.c_str());
    return $null; %}
 
 }

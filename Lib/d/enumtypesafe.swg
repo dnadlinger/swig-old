@@ -30,7 +30,7 @@
 
 %typemap(throws, canthrow=1) const enum SWIGTYPE &
 %{ (void)$1;
-   SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException, "C++ $1_type exception thrown");
+   SWIG_DSetPendingException(SWIG_DApplicationException, "C++ $1_type exception thrown");
    return $null; %}
 
 %typemap(csin) const enum SWIGTYPE & "$csinput.swigValue"
@@ -63,7 +63,7 @@
 
 %typemap(throws, canthrow=1) enum SWIGTYPE
 %{ (void)$1;
-   SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException, "C++ $1_type exception thrown");
+   SWIG_DSetPendingException(SWIG_DApplicationException, "C++ $1_type exception thrown");
    return $null; %}
 
 %typemap(csin) enum SWIGTYPE "$csinput.swigValue"

@@ -14,321 +14,185 @@
 #include <stdio.h>
 %}
 
-// Disabled as long as it has not been ported to D.
-#if 0
 
 #if !defined(SWIG_D_NO_EXCEPTION_HELPER)
 %insert(runtime) %{
-/* Support for throwing C# exceptions from C/C++. There are two types:
- * Exceptions that take a message and ArgumentExceptions that take a message and a parameter name. */
+// Support for throwing D exceptions from C/C++.
 typedef enum {
-  SWIG_CSharpApplicationException,
-  SWIG_CSharpArithmeticException,
-  SWIG_CSharpDivideByZeroException,
-  SWIG_CSharpIndexOutOfRangeException,
-  SWIG_CSharpInvalidCastException,
-  SWIG_CSharpInvalidOperationException,
-  SWIG_CSharpIOException,
-  SWIG_CSharpNullReferenceException,
-  SWIG_CSharpOutOfMemoryException,
-  SWIG_CSharpOverflowException,
-  SWIG_CSharpSystemException
-} SWIG_CSharpExceptionCodes;
+  SWIG_DException = 0,
+  SWIG_DIllegalArgumentException,
+  SWIG_DIllegalElementException,
+  SWIG_DIOException,
+  SWIG_DNoSuchElementException,
+} SWIG_DExceptionCodes;
 
-typedef enum {
-  SWIG_CSharpArgumentException,
-  SWIG_CSharpArgumentNullException,
-  SWIG_CSharpArgumentOutOfRangeException
-} SWIG_CSharpExceptionArgumentCodes;
-
-typedef void (SWIGSTDCALL* SWIG_CSharpExceptionCallback_t)(const char *);
-typedef void (SWIGSTDCALL* SWIG_CSharpExceptionArgumentCallback_t)(const char *, const char *);
+typedef void (SWIGSTDCALL* SWIG_DExceptionCallback_t)(const char *);
 
 typedef struct {
-  SWIG_CSharpExceptionCodes code;
-  SWIG_CSharpExceptionCallback_t callback;
-} SWIG_CSharpException_t;
+  SWIG_DExceptionCodes code;
+  SWIG_DExceptionCallback_t callback;
+} SWIG_DException_t;
 
-typedef struct {
-  SWIG_CSharpExceptionArgumentCodes code;
-  SWIG_CSharpExceptionArgumentCallback_t callback;
-} SWIG_CSharpExceptionArgument_t;
-
-static SWIG_CSharpException_t SWIG_csharp_exceptions[] = {
-  { SWIG_CSharpApplicationException, NULL },
-  { SWIG_CSharpArithmeticException, NULL },
-  { SWIG_CSharpDivideByZeroException, NULL },
-  { SWIG_CSharpIndexOutOfRangeException, NULL },
-  { SWIG_CSharpInvalidCastException, NULL },
-  { SWIG_CSharpInvalidOperationException, NULL },
-  { SWIG_CSharpIOException, NULL },
-  { SWIG_CSharpNullReferenceException, NULL },
-  { SWIG_CSharpOutOfMemoryException, NULL },
-  { SWIG_CSharpOverflowException, NULL },
-  { SWIG_CSharpSystemException, NULL }
+static SWIG_DException_t SWIG_d_exceptions[] = {
+  { SWIG_DException, NULL },
+  { SWIG_DIllegalArgumentException, NULL },
+  { SWIG_DIllegalElementException, NULL },
+  { SWIG_DIOException, NULL },
+  { SWIG_DNoSuchElementException, NULL }
 };
 
-static SWIG_CSharpExceptionArgument_t SWIG_csharp_exceptions_argument[] = {
-  { SWIG_CSharpArgumentException, NULL },
-  { SWIG_CSharpArgumentNullException, NULL },
-  { SWIG_CSharpArgumentOutOfRangeException, NULL }
-};
-
-static void SWIGUNUSED SWIG_CSharpSetPendingException(SWIG_CSharpExceptionCodes code, const char *msg) {
-  SWIG_CSharpExceptionCallback_t callback = SWIG_csharp_exceptions[SWIG_CSharpApplicationException].callback;
-  if ((size_t)code < sizeof(SWIG_csharp_exceptions)/sizeof(SWIG_CSharpException_t)) {
-    callback = SWIG_csharp_exceptions[code].callback;
+static void SWIGUNUSED SWIG_DSetPendingException(SWIG_DExceptionCodes code, const char *msg) {
+  if ((size_t)code < sizeof(SWIG_d_exceptions)/sizeof(SWIG_DException_t)) {
+    SWIG_d_exceptions[code].callback(msg);
+  } else {
+    SWIG_d_exceptions[SWIG_DException].callback(msg);
   }
-  callback(msg);
 }
 
-static void SWIGUNUSED SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpExceptionArgumentCodes code, const char *msg, const char *param_name) {
-  SWIG_CSharpExceptionArgumentCallback_t callback = SWIG_csharp_exceptions_argument[SWIG_CSharpArgumentException].callback;
-  if ((size_t)code < sizeof(SWIG_csharp_exceptions_argument)/sizeof(SWIG_CSharpExceptionArgument_t)) {
-    callback = SWIG_csharp_exceptions_argument[code].callback;
-  }
-  callback(msg, param_name);
-}
-%}
-
-%insert(runtime) %{
 #ifdef __cplusplus
 extern "C"
 #endif
 SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionCallbacks_$proxydmodule(
-                                                SWIG_CSharpExceptionCallback_t applicationCallback,
-                                                SWIG_CSharpExceptionCallback_t arithmeticCallback,
-                                                SWIG_CSharpExceptionCallback_t divideByZeroCallback,
-                                                SWIG_CSharpExceptionCallback_t indexOutOfRangeCallback,
-                                                SWIG_CSharpExceptionCallback_t invalidCastCallback,
-                                                SWIG_CSharpExceptionCallback_t invalidOperationCallback,
-                                                SWIG_CSharpExceptionCallback_t ioCallback,
-                                                SWIG_CSharpExceptionCallback_t nullReferenceCallback,
-                                                SWIG_CSharpExceptionCallback_t outOfMemoryCallback,
-                                                SWIG_CSharpExceptionCallback_t overflowCallback,
-                                                SWIG_CSharpExceptionCallback_t systemCallback) {
-  SWIG_csharp_exceptions[SWIG_CSharpApplicationException].callback = applicationCallback;
-  SWIG_csharp_exceptions[SWIG_CSharpArithmeticException].callback = arithmeticCallback;
-  SWIG_csharp_exceptions[SWIG_CSharpDivideByZeroException].callback = divideByZeroCallback;
-  SWIG_csharp_exceptions[SWIG_CSharpIndexOutOfRangeException].callback = indexOutOfRangeCallback;
-  SWIG_csharp_exceptions[SWIG_CSharpInvalidCastException].callback = invalidCastCallback;
-  SWIG_csharp_exceptions[SWIG_CSharpInvalidOperationException].callback = invalidOperationCallback;
-  SWIG_csharp_exceptions[SWIG_CSharpIOException].callback = ioCallback;
-  SWIG_csharp_exceptions[SWIG_CSharpNullReferenceException].callback = nullReferenceCallback;
-  SWIG_csharp_exceptions[SWIG_CSharpOutOfMemoryException].callback = outOfMemoryCallback;
-  SWIG_csharp_exceptions[SWIG_CSharpOverflowException].callback = overflowCallback;
-  SWIG_csharp_exceptions[SWIG_CSharpSystemException].callback = systemCallback;
-}
+  SWIG_DExceptionCallback_t exceptionCallback,
+  SWIG_DExceptionCallback_t illegalArgumentCallback,
+  SWIG_DExceptionCallback_t illegalElementCallback,
+  SWIG_DExceptionCallback_t ioCallback,
+  SWIG_DExceptionCallback_t noSuchElementCallback) {
 
-#ifdef __cplusplus
-extern "C"
-#endif
-SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$proxydmodule(
-                                                SWIG_CSharpExceptionArgumentCallback_t argumentCallback,
-                                                SWIG_CSharpExceptionArgumentCallback_t argumentNullCallback,
-                                                SWIG_CSharpExceptionArgumentCallback_t argumentOutOfRangeCallback) {
-  SWIG_csharp_exceptions_argument[SWIG_CSharpArgumentException].callback = argumentCallback;
-  SWIG_csharp_exceptions_argument[SWIG_CSharpArgumentNullException].callback = argumentNullCallback;
-  SWIG_csharp_exceptions_argument[SWIG_CSharpArgumentOutOfRangeException].callback = argumentOutOfRangeCallback;
+  SWIG_d_exceptions[SWIG_DException].callback = exceptionCallback;
+  SWIG_d_exceptions[SWIG_DIllegalArgumentException].callback = illegalArgumentCallback;
+  SWIG_d_exceptions[SWIG_DIllegalElementException].callback = illegalElementCallback;
+  SWIG_d_exceptions[SWIG_DIOException].callback = ioCallback;
+  SWIG_d_exceptions[SWIG_DNoSuchElementException].callback = noSuchElementCallback;
 }
 %}
 
-%pragma(d) imclasscode=%{
-  protected class SWIGExceptionHelper {
-
-    public delegate void ExceptionDelegate(string message);
-    public delegate void ExceptionArgumentDelegate(string message, string paramName);
-
-    static ExceptionDelegate applicationDelegate = new ExceptionDelegate(SetPendingApplicationException);
-    static ExceptionDelegate arithmeticDelegate = new ExceptionDelegate(SetPendingArithmeticException);
-    static ExceptionDelegate divideByZeroDelegate = new ExceptionDelegate(SetPendingDivideByZeroException);
-    static ExceptionDelegate indexOutOfRangeDelegate = new ExceptionDelegate(SetPendingIndexOutOfRangeException);
-    static ExceptionDelegate invalidCastDelegate = new ExceptionDelegate(SetPendingInvalidCastException);
-    static ExceptionDelegate invalidOperationDelegate = new ExceptionDelegate(SetPendingInvalidOperationException);
-    static ExceptionDelegate ioDelegate = new ExceptionDelegate(SetPendingIOException);
-    static ExceptionDelegate nullReferenceDelegate = new ExceptionDelegate(SetPendingNullReferenceException);
-    static ExceptionDelegate outOfMemoryDelegate = new ExceptionDelegate(SetPendingOutOfMemoryException);
-    static ExceptionDelegate overflowDelegate = new ExceptionDelegate(SetPendingOverflowException);
-    static ExceptionDelegate systemDelegate = new ExceptionDelegate(SetPendingSystemException);
-
-    static ExceptionArgumentDelegate argumentDelegate = new ExceptionArgumentDelegate(SetPendingArgumentException);
-    static ExceptionArgumentDelegate argumentNullDelegate = new ExceptionArgumentDelegate(SetPendingArgumentNullException);
-    static ExceptionArgumentDelegate argumentOutOfRangeDelegate = new ExceptionArgumentDelegate(SetPendingArgumentOutOfRangeException);
-
-    [DllImport("$dllimport", EntryPoint="SWIGRegisterExceptionCallbacks_$proxydmodule")]
-    public static extern void SWIGRegisterExceptionCallbacks_$proxydmodule(
-                                ExceptionDelegate applicationDelegate,
-                                ExceptionDelegate arithmeticDelegate,
-                                ExceptionDelegate divideByZeroDelegate,
-                                ExceptionDelegate indexOutOfRangeDelegate,
-                                ExceptionDelegate invalidCastDelegate,
-                                ExceptionDelegate invalidOperationDelegate,
-                                ExceptionDelegate ioDelegate,
-                                ExceptionDelegate nullReferenceDelegate,
-                                ExceptionDelegate outOfMemoryDelegate,
-                                ExceptionDelegate overflowDelegate,
-                                ExceptionDelegate systemExceptionDelegate);
-
-    [DllImport("$dllimport", EntryPoint="SWIGRegisterExceptionArgumentCallbacks_$proxydmodule")]
-    public static extern void SWIGRegisterExceptionCallbacksArgument_$proxydmodule(
-                                ExceptionArgumentDelegate argumentDelegate,
-                                ExceptionArgumentDelegate argumentNullDelegate,
-                                ExceptionArgumentDelegate argumentOutOfRangeDelegate);
-
-    static void SetPendingApplicationException(string message) {
-      SWIGPendingException.Set(new System.ApplicationException(message, SWIGPendingException.Retrieve()));
-    }
-    static void SetPendingArithmeticException(string message) {
-      SWIGPendingException.Set(new System.ArithmeticException(message, SWIGPendingException.Retrieve()));
-    }
-    static void SetPendingDivideByZeroException(string message) {
-      SWIGPendingException.Set(new System.DivideByZeroException(message, SWIGPendingException.Retrieve()));
-    }
-    static void SetPendingIndexOutOfRangeException(string message) {
-      SWIGPendingException.Set(new System.IndexOutOfRangeException(message, SWIGPendingException.Retrieve()));
-    }
-    static void SetPendingInvalidCastException(string message) {
-      SWIGPendingException.Set(new System.InvalidCastException(message, SWIGPendingException.Retrieve()));
-    }
-    static void SetPendingInvalidOperationException(string message) {
-      SWIGPendingException.Set(new System.InvalidOperationException(message, SWIGPendingException.Retrieve()));
-    }
-    static void SetPendingIOException(string message) {
-      SWIGPendingException.Set(new System.IO.IOException(message, SWIGPendingException.Retrieve()));
-    }
-    static void SetPendingNullReferenceException(string message) {
-      SWIGPendingException.Set(new System.NullReferenceException(message, SWIGPendingException.Retrieve()));
-    }
-    static void SetPendingOutOfMemoryException(string message) {
-      SWIGPendingException.Set(new System.OutOfMemoryException(message, SWIGPendingException.Retrieve()));
-    }
-    static void SetPendingOverflowException(string message) {
-      SWIGPendingException.Set(new System.OverflowException(message, SWIGPendingException.Retrieve()));
-    }
-    static void SetPendingSystemException(string message) {
-      SWIGPendingException.Set(new System.SystemException(message, SWIGPendingException.Retrieve()));
-    }
-
-    static void SetPendingArgumentException(string message, string paramName) {
-      SWIGPendingException.Set(new System.ArgumentException(message, paramName, SWIGPendingException.Retrieve()));
-    }
-    static void SetPendingArgumentNullException(string message, string paramName) {
-      Exception e = SWIGPendingException.Retrieve();
-      if (e != null) message = message + " Inner Exception: " + e.Message;
-      SWIGPendingException.Set(new System.ArgumentNullException(paramName, message));
-    }
-    static void SetPendingArgumentOutOfRangeException(string message, string paramName) {
-      Exception e = SWIGPendingException.Retrieve();
-      if (e != null) message = message + " Inner Exception: " + e.Message;
-      SWIGPendingException.Set(new System.ArgumentOutOfRangeException(paramName, message));
-    }
-
-    static SWIGExceptionHelper() {
-      SWIGRegisterExceptionCallbacks_$proxydmodule(
-                                applicationDelegate,
-                                arithmeticDelegate,
-                                divideByZeroDelegate,
-                                indexOutOfRangeDelegate,
-                                invalidCastDelegate,
-                                invalidOperationDelegate,
-                                ioDelegate,
-                                nullReferenceDelegate,
-                                outOfMemoryDelegate,
-                                overflowDelegate,
-                                systemDelegate);
-
-      SWIGRegisterExceptionCallbacksArgument_$proxydmodule(
-                                argumentDelegate,
-                                argumentNullDelegate,
-                                argumentOutOfRangeDelegate);
-    }
-  }
-
-  protected static SWIGExceptionHelper swigExceptionHelper = new SWIGExceptionHelper();
-
-  public class SWIGPendingException {
-    [ThreadStatic]
-    private static Exception pendingException = null;
-    private static int numExceptionsPending = 0;
-
-    public static bool Pending {
-      get {
-        bool pending = false;
-        if (numExceptionsPending > 0)
-          if (pendingException != null)
-            pending = true;
-        return pending;
-      }
-    }
-
-    public static void Set(Exception e) {
-      if (pendingException != null)
-        throw new ApplicationException("FATAL: An earlier pending exception from unmanaged code was missed and thus not thrown (" + pendingException.ToString() + ")", e);
-      pendingException = e;
-      lock(typeof($wrapdmodule)) {
-        numExceptionsPending++;
-      }
-    }
-
-    public static Exception Retrieve() {
-      Exception e = null;
-      if (numExceptionsPending > 0) {
-        if (pendingException != null) {
-          e = pendingException;
-          pendingException = null;
-          lock(typeof($wrapdmodule)) {
-            numExceptionsPending--;
-          }
-        }
-      }
-      return e;
-    }
-  }
+%pragma(d) wrapdmoduleimports=%{
+  // Exception throwing support currently requires Tango, but there is no reason
+  // why it could not support Phobos.
+  import tango.core.Exception;
+  import tango.stdc.stringz : fromStringz;
 %}
+
+%pragma(d) wrapdmodulecode=%{
+private class SWIGExceptionHelper {
+  static void setException(char* message) {
+    auto exception = new Exception(fromStringz(message));
+    exception.next = SWIGPendingException.retrieve();
+    SWIGPendingException.set(exception);
+  }
+  static void setIllegalArgumentException(char* message) {
+    auto exception = new IllegalArgumentException(fromStringz(message));
+    exception.next = SWIGPendingException.retrieve();
+    SWIGPendingException.set(exception);
+  }
+  static void setIllegalElementException(char* message) {
+    auto exception = new IllegalElementException(fromStringz(message));
+    exception.next = SWIGPendingException.retrieve();
+    SWIGPendingException.set(exception);
+  }
+  static void setIOException(char* message) {
+    auto exception = new IOException(fromStringz(message));
+    exception.next = SWIGPendingException.retrieve();
+    SWIGPendingException.set(exception);
+  }
+  static void setNoSuchElementException(char* message) {
+    auto exception = new NoSuchElementException(fromStringz(message));
+    exception.next = SWIGPendingException.retrieve();
+    SWIGPendingException.set(exception);
+  }
+
+  static this() {
+    SWIGRegisterExceptionCallbacks_$proxydmodule(
+      &setException,
+      &setIllegalArgumentException,
+      &setIllegalElementException,
+      &setIOException,
+      &setNoSuchElementException);
+  }
+}
+
+private class SWIGPendingException {
+public:
+  static bool isPending() {
+    bool pending = false;
+    if (m_sNumExceptionsPending > 0)
+      if (m_sPendingException !is null)
+	pending = true;
+    return pending;
+  }
+
+  static void set(Exception e) {
+    if (m_sPendingException !is null) {
+      throw new Exception( "FATAL: An earlier pending exception from C/C++ code " ~
+	"was missed and thus not thrown (" ~ m_sPendingException.classinfo.name ~
+	": " ~ m_sPendingException.msg ~ ")!", e );
+    }
+
+    m_sPendingException = e;
+    synchronized {
+      m_sNumExceptionsPending++;
+    }
+  }
+
+  static Exception retrieve() {
+    Exception e = null;
+    if (m_sNumExceptionsPending > 0) {
+      if (m_sPendingException !is null) {
+	e = m_sPendingException;
+	m_sPendingException = null;
+	synchronized {
+	  m_sNumExceptionsPending--;
+	}
+      }
+    }
+    return e;
+  }
+
+private:
+  // This is intended to be thread-global.
+  static int m_sNumExceptionsPending = 0;
+  // This is intended to be thread-local.
+  static Exception m_sPendingException = null;
+}
+
+alias void function( char* message ) SWIGExceptionCallback;
+%}
+// Callback registering function in wrapperloader.swg.
 #endif // SWIG_D_NO_EXCEPTION_HELPER
 
 #if !defined(SWIG_D_NO_STRING_HELPER)
 %insert(runtime) %{
-/* Callback for returning strings to C# without leaking memory */
-typedef char * (SWIGSTDCALL* SWIG_CSharpStringHelperCallback)(const char *);
-static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback = NULL;
-%}
+// Callback for returning strings to D without leaking memory.
+typedef char * (SWIGSTDCALL* SWIG_DStringHelperCallback)(const char *);
+static SWIG_DStringHelperCallback SWIG_d_string_callback = NULL;
 
-%pragma(d) imclasscode=%{
-  protected class SWIGStringHelper {
-
-    public delegate string SWIGStringDelegate(string message);
-    static SWIGStringDelegate stringDelegate = new SWIGStringDelegate(CreateString);
-
-    [DllImport("$dllimport", EntryPoint="SWIGRegisterStringCallback_$proxydmodule")]
-    public static extern void SWIGRegisterStringCallback_$proxydmodule(SWIGStringDelegate stringDelegate);
-
-    static string CreateString(string cString) {
-      return cString;
-    }
-
-    static SWIGStringHelper() {
-      SWIGRegisterStringCallback_$proxydmodule(stringDelegate);
-    }
-  }
-
-  static protected SWIGStringHelper swigStringHelper = new SWIGStringHelper();
-%}
-
-%insert(runtime) %{
 #ifdef __cplusplus
 extern "C"
 #endif
-SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$proxydmodule(SWIG_CSharpStringHelperCallback callback) {
-  SWIG_csharp_string_callback = callback;
+SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$proxydmodule(SWIG_DStringHelperCallback callback) {
+  SWIG_d_string_callback = callback;
 }
 %}
+
+%pragma(d) wrapdmodulecode=%{
+private class SWIGStringHelper {
+  static char* createString(char* cString) {
+    // TODO: Research what the C# module is doing here and port it to D.
+    return cString;
+  }
+
+  static this() {
+    SWIGRegisterStringCallback_$proxydmodule(&createString);
+  }
+}
+alias char* function( char* cString ) SWIGStringCallback;
+%}
+// Callback registering function in wrapperloader.swg.
 #endif // SWIG_D_NO_STRING_HELPER
 
 %insert(runtime) %{
 /* Contract support */
 
-#define SWIG_contract_assert(nullreturn, expr, msg) if (!(expr)) {SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentOutOfRangeException, msg, ""); return nullreturn; } else
+#define SWIG_contract_assert(nullreturn, expr, msg) if (!(expr)) {SWIG_DSetPendingExceptionArgument(SWIG_DArgumentOutOfRangeException, msg, ""); return nullreturn; } else
 %}
-
-#endif

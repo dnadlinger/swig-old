@@ -422,6 +422,7 @@ public:
 
       Replaceall(wrapper_loader_code, "$wraplibrary", wrap_library_name);
       Replaceall(wrapper_loader_code, "$wrapperloaderbindcode", wrapper_loader_bind_code);
+      Replaceall(wrapper_loader_code, "$proxydmodule", proxy_dmodule_name);
       Printf(f_wrapd, "%s\n", wrapper_loader_code);
 
       // Add the wrapper function declarations.
@@ -971,10 +972,10 @@ public:
       if (!Getattr(n, "csharp:canthrow")) {
 	if (Strstr(f->code, "SWIG_exception")) {
 	  Swig_warning(WARN_CSHARP_CANTHROW, input_file, line_number,
-		       "Unmanaged code contains a call to SWIG_exception and C# code does not handle pending exceptions via the canthrow attribute.\n");
-	} else if (Strstr(f->code, "SWIG_CSharpSetPendingException")) {
+	  "C code contains a call to SWIG_exception and D code does not handle pending exceptions via the canthrow attribute.\n");
+	} else if (Strstr(f->code, "SWIG_DSetPendingException")) {
 	  Swig_warning(WARN_CSHARP_CANTHROW, input_file, line_number,
-		       "Unmanaged code contains a call to a SWIG_CSharpSetPendingException method and C# code does not handle pending exceptions via the canthrow attribute.\n");
+	  "C code contains a call to a SWIG_DSetPendingException method and D code does not handle pending exceptions via the canthrow attribute.\n");
 	}
       }
     }

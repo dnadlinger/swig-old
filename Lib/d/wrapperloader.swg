@@ -24,6 +24,13 @@ static this() {
   version ( Win32 ) {
     Binder.library = SharedLib.load( "$wraplibrary.dll" );
   }
+
+  //#if !defined(SWIG_D_NO_EXCEPTION_HELPER)
+  bind( SWIGRegisterExceptionCallbacks_$proxydmodule )( "SWIGRegisterExceptionCallbacks_$proxydmodule" );
+  //#endif // SWIG_D_NO_EXCEPTION_HELPER
+  //#if !defined(SWIG_D_NO_STRING_HELPER)
+  bind( SWIGRegisterStringCallback_$proxydmodule )( "SWIGRegisterStringCallback_$proxydmodule" );
+  //#endif // SWIG_D_NO_STRING_HELPER
   $wrapperloaderbindcode
 }
 
@@ -58,7 +65,21 @@ private {
     }
   }
 }
+
+//#if !defined(SWIG_D_NO_EXCEPTION_HELPER)
+extern( C ) void function(
+  SWIGExceptionCallback exceptionCallback,
+  SWIGExceptionCallback illegalArgumentCallback,
+  SWIGExceptionCallback illegalElementCallback,
+  SWIGExceptionCallback ioCallback,
+  SWIGExceptionCallback noSuchElementCallback) SWIGRegisterExceptionCallbacks_$proxydmodule;
+//#endif // SWIG_D_NO_EXCEPTION_HELPER
+
+//#if !defined(SWIG_D_NO_STRING_HELPER)
+extern( C ) void function(SWIGStringCallback callback) SWIGRegisterStringCallback_$proxydmodule;
+//#endif // SWIG_D_NO_STRING_HELPER
 %}
+
 
 %pragma(d) wrapperloaderbindcommand=%{
   bind( $function )( "$symbol" );%}

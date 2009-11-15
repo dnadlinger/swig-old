@@ -31,14 +31,14 @@
 
 %typemap(throws, canthrow=1) const enum SWIGTYPE &
 %{ (void)$1;
-   SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException, "C++ $1_type exception thrown");
+   SWIG_DSetPendingException(SWIG_DApplicationException, "C++ $1_type exception thrown");
    return $null; %}
 
 %typemap(csin) const enum SWIGTYPE & "$csinput"
 %typemap(csout, excode=SWIGEXCODE) const enum SWIGTYPE & {
     int ret = $imcall;$excode
     return ret;
-  }
+  }<
 
 %typemap(csvarout, excode=SWIGEXCODE2) const enum SWIGTYPE & %{
     get {
@@ -64,7 +64,7 @@
 
 %typemap(throws, canthrow=1) enum SWIGTYPE
 %{ (void)$1;
-   SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException, "C++ $1_type exception thrown");
+   SWIG_DSetPendingException(SWIG_DApplicationException, "C++ $1_type exception thrown");
    return $null; %}
 
 %typemap(csin) enum SWIGTYPE "$csinput"
