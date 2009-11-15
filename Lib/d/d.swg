@@ -68,8 +68,8 @@
 %typemap(cstype) void                                               "void"
 
 %typemap(ctype) char *, char *&, char[ANY], char[]   "char *"
-%typemap(imtype) char *, char *&, char[ANY], char[]   "char *"
-%typemap(cstype) char *, char *&, char[ANY], char[]   "char *"
+%typemap(imtype) char *, char *&, char[ANY], char[]   "char*"
+%typemap(cstype) char *, char *&, char[ANY], char[]   "char*"
 
 // Non-primitive types.
 %typemap(ctype) SWIGTYPE "void *"
@@ -766,30 +766,31 @@
 %}
 
 // Typewrapper classes.
-%typemap(csbody) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] %{
-  private HandleRef __swig_cObject;
+// TODO: How much visibility is needed for the two-arguments constructor?
+%typemap(dbody) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] %{
+  private void* __swig_cObject;
 
-  internal $dclassname(IntPtr cPtr, bool futureUse) {
-    __swig_cObject = new HandleRef(this, cPtr);
+  public this( void* cObject, bool futureUse ) {
+    __swig_cObject = cObject;
   }
 
-  protected $dclassname() {
-    __swig_cObject = new HandleRef(null, IntPtr.Zero);
+  protected this() {
+    __swig_cObject = null;
   }
 
-  internal static HandleRef getCPtr($dclassname obj) {
-    return (obj == null) ? new HandleRef(null, IntPtr.Zero) : obj.__swig_cObject;
+  public static void* __swig_getCObject( $dclassname obj ) {
+    return ( obj is null ) ? null : obj.__swig_cObject;
   }
 %}
 
-%typemap(csbody) SWIGTYPE (CLASS::*) %{
+%typemap(dbody) SWIGTYPE (CLASS::*) %{
   private char* __swig_cMemberPtr;
 
-  internal $dclassname( char* cMemberPtr, bool futureUse ) {
+  public this( char* cMemberPtr, bool futureUse ) {
     __swig_cMemberPtr = cMemberPtr;
   }
 
-  protected $dclassname() {
+  protected this() {
     __swig_cMemberPtr = null;
   }
 

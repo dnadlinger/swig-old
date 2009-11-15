@@ -461,6 +461,11 @@ public:
       Replaceall(proxy_dmodule_code, "$wrapdmodule", wrap_dmodule_name);
       Replaceall(module_class_constants_code, "$wrapdmodule", wrap_dmodule_name);
 
+      // Output a D type wrapper class for each SWIG type
+      for (Iterator swig_type = First(swig_types_hash); swig_type.key; swig_type = Next(swig_type)) {
+	writeTypeWrapperClass(swig_type.key, swig_type.item);
+      }
+
       // Add the proxy functions.
       Printv(f_module, proxy_dmodule_code, NIL);
 
@@ -476,11 +481,6 @@ public:
     Printf(f_wrappers, "#ifdef __cplusplus\n");
     Printf(f_wrappers, "}\n");
     Printf(f_wrappers, "#endif\n");
-
-    // Output a C# type wrapper class for each SWIG type
-    for (Iterator swig_type = First(swig_types_hash); swig_type.key; swig_type = Next(swig_type)) {
-      emitTypeWrapperClass(swig_type.key, swig_type.item);
-    }
 
     // Check for overwriting file problems on filesystems that are case insensitive
     Iterator it1;
@@ -2730,56 +2730,36 @@ public:
   }
 
   /* -----------------------------------------------------------------------------
-   * emitTypeWrapperClass()
+   * writeTypeWrapperClass()
    * ----------------------------------------------------------------------------- */
 
-  void emitTypeWrapperClass(String *classname, SwigType *type) {
+  void writeTypeWrapperClass(String *classname, SwigType *type) {
     Node *n = NewHash();
     Setfile(n, input_file);
     Setline(n, line_number);
 
-    String *swigtype = NewString("");
-    String *filen = NewStringf("%s%s.cs", SWIG_output_directory(), classname);
-    File *f_swigtype = NewFile(filen, "w", SWIG_output_files());
-    if (!f_swigtype) {
-      FileErrorDisplay(filen);
-      SWIG_exit(EXIT_FAILURE);
-    }
-    Append(filenames_list, Copy(filen));
-    Delete(filen);
-    filen = NULL;
-
-    // Start writing out the type wrapper class file
-    emitBanner(f_swigtype);
-
-    addOpenNamespace(namespce, f_swigtype);
+    // Import statements.
+    Printv(wrap_dmodule_imports, typemapLookup(n, "dimports", type, WARN_NONE), NIL);
 
     // Pure C# baseclass and interfaces
     const String *pure_baseclass = typemapLookup(n, "csbase", type, WARN_NONE);
     const String *pure_interfaces = typemapLookup(n, "dinterfaces", type, WARN_NONE);
 
-    // Emit the class
-    Printv(swigtype, typemapLookup(n, "dimports", type, WARN_NONE),	// Import statements
-	   "\n", NIL);
+    // Emit the class.
+    Printv(proxy_dmodule_code,
+      typemapLookup(n, "dclassmodifiers", type, WARN_CSHARP_TYPEMAP_CLASSMOD_UNDEF),	// Class modifiers
+      " $dclassname",	// Class name and base class
+      (*Char(pure_baseclass) || *Char(pure_interfaces)) ? " : " : "", pure_baseclass,
+      ((*Char(pure_baseclass)) && *Char(pure_interfaces)) ? ", " : "", pure_interfaces, // Interfaces
+      " {",
+      typemapLookup(n, "dbody", type, WARN_D_TYPEMAP_DBODY_UNDEF),	// main body of class
+      typemapLookup(n, "cscode", type, WARN_NONE),	// extra D code
+      "}\n\n", NIL);
 
-    Printv(swigtype, typemapLookup(n, "csclassmodifiers", type, WARN_CSHARP_TYPEMAP_CLASSMOD_UNDEF),	// Class modifiers
-	   " $dclassname",	// Class name and base class
-	   (*Char(pure_baseclass) || *Char(pure_interfaces)) ? " : " : "", pure_baseclass, ((*Char(pure_baseclass)) && *Char(pure_interfaces)) ?	// Interfaces
-	   ", " : "", pure_interfaces, " {", typemapLookup(n, "dbody", type, WARN_D_TYPEMAP_DBODY_UNDEF),	// main body of class
-	   typemapLookup(n, "cscode", type, WARN_NONE),	// extra C# code
-	   "}\n", NIL);
+    Replaceall(proxy_dmodule_code, "$dclassname", classname);
+    Replaceall(proxy_dmodule_code, "$proxydmodule", proxy_dmodule_name);
+    Replaceall(proxy_dmodule_code, "$wrapdmodule", wrap_dmodule_name);
 
-    Replaceall(swigtype, "$dclassname", classname);
-    Replaceall(swigtype, "$proxydmodule", proxy_dmodule_name);
-    Replaceall(swigtype, "$wrapdmodule", wrap_dmodule_name);
-    Replaceall(swigtype, "$dllimport", wrap_library_name);
-
-    Printv(f_swigtype, swigtype, NIL);
-
-    addCloseNamespace(namespce, f_swigtype);
-
-    Close(f_swigtype);
-    Delete(swigtype);
     Delete(n);
   }
 
