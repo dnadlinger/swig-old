@@ -71,11 +71,21 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionCallbacks_$proxydmodule(
 // Exception throwing support currently requires Tango, but there is no reason
 // why it could not support Phobos.
 import tango.core.Exception;
+static import tango.core.Thread;
 static import tango.stdc.stringz;
 %}
 
 %pragma(d) wrapdmodulecode=%{
 private class SWIGExceptionHelper {
+  static this() {
+    SWIGRegisterExceptionCallbacks_$proxydmodule(
+      &setException,
+      &setIllegalArgumentException,
+      &setIllegalElementException,
+      &setIOException,
+      &setNoSuchElementException);
+  }
+
   static void setException(char* message) {
     auto exception = new Exception(tango.stdc.stringz.fromStringz(message));
     exception.next = SWIGPendingException.retrieve();
@@ -101,48 +111,46 @@ private class SWIGExceptionHelper {
     exception.next = SWIGPendingException.retrieve();
     SWIGPendingException.set(exception);
   }
-
-  static this() {
-    SWIGRegisterExceptionCallbacks_$proxydmodule(
-      &setException,
-      &setIllegalArgumentException,
-      &setIllegalElementException,
-      &setIOException,
-      &setNoSuchElementException);
-  }
 }
 
 private class SWIGPendingException {
 public:
+  static this() {
+    m_sPendingCount = 0;
+    m_sPendingException = new ThreadLocalData( null );
+  }
+
   static bool isPending() {
     bool pending = false;
-    if (m_sNumExceptionsPending > 0)
-      if (m_sPendingException !is null)
+    if (m_sPendingCount > 0) {
+      if (m_sPendingException.val !is null) {
 	pending = true;
+      }
+    }
     return pending;
   }
 
   static void set(Exception e) {
-    if (m_sPendingException !is null) {
+    if (m_sPendingException.val !is null) {
       throw new Exception( "FATAL: An earlier pending exception from C/C++ code " ~
-	"was missed and thus not thrown (" ~ m_sPendingException.classinfo.name ~
-	": " ~ m_sPendingException.msg ~ ")!", e );
+	"was missed and thus not thrown (" ~ m_sPendingException.val.classinfo.name ~
+	": " ~ m_sPendingException.val.msg ~ ")!", e );
     }
 
-    m_sPendingException = e;
+    m_sPendingException.val = e;
     synchronized {
-      m_sNumExceptionsPending++;
+      ++m_sPendingCount;
     }
   }
 
   static Exception retrieve() {
     Exception e = null;
-    if (m_sNumExceptionsPending > 0) {
-      if (m_sPendingException !is null) {
-	e = m_sPendingException;
-	m_sPendingException = null;
+    if (m_sPendingCount > 0) {
+      if (m_sPendingException.val !is null) {
+	e = m_sPendingException.val;
+	m_sPendingException.val = null;
 	synchronized {
-	  m_sNumExceptionsPending--;
+	  --m_sPendingCount;
 	}
       }
     }
@@ -150,10 +158,12 @@ public:
   }
 
 private:
-  // This is intended to be thread-global.
-  static int m_sNumExceptionsPending = 0;
-  // This is intended to be thread-local.
-  static Exception m_sPendingException = null;
+  // The pending exception counter is stored thread-global.
+  static int m_sPendingCount;
+
+  // The reference to the pending exception (if any) is stored thread-local.
+  alias tango.core.Thread.ThreadLocal!(Exception) ThreadLocalData;
+  static ThreadLocalData m_sPendingException;
 }
 
 alias void function( char* message ) SWIGExceptionCallback;
