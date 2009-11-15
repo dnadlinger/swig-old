@@ -69,7 +69,7 @@
 
 %typemap(ctype) char *, char *&, char[ANY], char[]   "char *"
 %typemap(imtype) char *, char *&, char[ANY], char[]   "char*"
-%typemap(cstype) char *, char *&, char[ANY], char[]   "char*"
+%typemap(cstype) char *, char *&, char[ANY], char[]   "char[]"
 
 // Non-primitive types.
 %typemap(ctype) SWIGTYPE "void *"
@@ -546,7 +546,7 @@
                  float,              const float &,
                  double,             const double &
     "$csinput"
-%typemap(csin) char *, char *&, char[ANY], char[] "$csinput"
+%typemap(csin) char *, char *&, char[ANY], char[] "toStringz($csinput)"
 %typemap(csin) SWIGTYPE "$&dclassname.__swig_getCObject($csinput)"
 %typemap(csin) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] "$dclassname.__swig_getCObject($csinput)"
 %typemap(csin) SWIGTYPE (CLASS::*) "$dclassname.getCMemberPtr($csinput)"
@@ -626,7 +626,7 @@
   return ret;
 }
 %typemap(csout, excode=SWIGEXCODE) char *, char *&, char[ANY], char[] {
-  char* ret = $imcall;$excode
+  char[] ret = fromStringz($imcall);$excode
   return ret;
 }
 %typemap(csout, excode=SWIGEXCODE) void {
@@ -810,6 +810,7 @@
 #define %csnothrowexception         %feature("except")
 
 %pragma(d) proxydmoduleimports=%{
+import tango.stdc.stringz : fromStringz, toStringz;
 %}
 
 %pragma(d) wrapdmoduleimports=%{
