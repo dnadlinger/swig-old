@@ -1,4 +1,5 @@
 # See top-level Makefile.in.
 class
+enum
 simple
 variables
