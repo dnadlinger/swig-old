@@ -76,9 +76,9 @@ static import tango.stdc.stringz;
 %}
 
 %pragma(d) wrapdmodulecode=%{
-private class SWIGExceptionHelper {
+private class __SWIGExceptionHelper {
   static this() {
-    SWIGRegisterExceptionCallbacks_$proxydmodule(
+    __SWIGRegisterExceptionCallbacks_$proxydmodule(
       &setException,
       &setIllegalArgumentException,
       &setIllegalElementException,
@@ -88,32 +88,32 @@ private class SWIGExceptionHelper {
 
   static void setException(char* message) {
     auto exception = new Exception(tango.stdc.stringz.fromStringz(message));
-    exception.next = SWIGPendingException.retrieve();
-    SWIGPendingException.set(exception);
+    exception.next = __SWIGPendingException.retrieve();
+    __SWIGPendingException.set(exception);
   }
   static void setIllegalArgumentException(char* message) {
     auto exception = new IllegalArgumentException(tango.stdc.stringz.fromStringz(message));
-    exception.next = SWIGPendingException.retrieve();
-    SWIGPendingException.set(exception);
+    exception.next = __SWIGPendingException.retrieve();
+    __SWIGPendingException.set(exception);
   }
   static void setIllegalElementException(char* message) {
     auto exception = new IllegalElementException(tango.stdc.stringz.fromStringz(message));
-    exception.next = SWIGPendingException.retrieve();
-    SWIGPendingException.set(exception);
+    exception.next = __SWIGPendingException.retrieve();
+    __SWIGPendingException.set(exception);
   }
   static void setIOException(char* message) {
     auto exception = new IOException(tango.stdc.stringz.fromStringz(message));
-    exception.next = SWIGPendingException.retrieve();
-    SWIGPendingException.set(exception);
+    exception.next = __SWIGPendingException.retrieve();
+    __SWIGPendingException.set(exception);
   }
   static void setNoSuchElementException(char* message) {
     auto exception = new NoSuchElementException(tango.stdc.stringz.fromStringz(message));
-    exception.next = SWIGPendingException.retrieve();
-    SWIGPendingException.set(exception);
+    exception.next = __SWIGPendingException.retrieve();
+    __SWIGPendingException.set(exception);
   }
 }
 
-private class SWIGPendingException {
+package class __SWIGPendingException {
 public:
   static this() {
     m_sPendingCount = 0;
@@ -166,7 +166,7 @@ private:
   static ThreadLocalData m_sPendingException;
 }
 
-alias void function( char* message ) SWIGExceptionCallback;
+alias void function( char* message ) __SWIGExceptionCallback;
 %}
 // Callback registering function in wrapperloader.swg.
 #endif // SWIG_D_NO_EXCEPTION_HELPER
@@ -186,17 +186,17 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$proxydmodule(SWIG_DStrin
 %}
 
 %pragma(d) wrapdmodulecode=%{
-private class SWIGStringHelper {
+private class __SWIGStringHelper {
+  static this() {
+    __SWIGRegisterStringCallback_$proxydmodule(&createString);
+  }
+
   static char* createString(char* cString) {
     // TODO: Research what the C# module is doing here and port it to D.
     return cString;
   }
-
-  static this() {
-    SWIGRegisterStringCallback_$proxydmodule(&createString);
-  }
 }
-alias char* function( char* cString ) SWIGStringCallback;
+alias char* function( char* cString ) __SWIGStringCallback;
 %}
 // Callback registering function in wrapperloader.swg.
 #endif // SWIG_D_NO_STRING_HELPER
