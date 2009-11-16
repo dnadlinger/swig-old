@@ -41,7 +41,6 @@ class D:public Language {
   bool wrapping_member_flag;	// Flag for when wrapping a member variable/enum/const
   bool global_variable_flag;	// Flag for when wrapping a global variable
   bool old_variable_names;	// Flag for old style variable names in the intermediary class
-  bool generate_property_declaration_flag;	// Flag for generating properties
 
   String *wrap_dmodule_name;	// The name of the D module containing the interface to the C wrapper.
   String *proxy_dmodule_name;	// The name of the proxy module which exposes the (SWIG) module contents as a D module.
@@ -115,7 +114,6 @@ public:
       wrapping_member_flag(false),
       global_variable_flag(false),
       old_variable_names(false),
-      generate_property_declaration_flag(false),
       wrap_dmodule_name(NULL),
       proxy_dmodule_name(NULL),
       wrap_dmodule_code(NULL),
@@ -1016,13 +1014,10 @@ public:
    * ------------------------------------------------------------------------ */
 
   virtual int globalvariableHandler(Node *n) {
-
-    generate_property_declaration_flag = true;
     variable_name = Getattr(n, "sym:name");
     global_variable_flag = true;
     int ret = Language::globalvariableHandler(n);
     global_variable_flag = false;
-    generate_property_declaration_flag = false;
 
     return ret;
   }
@@ -2144,14 +2139,12 @@ public:
    * ---------------------------------------------------------------------- */
 
   virtual int membervariableHandler(Node *n) {
-    generate_property_declaration_flag = true;
     variable_name = Getattr(n, "sym:name");
     wrapping_member_flag = true;
     variable_wrapper_flag = true;
     Language::membervariableHandler(n);
     wrapping_member_flag = false;
     variable_wrapper_flag = false;
-    generate_property_declaration_flag = false;
 
     return SWIG_OK;
   }
@@ -2161,14 +2154,12 @@ public:
    * ---------------------------------------------------------------------- */
 
   virtual int staticmembervariableHandler(Node *n) {
-    generate_property_declaration_flag = true;
     variable_name = Getattr(n, "sym:name");
     wrapping_member_flag = true;
     static_flag = true;
     Language::staticmembervariableHandler(n);
     wrapping_member_flag = false;
     static_flag = false;
-    generate_property_declaration_flag = false;
 
     return SWIG_OK;
   }
