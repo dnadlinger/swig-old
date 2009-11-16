@@ -50,7 +50,7 @@ class D:public Language {
   String *proxy_dmodule_code;	// The D code for proxy functions/classes which is written to the proxy D module.
   String *proxy_class_name;
   String *variable_name;	//Name of a variable being wrapped
-  String *proxy_class_constants_code;
+  String *proxy_class_enums_code;
   String *module_class_constants_code;
   String *enum_code;
   String *wrap_library_name;		// The name of the library which contains the C wrapper (used for dynamic linking).
@@ -122,7 +122,7 @@ public:
       proxy_dmodule_code(NULL),
       proxy_class_name(NULL),
       variable_name(NULL),
-      proxy_class_constants_code(NULL),
+      proxy_class_enums_code(NULL),
       module_class_constants_code(NULL),
       enum_code(NULL),
       wrap_library_name(NULL),
@@ -1068,7 +1068,7 @@ public:
       Replaceall(enum_code, "\n", "\n  ");
       Replaceall(enum_code, "  \n", "\n");
 
-      Printv(proxy_class_constants_code, "  ", enum_code, "\n\n", NIL);
+      Printv(proxy_class_enums_code, "  ", enum_code, "\n\n", NIL);
     } else {
       // Global enums are just written to the proxy module.
       Printv( proxy_dmodule_imports,
@@ -1154,7 +1154,6 @@ public:
     ParmList *l = Getattr(n, "parms");
     String *tm;
     String *return_type = NewString("");
-    String *constants_code = NewString("");
 
     if (!addSymbol(symname, n))
       return SWIG_ERROR;
@@ -1186,20 +1185,19 @@ public:
       Setattr(n, "value", new_value);
     }
 
-    const String *outattributes = Getattr(n, "tmap:cstype:outattributes");
-    if (outattributes)
-      Printf(constants_code, "  %s\n", outattributes);
-    const String *itemname = (proxy_flag && wrapping_member_flag) ? variable_name : symname;
-
-    const String *methodmods = Getattr(n, "feature:cs:methodmodifiers");
-    methodmods = methodmods ? methodmods : (is_public(n) ? public_string : protected_string);
-
     // Retrive the override value set via %dconstvalue, if any.
     String *value = Getattr(n, "feature:d:constvalue");
 
     // The %dconst feature determines if a D const or a getter function is
     // created.
     if (GetFlag(n, "feature:d:const") == 1) {
+      String *constants_code = NewString("");
+
+      const String *itemname = (proxy_flag && wrapping_member_flag) ? variable_name : symname;
+
+      const String *methodmods = Getattr(n, "feature:cs:methodmodifiers");
+      methodmods = methodmods ? methodmods : (is_public(n) ? public_string : protected_string);
+
       Printf(constants_code, "%s const %s %s = ", methodmods, return_type, itemname );
       if (value) {
 	Printf(constants_code, "%s;\n", value);
@@ -1207,6 +1205,14 @@ public:
 	// Just emit the C code and hope it compiles in D.
 	Printf(constants_code, "%s;\n", Getattr(n, "value"));
       }
+
+      // Emit the generated code to appropriate place
+      if (proxy_flag && wrapping_member_flag)
+	Printv(proxy_class_code, constants_code, NIL);
+      else
+	Printv(module_class_constants_code, constants_code, NIL);
+
+      Delete(constants_code);
     } else {
       // Default constant handling will work with any type of C constant. It
       // generates a getter function (which is the same as a read only property
@@ -1216,17 +1222,10 @@ public:
       globalvariableHandler(n);
     }
 
-    // Emit the generated code to appropriate place
-    if (proxy_flag && wrapping_member_flag)
-      Printv(proxy_class_constants_code, constants_code, NIL);
-    else
-      Printv(module_class_constants_code, constants_code, NIL);
-
     // Cleanup
     Swig_restore(n);
     Delete(new_value);
     Delete(return_type);
-    Delete(constants_code);
     return SWIG_OK;
   }
 
@@ -1527,7 +1526,7 @@ public:
       Clear(proxy_class_code);
 
       destructor_call = NewString("");
-      proxy_class_constants_code = NewString("");
+      proxy_class_enums_code = NewString("");
     }
 
     Language::classHandler(n);
@@ -1537,21 +1536,21 @@ public:
 
       Replaceall(proxy_class_def, "$proxydmodule", proxy_dmodule_name);
       Replaceall(proxy_class_code, "$proxydmodule", proxy_dmodule_name);
-      Replaceall(proxy_class_constants_code, "$proxydmodule", proxy_dmodule_name);
+      Replaceall(proxy_class_enums_code, "$proxydmodule", proxy_dmodule_name);
       Replaceall(proxy_class_def, "$wrapdmodule", wrap_dmodule_name);
       Replaceall(proxy_class_code, "$wrapdmodule", wrap_dmodule_name);
-      Replaceall(proxy_class_constants_code, "$wrapdmodule", wrap_dmodule_name);
+      Replaceall(proxy_class_enums_code, "$wrapdmodule", wrap_dmodule_name);
       Replaceall(proxy_class_def, "$dllimport", wrap_library_name);
       Replaceall(proxy_class_code, "$dllimport", wrap_library_name);
-      Replaceall(proxy_class_constants_code, "$dllimport", wrap_library_name);
+      Replaceall(proxy_class_enums_code, "$dllimport", wrap_library_name);
 
       // Write the proxy class definition (the header part).
       Printv(proxy_dmodule_code, proxy_class_def, NIL);
 
       // Write all constants and enumerations first to prevent forward reference
       // errors.
-      if (Len(proxy_class_constants_code) != 0)
-	Printv(proxy_dmodule_code, proxy_class_constants_code, NIL);
+      if (Len(proxy_class_enums_code) != 0)
+	Printv(proxy_dmodule_code, proxy_class_enums_code, NIL);
 
       // Write the class code and the curly bracket closing the class definition.
       Printv(proxy_dmodule_code, proxy_class_code, "}\n\n", NIL);
@@ -1588,8 +1587,8 @@ public:
       proxy_class_name = NULL;
       Delete(destructor_call);
       destructor_call = NULL;
-      Delete(proxy_class_constants_code);
-      proxy_class_constants_code = NULL;
+      Delete(proxy_class_enums_code);
+      proxy_class_enums_code = NULL;
     }
 
     return SWIG_OK;
