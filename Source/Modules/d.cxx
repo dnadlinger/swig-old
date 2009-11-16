@@ -1119,8 +1119,8 @@ public:
 
       Printf(enum_code, "  %s", symname);
 
-      // Check for the %csconstvalue feature
-      String *value = Getattr(n, "feature:cs:constvalue");
+      // Check for the %dconstvalue feature
+      String *value = Getattr(n, "feature:d:constvalue");
 
       // Note that in D, enum values must be compile-time constants. Thus,
       // %csconst(0) is not supported.
@@ -1142,16 +1142,18 @@ public:
     return SWIG_OK;
   }
 
-  /* -----------------------------------------------------------------------
+  /* ---------------------------------------------------------------------------
    * constantWrapper()
-   * Used for wrapping constants - #define or %constant.
-   * Also for inline initialised const static primitive type member variables (short, int, double, enums etc).
-   * C# static const variables are generated for these.
-   * If the %csconst(1) feature is used then the C constant value is used to initialise the C# const variable.
-   * If not, a PINVOKE method is generated to get the C constant value for initialisation of the C# const variable.
-   * However, if the %csconstvalue feature is used, it overrides all other ways to generate the initialisation.
-   * Also note that this method might be called for wrapping enum items (when the enum is using %csconst(0)).
-   * ------------------------------------------------------------------------ */
+   *
+   * Used for wrapping constants declared by #define or %constant and also for
+   * inline initialised const static primitive type member variables (short,
+   * int, double, enums etc).
+   *
+   * If the %dconst(1) feature is used, the C/C++ constant value is used to
+   * initialize a D »const«. If not, a »getter« method is generated which
+   * retrieves the value via a call to the C wrapper. However, if there is a
+   * %dconstvalue specified, it overrides all other settings.
+   * --------------------------------------------------------------------------- */
 
   virtual int constantWrapper(Node *n) {
     String *symname = Getattr(n, "sym:name");
@@ -1164,22 +1166,10 @@ public:
     if (!addSymbol(symname, n))
       return SWIG_ERROR;
 
-    bool is_enum_item = (Cmp(nodeType(n), "enumitem") == 0);
-
-    // The %csconst feature determines how the constant value is obtained
-    int const_feature_flag = GetFlag(n, "feature:cs:const");
-
-    /* Adjust the enum type for the Swig_typemap_lookup.
-     * We want the same jstype typemap for all the enum items so we use the enum type (parent node). */
-    if (is_enum_item) {
-      t = Getattr(parentNode(n), "enumtype");
-      Setattr(n, "type", t);
-    }
-
-    /* Attach the non-standard typemaps to the parameter list. */
+    // Attach the non-standard typemaps to the parameter list.
     Swig_typemap_attach_parms("cstype", l, NULL);
 
-    /* Get C# return types */
+    // Get D return types.
     bool classname_substituted_flag = false;
 
     if ((tm = Swig_typemap_lookup("cstype", n, "", 0))) {
@@ -1211,45 +1201,34 @@ public:
     const String *methodmods = Getattr(n, "feature:cs:methodmodifiers");
     methodmods = methodmods ? methodmods : (is_public(n) ? public_string : protected_string);
 
-    Printf(constants_code, "  %s %s %s %s = ", methodmods, (const_feature_flag ? "const" : "static readonly"), return_type, itemname);
+    // Retrive the override value set via %dconstvalue, if any.
+    String *value = Getattr(n, "feature:d:constvalue");
 
-    // Check for the %csconstvalue feature
-    String *value = Getattr(n, "feature:cs:constvalue");
-
-    if (value) {
-      Printf(constants_code, "%s;\n", value);
-    } else if (!const_feature_flag) {
-      // Default enum and constant handling will work with any type of C constant and initialises the C# variable from C through a PINVOKE call.
-
-      if (classname_substituted_flag) {
-	if (SwigType_isenum(t)) {
-	  // This handles wrapping of inline initialised const enum static member variables (not when wrapping enum items - ignored later on)
-	  Printf(constants_code, "(%s)%s.%s();\n", return_type, wrap_dmodule_name, Swig_name_get(symname));
-	} else {
-	  // This handles function pointers using the %constant directive
-	  Printf(constants_code, "new %s(%s.%s(), false);\n", return_type, wrap_dmodule_name, Swig_name_get(symname));
-	}
-      } else
-	Printf(constants_code, "%s.%s();\n", wrap_dmodule_name, Swig_name_get(symname));
-
-      // Each constant and enum value is wrapped with a separate PInvoke function call
-      SetFlag(n, "feature:immutable");
-      enum_constant_flag = true;
-      variableWrapper(n);
-      enum_constant_flag = false;
+    // The %dconst feature determines if a D const or a getter function is
+    // created.
+    if (GetFlag(n, "feature:d:const") == 1) {
+      Printf(constants_code, "%s const %s %s = ", methodmods, return_type, itemname );
+      if (value) {
+	Printf(constants_code, "%s;\n", value);
+      } else {
+	// Just emit the C code and hope it compiles in D.
+	Printf(constants_code, "%s;\n", Getattr(n, "value"));
+      }
     } else {
-      // Alternative constant handling will use the C syntax to make a true C# constant and hope that it compiles as C# code
-      Printf(constants_code, "%s;\n", Getattr(n, "value"));
+      // Default constant handling will work with any type of C constant. It
+      // generates a getter function (which is the same as a read only property
+      // in D) which retrieves the value via by calling the C wrapper.
+
+      SetFlag(n, "feature:immutable");
+      globalvariableHandler(n);
     }
 
     // Emit the generated code to appropriate place
-    // Enums only emit the intermediate and PINVOKE methods, so no proxy or module class wrapper methods needed
-    if (!is_enum_item) {
-      if (proxy_flag && wrapping_member_flag)
-	Printv(proxy_class_constants_code, constants_code, NIL);
-      else
-	Printv(module_class_constants_code, constants_code, NIL);
-    }
+    if (proxy_flag && wrapping_member_flag)
+      Printv(proxy_class_constants_code, constants_code, NIL);
+    else
+      Printv(module_class_constants_code, constants_code, NIL);
+
     // Cleanup
     Swig_restore(n);
     Delete(new_value);
@@ -2317,7 +2296,7 @@ public:
     num_arguments = emit_num_arguments(l);
     num_required = emit_num_required(l);
 
-    bool global_or_member_variable = global_variable_flag || (wrapping_member_flag && !enum_constant_flag);
+    bool global_or_member_variable = global_variable_flag || wrapping_member_flag;
     int gencomma = 0;
 
     /* Output each parameter */
@@ -2456,19 +2435,19 @@ public:
    * class call to obtain the enum value. The intermediary class and PINVOKE methods to obtain
    * the enum value will be generated. Otherwise the C/C++ enum value will be used if there
    * is one and hopefully it will compile as C# code - e.g. 20 as in: enum E{e=20};
-   * The %csconstvalue feature overrides all other ways to generate the constant value.
+   * The %dconstvalue feature overrides all other ways to generate the constant value.
    * The caller must delete memory allocated for the returned string.
    * ------------------------------------------------------------------------ */
 
   String *enumValue(Node *n) {
     String *symname = Getattr(n, "sym:name");
 
-    // Check for the %csconstvalue feature
-    String *value = Getattr(n, "feature:cs:constvalue");
+    // Check for the %dconstvalue feature
+    String *value = Getattr(n, "feature:d:constvalue");
 
     if (!value) {
       // The %csconst feature determines how the constant value is obtained
-      int const_feature_flag = GetFlag(n, "feature:cs:const");
+      int const_feature_flag = GetFlag(n, "feature:d:const");
 
       if (const_feature_flag) {
 	// Use the C syntax to make a true C# constant and hope that it compiles as C# code

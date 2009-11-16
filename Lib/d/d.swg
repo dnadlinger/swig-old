@@ -878,8 +878,8 @@
 /*
  * D-specific directives.
  */
-#define %csconst(flag)              %feature("cs:const","flag")
-#define %csconstvalue(value)        %feature("cs:constvalue",value)
+#define %dconst(flag)               %feature("d:const","flag")
+#define %dconstvalue(value)         %feature("d:constvalue",value)
 #define %csenum(wrapapproach)       %feature("cs:enum","wrapapproach")
 #define %dmethodmodifiers           %feature("d:methodmodifiers")
 #define %csnothrowexception         %feature("except")
