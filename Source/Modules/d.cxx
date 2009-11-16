@@ -36,7 +36,6 @@ class D:public Language {
 
   bool proxy_flag;		// Flag for generating proxy classes
   bool native_function_flag;	// Flag for when wrapping a native function
-  bool enum_constant_flag;	// Flag for when wrapping an enum or constant
   bool static_flag;		// Flag for when wrapping a static functions or member variables
   bool variable_wrapper_flag;	// Flag for when wrapping a nonstatic member variable
   bool wrapping_member_flag;	// Flag for when wrapping a member variable/enum/const
@@ -111,7 +110,6 @@ public:
       filenames_list(NULL),
       proxy_flag(true),
       native_function_flag(false),
-      enum_constant_flag(false),
       static_flag(false),
       variable_wrapper_flag(false),
       wrapping_member_flag(false),
@@ -981,13 +979,13 @@ public:
     // If we are not processing an enum or constant, and we were not generating
     // a wrapper function which will be accessed via a proxy class, write a
     // function to the proxy D module.
-    if (!(proxy_flag && is_wrapping_class()) && !enum_constant_flag) {
+    if (!(proxy_flag && is_wrapping_class())) {
       writeProxyDModuleFunction(n);
     }
 
     // If we are processing a public member variable, write the property-style
     // member function to the proxy class.
-    if (proxy_flag && wrapping_member_flag && !enum_constant_flag) {
+    if (proxy_flag && wrapping_member_flag) {
       Setattr(n, "proxyfuncname", variable_name);
       Setattr(n, "imfuncname", symname);
 
@@ -1710,7 +1708,7 @@ public:
       Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(t, 0));
     }
 
-    if (wrapping_member_flag && !enum_constant_flag) {
+    if (wrapping_member_flag) {
       // Check if this is a setter method for a public member.
       setter_flag = (Cmp(Getattr(n, "sym:name"),
 	Swig_name_set(Swig_name_member(proxy_class_name, variable_name))) == 0);
@@ -2296,7 +2294,6 @@ public:
     num_arguments = emit_num_arguments(l);
     num_required = emit_num_required(l);
 
-    bool global_or_member_variable = global_variable_flag || wrapping_member_flag;
     int gencomma = 0;
 
     /* Output each parameter */
@@ -2322,7 +2319,8 @@ public:
       if (gencomma)
 	Printf(imcall, ", ");
 
-      String *arg = makeParameterName(n, p, i, global_or_member_variable);
+      const bool generating_setter = global_variable_flag || wrapping_member_flag;
+      String *arg = makeParameterName(n, p, i, generating_setter);
 
       // Use typemaps to transform type used in C# wrapper function (in proxy class) to type used in PInvoke function (in intermediary class)
       if ((tm = Getattr(p, "tmap:csin"))) {
