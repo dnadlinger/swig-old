@@ -1255,7 +1255,6 @@ public:
       String *value = Getattr(n, "value");
 
       if (Strcmp(lang, "d") == 0) {
-
 	String *strvalue = NewString(value);
 	Replaceall(strvalue, "\\\"", "\"");
 
@@ -1275,7 +1274,7 @@ public:
 	} else if (Strcmp(code, "wrapperloaderbindcommand") == 0) {
 	  Delete(wrapper_loader_bind_command);
 	  wrapper_loader_bind_command = Copy(strvalue);
-	}else {
+	} else {
 	  Printf(stderr, "%s : Line %d. Unrecognized pragma.\n", input_file, line_number);
 	}
 	Delete(strvalue);
@@ -2690,25 +2689,6 @@ public:
     Delete(excode_attribute);
   }
 
-  /* -----------------------------------------------------------------------------
-   * addOpenNamespace()
-   * ----------------------------------------------------------------------------- */
-
-  void addOpenNamespace(String *namspace, File *file) {
-    if (namspace)
-      if (Len(namspace) > 0)
-	Printf(file, "namespace %s {\n", namspace);
-  }
-
-  /* -----------------------------------------------------------------------------
-   * addCloseNamespace()
-   * ----------------------------------------------------------------------------- */
-
-  void addCloseNamespace(String *namspace, File *file) {
-    if (namspace)
-      if (Len(namspace) > 0)
-	Printf(file, "\n}\n");
-  }
 
   /*----------------------------------------------------------------------
    * Start of director methods
