@@ -1154,72 +1154,73 @@ public:
 
     // The %dconst feature determines if a D const or a getter function is
     // created.
-    if (GetFlag(n, "feature:d:const") == 1) {
-      String *constants_code = NewString("");
-      SwigType *t = Getattr(n, "type");
-      ParmList *l = Getattr(n, "parms");
-
-      // Attach the non-standard typemaps to the parameter list.
-      Swig_typemap_attach_parms("cstype", l, NULL);
-
-      // Get D return types.
-      String *return_type = NewString("");
-      String *tm;
-      if ((tm = Swig_typemap_lookup("cstype", n, "", 0))) {
-	String *cstypeout = Getattr(n, "tmap:cstype:out");	// the type in the cstype typemap's out attribute overrides the type in the typemap
-	if (cstypeout)
-	  tm = cstypeout;
-	substituteClassname(t, tm);
-	Printf(return_type, "%s", tm);
-      } else {
-	Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(t, 0));
-      }
-
-      // Add the stripped quotes back in.
-      String *new_value = NewString("");
-      Swig_save("constantWrapper", n, "value", NIL);
-      if (SwigType_type(t) == T_STRING) {
-	Printf(new_value, "\"%s\"", Copy(Getattr(n, "value")));
-	Setattr(n, "value", new_value);
-      } else if (SwigType_type(t) == T_CHAR) {
-	Printf(new_value, "\'%s\'", Copy(Getattr(n, "value")));
-	Setattr(n, "value", new_value);
-      }
-
-      const String *itemname = (proxy_flag && wrapping_member_flag) ? variable_name : symname;
-
-      const String *methodmods = Getattr(n, "feature:d:methodmodifiers");
-      methodmods = methodmods ? methodmods : (is_public(n) ? public_string : protected_string);
-
-      Printf(constants_code, "%s const %s %s = ", methodmods, return_type, itemname);
-
-      // Retrive the override value set via %dconstvalue, if any.
-      String *override_value = Getattr(n, "feature:d:constvalue");
-      if (override_value) {
-	Printf(constants_code, "%s;\n", override_value);
-      } else {
-	// Just emit the C code and hope it compiles in D.
-	Printf(constants_code, "%s;\n", Getattr(n, "value"));
-      }
-
-      // Emit the generated code to appropriate place.
-      if (proxy_flag && wrapping_member_flag)
-	Printv(proxy_class_code, constants_code, NIL);
-      else
-	Printv(module_class_constants_code, constants_code, NIL);
-
-      // Cleanup.
-      Delete(new_value);
-      Delete(return_type);
-      Delete(constants_code);
-      Swig_restore(n);
-    } else {
+    if (GetFlag(n, "feature:d:const") != 1) {
       // Default constant handling will work with any type of C constant. It
       // generates a getter function (which is the same as a read only property
       // in D) which retrieves the value via by calling the C wrapper.
-      SetFlag(n, "feature:immutable");
-      globalvariableHandler(n);
+      // Note that this is only called for global constants, static member
+      // constants are already handeled in staticmemberfunctionHandler().
+      return globalvariableHandler(n);
     }
+
+    String *constants_code = NewString("");
+    SwigType *t = Getattr(n, "type");
+    ParmList *l = Getattr(n, "parms");
+
+    // Attach the non-standard typemaps to the parameter list.
+    Swig_typemap_attach_parms("cstype", l, NULL);
+
+    // Get D return types.
+    String *return_type = NewString("");
+    String *tm;
+    if ((tm = Swig_typemap_lookup("cstype", n, "", 0))) {
+      String *cstypeout = Getattr(n, "tmap:cstype:out");	// the type in the cstype typemap's out attribute overrides the type in the typemap
+      if (cstypeout)
+	tm = cstypeout;
+      substituteClassname(t, tm);
+      Printf(return_type, "%s", tm);
+    } else {
+      Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(t, 0));
+    }
+
+    // Add the stripped quotes back in.
+    String *new_value = NewString("");
+    Swig_save("constantWrapper", n, "value", NIL);
+    if (SwigType_type(t) == T_STRING) {
+      Printf(new_value, "\"%s\"", Copy(Getattr(n, "value")));
+      Setattr(n, "value", new_value);
+    } else if (SwigType_type(t) == T_CHAR) {
+      Printf(new_value, "\'%s\'", Copy(Getattr(n, "value")));
+      Setattr(n, "value", new_value);
+    }
+
+    const String *itemname = (proxy_flag && wrapping_member_flag) ? variable_name : symname;
+
+    const String *methodmods = Getattr(n, "feature:d:methodmodifiers");
+    methodmods = methodmods ? methodmods : (is_public(n) ? public_string : protected_string);
+
+    Printf(constants_code, "%s const %s %s = ", methodmods, return_type, itemname);
+
+    // Retrive the override value set via %dconstvalue, if any.
+    String *override_value = Getattr(n, "feature:d:constvalue");
+    if (override_value) {
+      Printf(constants_code, "%s;\n", override_value);
+    } else {
+      // Just emit the C code and hope it compiles in D.
+      Printf(constants_code, "%s;\n", Getattr(n, "value"));
+    }
+
+    // Emit the generated code to appropriate place.
+    if (proxy_flag && wrapping_member_flag)
+      Printv(proxy_class_code, constants_code, NIL);
+    else
+      Printv(module_class_constants_code, constants_code, NIL);
+
+    // Cleanup.
+    Delete(new_value);
+    Delete(return_type);
+    Delete(constants_code);
+    Swig_restore(n);
 
     return SWIG_OK;
   }
@@ -2147,6 +2148,10 @@ public:
    * ---------------------------------------------------------------------- */
 
   virtual int staticmembervariableHandler(Node *n) {
+    if ( GetFlag(n, "feature:d:const") != 1 ) {
+      Delattr(n, "value");
+    }
+
     variable_name = Getattr(n, "sym:name");
     wrapping_member_flag = true;
     static_flag = true;
