@@ -191,8 +191,9 @@ private class __SWIGStringHelper {
     __SWIGRegisterStringCallback_$proxydmodule(&createString);
   }
 
-  static char* createString(char* cString) {
-    // TODO: Research what the C# module is doing here and port it to D.
+  static char* createString( char* cString ) {
+    // TODO: Research if this callback mechanism is needed for D.
+    // We are dup'ing the strings in csout anyway…
     return cString;
   }
 }
