@@ -205,5 +205,5 @@ alias char* function( char* cString ) __SWIGStringCallback;
 %insert(runtime) %{
 /* Contract support */
 
-#define SWIG_contract_assert(nullreturn, expr, msg) if (!(expr)) {SWIG_DSetPendingExceptionArgument(SWIG_DArgumentOutOfRangeException, msg, ""); return nullreturn; } else
+#define SWIG_contract_assert(nullreturn, expr, msg) if (!(expr)) {SWIG_DSetPendingException(SWIG_DException, msg); return nullreturn; } else
 %}
