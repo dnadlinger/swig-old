@@ -56,8 +56,8 @@ class D:public Language {
   String *enum_code;
   String *wrap_library_name;		// The name of the library which contains the C wrapper (used for dynamic linking).
   String *namespce;		// Optional namespace name
-  String *wrap_dmodule_imports;	//intermediary class imports from %pragma
-  String *proxy_dmodule_imports;	//module imports from %pragma
+  String *wrap_dmodule_imports;	// Imports for the wrap D module from %pragma.
+  String *proxy_dmodule_imports;	// Imports for the proxy D module from %pragma.
   String *upcasts_code;		//C++ casts for inheritance hierarchies C++ code
   String *wrap_dmodule_cppcasts_code;	//C++ casts up inheritance hierarchies intermediary class code
   String *director_callback_typedefs;	// Director function pointer typedefs for callbacks
@@ -1695,7 +1695,7 @@ public:
     const String *outattributes = Getattr(n, "tmap:cstype:outattributes");
     if (outattributes)
       Printf(function_code, "  %s\n", outattributes);
-    const String *methodmods = Getattr(n, "feature:cs:methodmodifiers");
+    const String *methodmods = Getattr(n, "feature:d:methodmodifiers");
     if (methodmods) {
       if (is_smart_pointer()) {
 	// Smart pointer classes do not mirror the inheritance hierarchy of the
