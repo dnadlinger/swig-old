@@ -3025,9 +3025,9 @@ public:
 	      substituteClassname(pt, din);
 	      Replaceall(din, "$iminput", ln);
 
+	      Printf(proxy_method_types, ", ");
 	      if (gencomma > 0) {
 		Printf(delegate_parms, ", ");
-		Printf(proxy_method_types, ", ");
 		Printf(imcall_args, ", ");
 	      }
 	      Printf(delegate_parms, "%s%s %s", im_directorinattributes ? im_directorinattributes : empty_string, tm, ln);
@@ -3233,7 +3233,7 @@ public:
       // Write the type alias for the callback to the wrap D module.
       String* proxy_callback_type = NewString("");
       Printf(proxy_callback_type, "__SwigDirector_%s_Callback%s", classname, methid);
-      Printf(wrap_dmodule_code, "alias %s function(void*,%s) %s;\n", proxy_callback_return_type, proxy_method_types, proxy_callback_type);
+      Printf(wrap_dmodule_code, "alias %s function(void*%s) %s;\n", proxy_callback_return_type, proxy_method_types, proxy_callback_type);
       Delete(proxy_callback_type);
     }
 
