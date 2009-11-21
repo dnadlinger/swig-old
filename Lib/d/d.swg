@@ -96,8 +96,8 @@
 
 /*
  * The following typemaps, in and out, are used for converting between the types
- * for C/C++ and D when generating the code for the wrapper functions (they
- * are used only on the C++ side.
+ * for C/C++ and D when generating the code for the wrapper functions (on the
+ * C++ side.
  */
 
 // Primitive types.
