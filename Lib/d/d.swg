@@ -96,7 +96,8 @@
 
 /*
  * The following typemaps, in and out, are used for converting between the types
- * for C/C++ and D when generating the code for the wrapper functions.
+ * for C/C++ and D when generating the code for the wrapper functions (they
+ * are used only on the C++ side.
  */
 
 // Primitive types.
@@ -199,15 +200,15 @@
 %typemap(out) float              %{ $result = $1; %}
 %typemap(out) double             %{ $result = $1; %}
 
-/* char * - treat as String */
+/* char * - treat as char[] */
 %typemap(in) char * %{ $1 = ($1_ltype)$input; %}
 %typemap(out) char * %{ $result = SWIG_d_string_callback((const char *)$1); %}
 %typemap(directorout, warning=SWIGWARN_TYPEMAP_DIRECTOROUT_PTR_MSG) char * %{ $result = ($1_ltype)$input; %}
 %typemap(directorin) char * %{ $input = SWIG_d_string_callback((const char *)$1); %}
 %typemap(csdirectorin) char * "$iminput"
-%typemap(csdirectorout) char * "$cscall"
+%typemap(csdirectorout) char * "tango.stdc.stringz.toStringz($cscall)"
 
-/* char *& - treat as String */
+/* char *& - treat as char[] */
 %typemap(in) char *& ($*1_ltype temp = 0) %{
   temp = ($*1_ltype)$input;
   $1 = &temp;
@@ -353,7 +354,7 @@
 %typemap(directorin) SWIGTYPE
 %{ $input = (void *)&$1; %}
 %typemap(csdirectorin) SWIGTYPE "new $&dclassname($iminput, false)"
-%typemap(csdirectorout) SWIGTYPE "$&dclassname.getCPtr($cscall).Handle"
+%typemap(csdirectorout) SWIGTYPE "$&dclassname.__swig_getCObject($cscall)"
 
 // Pointers and references.
 %typemap(in) SWIGTYPE * %{ $1 = ($1_ltype)$input; %}
@@ -393,9 +394,9 @@
 %typemap(directorin) SWIGTYPE &
 %{ $input = ($1_ltype) &$1; %}
 
-%typemap(csdirectorin) SWIGTYPE *, SWIGTYPE (CLASS::*) "($iminput == IntPtr.Zero) ? null : new $dclassname($iminput, false)"
+%typemap(csdirectorin) SWIGTYPE *, SWIGTYPE (CLASS::*) "($iminput is null) ? null : new $dclassname($iminput, false)"
 %typemap(csdirectorin) SWIGTYPE & "new $dclassname($iminput, false)"
-%typemap(csdirectorout) SWIGTYPE *, SWIGTYPE (CLASS::*), SWIGTYPE & "$dclassname.getCPtr($cscall).Handle"
+%typemap(csdirectorout) SWIGTYPE *, SWIGTYPE (CLASS::*), SWIGTYPE & "$dclassname.__swig_getCObject($cscall)"
 
 // Default array handling.
 %typemap(in) SWIGTYPE [] %{ $1 = ($1_ltype)$input; %}
@@ -526,7 +527,7 @@
 
 
 /*
- * Typemaps for code generation in proxy classes and C# type wrapper classes.
+ * Typemaps for code generation in D proxy and type wrapper classes.
  */
 
 // The csin typemap is used for converting function parameter types from the
@@ -549,7 +550,7 @@
 %typemap(csin) char *, char *&, char[ANY], char[] "tango.stdc.stringz.toStringz($csinput)"
 %typemap(csin) SWIGTYPE "$&dclassname.__swig_getCObject($csinput)"
 %typemap(csin) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] "$dclassname.__swig_getCObject($csinput)"
-%typemap(csin) SWIGTYPE (CLASS::*) "$dclassname.getCMemberPtr($csinput)"
+%typemap(csin) SWIGTYPE (CLASS::*) "$dclassname.__swig_getCMemberPtr($csinput)"
 
 
 // The csout typemap is used for converting function return values from the
@@ -784,7 +785,7 @@
 %typemap(dinterfaces)                 SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
 %typemap(dinterfaces_derived)         SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
 
-%typemap(dconstructor, excode=SWIGEXCODE,directorconnect="\n    SwigDirectorConnect();") SWIGTYPE %{{
+%typemap(dconstructor, excode=SWIGEXCODE,directorconnect="\n    __SwigDirectorConnect();") SWIGTYPE %{{
     this( $imcall, true );$excode$directorconnect
   }
 %}

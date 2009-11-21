@@ -1337,9 +1337,9 @@ public:
       if (purebase_notderived)
         Swig_error(input_file, line_number, "The csbase typemap for proxy %s must contain just one of the 'replace' or 'notderived' attributes.\n", typemap_lookup_type);
     } else if (Len(pure_baseclass) > 0 && Len(baseclass) > 0) {
-      Swig_warning(WARN_CSHARP_MULTIPLE_INHERITANCE, input_file, line_number,
-		   "Warning for %s proxy: Base %s ignored. Multiple inheritance is not supported in C#. "
-		   "Perhaps you need one of the 'replace' or 'notderived' attributes in the csbase typemap?\n", typemap_lookup_type, pure_baseclass);
+      Swig_warning(WARN_D_MULTIPLE_INHERITANCE, input_file, line_number,
+	"Warning for %s proxy: Base class %s ignored. Multiple inheritance is not supported in D. "
+	"Perhaps you need one of the 'replace' or 'notderived' attributes in the csbase typemap?\n", typemap_lookup_type, pure_baseclass);
     }
 
     // Pure C# interfaces
@@ -1373,53 +1373,39 @@ public:
     if (feature_director) {
       // Generate director connect method
       // put this in classDirectorEnd ???
-      Printf(proxy_class_code, "  private void SwigDirectorConnect() {\n");
+      Printf(proxy_class_code, "  private void __SwigDirectorConnect() {\n");
 
       int i;
       for (i = first_class_dmethod; i < curr_class_dmethod; ++i) {
 	UpcallData *udata = Getitem(dmethods_seq, i);
 	String *method = Getattr(udata, "method");
 	String *methid = Getattr(udata, "class_methodidx");
-	String *overname = Getattr(udata, "overname");
-	Printf(proxy_class_code, "    if (SwigDerivedClassHasMethod(\"%s\", swigMethodTypes%s))\n", method, methid);
-	Printf(proxy_class_code, "      swigDelegate%s = new SwigDelegate%s_%s(SwigDirector%s);\n", methid, proxy_class_name, methid, overname);
+	Printf(proxy_class_code, "    %s.__SwigDirectorCallback%s_%s callback%s;\n", wrap_dmodule_name, proxy_class_name, methid, methid);
+	Printf(proxy_class_code, "    if ( __SwigIsMethodOverridden!( \"%s\" ) ) {\n", method);
+	Printf(proxy_class_code, "      callback%s = &__SwigDirector_%s;\n", methid, method);
+	Printf(proxy_class_code, "    }\n\n");
       }
-      Printf(proxy_class_code, "    %s.%s_director_connect(__swig_cObject", wrap_dmodule_name, proxy_class_name);
+      Printf(proxy_class_code, "    %s.%s_director_connect( __swig_cObject", wrap_dmodule_name, proxy_class_name);
       for (i = first_class_dmethod; i < curr_class_dmethod; ++i) {
 	UpcallData *udata = Getitem(dmethods_seq, i);
 	String *methid = Getattr(udata, "class_methodidx");
-	Printf(proxy_class_code, ", swigDelegate%s", methid);
+	Printf(proxy_class_code, ", callback%s", methid);
       }
-      Printf(proxy_class_code, ");\n");
+      Printf(proxy_class_code, " );\n");
       Printf(proxy_class_code, "  }\n");
 
+      // Helper function to determine if a method has been overridden in a
+      // subclass of the wrapped class. If not, we just pass null to the
+      // director_connect_function since the method from the C++ class should
+      // be called as usual (see above).
+      // Only emit it if the proxy class has at least one method.
+      // TODO: Extend this to support overriden methods.
       if (first_class_dmethod < curr_class_dmethod) {
-	// Only emit if there is at least one director method
 	Printf(proxy_class_code, "\n");
-	Printf(proxy_class_code, "  private bool SwigDerivedClassHasMethod(string methodName, Type[] methodTypes) {\n");
-	Printf(proxy_class_code,
-	       "    System.Reflection.MethodInfo methodInfo = this.GetType().GetMethod(methodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance, null, methodTypes, null);\n");
-	Printf(proxy_class_code, "    bool hasDerivedMethod = methodInfo.DeclaringType.IsSubclassOf(typeof(%s));\n", proxy_class_name);
-	/* Could add this code to cover corner case where the GetMethod() returns a method which allows type
-	 * promotion, eg it will return foo(double), if looking for foo(int).
-	 if (hasDerivedMethod) {
-	 hasDerivedMethod = false;
-	 if (methodInfo != null)
-	 {
-	 hasDerivedMethod = true;
-	 ParameterInfo[] parameterArray1 = methodInfo.GetParameters();
-	 for (int i=0; i<methodTypes.Length; i++)
-	 {
-	 if (parameterArray1[0].ParameterType != methodTypes[0])
-	 {
-	 hasDerivedMethod = false;
-	 break;
-	 }
-	 }
-	 }
-	 }
-	 */
-	Printf(proxy_class_code, "    return hasDerivedMethod;\n");
+	Printf(proxy_class_code, "  private bool __SwigIsMethodOverridden( char[] methodName )() {\n");
+	Printf(proxy_class_code, "    auto methodThis = mixin( \"&\" ~ methodName );\n" );
+	Printf(proxy_class_code, "    auto methodBase = mixin( \"&%s.\" ~ methodName );\n", proxy_class_name );
+	Printf(proxy_class_code, "    return !( methodThis is methodBase );\n");
 	Printf(proxy_class_code, "  }\n");
       }
 
@@ -1845,8 +1831,9 @@ public:
 	Replaceall(tm, "$owner", "false");
       substituteClassname(t, tm);
 
-      // For director methods: generate code to selectively make a normal polymorphic call or
-      // an explicit method call - needed to prevent infinite recursion calls in director methods.
+      // For director methods: generate code to selectively make a normal
+      // polymorphic call or an explicit method call. Needed to prevent infinite
+      // recursion when calling director methods.
       Node *explicit_n = Getattr(n, "explicitcallnode");
       if (explicit_n) {
 	String *ex_overloaded_name = getOverloadedName(explicit_n);
@@ -1858,9 +1845,9 @@ public:
 
 	String *excode = NewString("");
 	if (!Cmp(return_type, "void"))
-	  Printf(excode, "if (this.GetType() == typeof(%s)) %s; else %s", proxy_class_name, imcall, ex_imcall);
+	  Printf(excode, "if (this.classinfo == %s.classinfo) %s; else %s", proxy_class_name, imcall, ex_imcall);
 	else
-	  Printf(excode, "((this.GetType() == typeof(%s)) ? %s : %s)", proxy_class_name, imcall, ex_imcall);
+	  Printf(excode, "((this.classinfo == %s.classinfo) ? %s : %s)", proxy_class_name, imcall, ex_imcall);
 
 	Clear(imcall);
 	Printv(imcall, excode, NIL);
@@ -2043,12 +2030,12 @@ public:
 	if (!feature_director) {
 	  Replaceall(construct_tm, "$directorconnect", "");
 	} else {
-	  String *connect_attr = Getattr(attributes, "tmap:csconstruct:directorconnect");
+	  String *connect_attr = Getattr(attributes, "tmap:dconstructor:directorconnect");
 
 	  if (connect_attr) {
 	    Replaceall(construct_tm, "$directorconnect", connect_attr);
 	  } else {
-	    Swig_warning(WARN_CSHARP_NO_DIRECTORCONNECT_ATTR, input_file, line_number, "\"directorconnect\" attribute missing in %s \"csconstruct\" typemap.\n",
+	    Swig_warning(WARN_D_NO_DIRECTORCONNECT_ATTR, input_file, line_number, "\"directorconnect\" attribute missing in %s \"csconstruct\" typemap.\n",
 			 Getattr(n, "name"));
 	    Replaceall(construct_tm, "$directorconnect", "");
 	  }
@@ -2734,17 +2721,20 @@ public:
     if (!Swig_directorclass(n))
       return;
 
-    // Output the director connect method:
+    // Output the director connect method.
     String *norm_name = SwigType_namestr(Getattr(n, "name"));
-    String *swig_director_connect = NewStringf("%s_director_connect", proxy_class_name);
+    String *connect_name = NewStringf("%s_director_connect", proxy_class_name);
     String *sym_name = Getattr(n, "sym:name");
     Wrapper *code_wrap;
 
-    Printv(wrap_dmodule_code, "\n  [DllImport(\"", wrap_library_name, "\", EntryPoint=\"D_", swig_director_connect, "\")]\n", NIL);
-    Printf(wrap_dmodule_code, "  public static extern void %s(HandleRef jarg1", swig_director_connect);
+    Printv(wrapper_loader_bind_code, wrapper_loader_bind_command, NIL);
+    Replaceall(wrapper_loader_bind_code, "$function", connect_name);
+    Replaceall(wrapper_loader_bind_code, "$symbol", Swig_name_wrapper( connect_name ));
+
+    Printf(wrap_dmodule_code, "extern( C ) void function(void* jarg1");
 
     code_wrap = NewWrapper();
-    Printf(code_wrap->def, "SWIGEXPORT void SWIGSTDCALL D_%s(void *objarg", swig_director_connect);
+    Printf(code_wrap->def, "SWIGEXPORT void SWIGSTDCALL D_%s(void *objarg", connect_name);
 
     Printf(code_wrap->code, "  %s *obj = (%s *)objarg;\n", norm_name, norm_name);
     Printf(code_wrap->code, "  SwigDirector_%s *director = dynamic_cast<SwigDirector_%s *>(obj);\n", sym_name, sym_name);
@@ -2761,26 +2751,26 @@ public:
 	Printf(code_wrap->code, ", ");
       Printf(code_wrap->def, "SwigDirector_%s::SWIG_Callback%s_t callback%s", sym_name, methid, methid);
       Printf(code_wrap->code, "callback%s", methid);
-      Printf(wrap_dmodule_code, ", %s.SwigDelegate%s_%s delegate%s", sym_name, sym_name, methid, methid);
+      Printf(wrap_dmodule_code, ", __SwigDirectorCallback%s_%s callback%s", sym_name, methid, methid);
     }
 
     Printf(code_wrap->def, ") {\n");
     Printf(code_wrap->code, ");\n");
-    Printf(wrap_dmodule_code, ");\n");
+    Printf(wrap_dmodule_code, ") %s;\n", connect_name);
     Printf(code_wrap->code, "  }\n");
     Printf(code_wrap->code, "}\n");
 
     Wrapper_print(code_wrap, f_wrappers);
     DelWrapper(code_wrap);
 
-    Delete(swig_director_connect);
+    Delete(connect_name);
   }
 
   /* ---------------------------------------------------------------
    * classDirectorMethod()
    *
    * Emit a virtual director method to pass a method call on to the
-   * underlying Java object.
+   * underlying D object.
    *
    * --------------------------------------------------------------- */
 
@@ -2815,6 +2805,7 @@ public:
     String *callback_typedef_parms = NewString("");
     String *delegate_parms = NewString("");
     String *proxy_method_types = NewString("");
+    String *proxy_callback_return_type = NewString("");
     String *callback_def = NewString("");
     String *callback_code = NewString("");
     String *imcall_args = NewString("");
@@ -2829,7 +2820,6 @@ public:
     imclass_dmethod = NewStringf("SwigDirector_%s", Swig_name_member(classname, overloaded_name));
 
     if (returntype) {
-
       qualified_return = SwigType_rcaststr(returntype, "c_result");
 
       if (!is_void && !ignored_method) {
@@ -2890,14 +2880,12 @@ public:
         const String *im_directoroutattributes = Getattr(tp, "tmap:imtype:directoroutattributes");
         if (im_directoroutattributes) {
           Printf(callback_def, "  %s\n", im_directoroutattributes);
-          Printf(director_delegate_definitions, "  %s\n", im_directoroutattributes);
         }
 
-	Printf(callback_def, "  private %s SwigDirector%s(", tm, overloaded_name);
-	if (!ignored_method)
-	  Printf(director_delegate_definitions, "  public delegate %s", tm);
+	Printf(callback_def, "  private %s __SwigDirector_%s(", tm, overloaded_name);
+	Printv( proxy_callback_return_type, tm, NIL );
       } else {
-	Swig_warning(WARN_CSHARP_TYPEMAP_CSTYPE_UNDEF, input_file, line_number, "No imtype typemap defined for %s\n", SwigType_str(returntype, 0));
+	Swig_warning(WARN_D_TYPEMAP_CSTYPE_UNDEF, input_file, line_number, "No imtype typemap defined for %s\n", SwigType_str(returntype, 0));
       }
 
       Parm *retpm = NewParmFromNode(returntype, empty_str, n);
@@ -3235,10 +3223,10 @@ public:
       Printf(director_callback_typedefs, "%s);\n", callback_typedef_parms);
       Printf(director_callbacks, "    SWIG_Callback%s_t swig_callback%s;\n", methid, overloaded_name);
 
-      Printf(director_delegate_definitions, " SwigDelegate%s_%s(%s);\n", classname, methid, delegate_parms);
-      Printf(director_delegate_instances, "  private SwigDelegate%s_%s swigDelegate%s;\n", classname, methid, methid);
-      Printf(director_method_types, "  private static Type[] swigMethodTypes%s = new Type[] { %s };\n", methid, proxy_method_types);
-      Printf(director_connect_parms, "SwigDirector%s%s delegate%s", classname, methid, methid);
+      String* proxy_callback_type = NewString("");
+      Printf(proxy_callback_type, "__SwigDirectorCallback%s_%s", classname, methid);
+      Printf(wrap_dmodule_code, "alias %s delegate(%s) %s;\n", proxy_callback_return_type, proxy_method_types, proxy_callback_type);
+      Delete(proxy_callback_type);
     }
 
     Delete(qualified_return);
@@ -3345,7 +3333,7 @@ public:
     Delete(director_ctor_code);
     director_ctor_code = NewString("$director_new");
 
-    Java_director_declaration(n);
+    D_director_declaration(n);
 
     Printf(f_directors_h, "%s {\n", Getattr(n, "director:decl"));
     Printf(f_directors_h, "\npublic:\n");
@@ -3477,13 +3465,13 @@ public:
   }
 
   /*----------------------------------------------------------------------
-   * Java_director_declaration()
+   * D_director_declaration()
    *
    * Generate the director class's declaration
    * e.g. "class SwigDirector_myclass : public myclass, public Swig::Director {"
    *--------------------------------------------------------------------*/
 
-  void Java_director_declaration(Node *n) {
+  void D_director_declaration(Node *n) {
 
     String *base = Getattr(n, "classtype");
     String *class_ctor = NewString("Swig::Director()");
