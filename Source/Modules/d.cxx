@@ -1229,7 +1229,6 @@ public:
     String *code = Getattr(n, "code");
     Replaceall(code, "$proxydmodule", proxy_dmodule_name);
     Replaceall(code, "$wrapdmodule", wrap_dmodule_name);
-    Replaceall(code, "$dllimport", wrap_library_name);
     return Language::insertDirective(n);
   }
 
@@ -1457,9 +1456,6 @@ public:
     Replaceall(proxy_class_def, "$wrapdmodule", wrap_dmodule_name);
     Replaceall(proxy_class_code, "$wrapdmodule", wrap_dmodule_name);
 
-    Replaceall(proxy_class_def, "$dllimport", wrap_library_name);
-    Replaceall(proxy_class_code, "$dllimport", wrap_library_name);
-
     // Add code to do C++ casting to base class (only for classes in an inheritance hierarchy)
     if (derived) {
       String *upcast_name = NewString( "" );
@@ -1524,10 +1520,6 @@ public:
       Replaceall(proxy_class_code, "$wrapdmodule", wrap_dmodule_name);
       Replaceall(proxy_class_enums_code, "$wrapdmodule", wrap_dmodule_name);
       Replaceall(proxy_class_epilogue_code, "$wrapdmodule", wrap_dmodule_name);
-      Replaceall(proxy_class_def, "$dllimport", wrap_library_name);
-      Replaceall(proxy_class_code, "$dllimport", wrap_library_name);
-      Replaceall(proxy_class_enums_code, "$dllimport", wrap_library_name);
-      Replaceall(proxy_class_epilogue_code, "$dllimport", wrap_library_name);
 
       // Write the proxy class definition (the header part).
       Printv(proxy_dmodule_code, proxy_class_def, NIL);
