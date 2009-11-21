@@ -1,6 +1,7 @@
 # See top-level Makefile.in.
 class
 enum
+extend
 funcptr
 simple
 variables
