@@ -34,10 +34,6 @@ static this() {
   $wrapperloaderbindcode
 }
 
-static ~this() {
-  Binder.library.unload();
-}
-
 private {
   // The binding code is heavily inspired by Derelict.
   struct Binder {
