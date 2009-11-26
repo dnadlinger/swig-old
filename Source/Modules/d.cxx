@@ -1150,11 +1150,9 @@ public:
       // Add the stripped quotes back in.
       String *value;
       if (SwigType_type(t) == T_STRING) {
-	value = NewString("");
-	Printf(value, "\"%s\"", raw_value);
+	value = NewStringf("\"%s\"", raw_value);
       } else if (SwigType_type(t) == T_CHAR) {
-	value = NewString("");
-	Printf(value, "\'%s\'", raw_value);
+	value = NewStringf("\'%s\'", raw_value);
       } else {
 	value = Copy(raw_value);
       }
