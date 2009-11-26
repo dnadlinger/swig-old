@@ -91,10 +91,9 @@ class D:public Language {
 
 public:
 
-  /* -----------------------------------------------------------------------------
-   * D()
-   * ----------------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::D()
+   * --------------------------------------------------------------------------- */
    D():empty_string(NewString("")),
       public_string(NewString("public")),
       protected_string(NewString("protected")),
@@ -154,13 +153,12 @@ public:
     director_language = 1;
   }
 
-  /* -----------------------------------------------------------------------------
-   * getProxyName()
+  /* ---------------------------------------------------------------------------
+   * D::getProxyName()
    *
    * Test to see if a type corresponds to something wrapped with a proxy class
    * Return NULL if not otherwise the proxy class name
-   * ----------------------------------------------------------------------------- */
-
+   * --------------------------------------------------------------------------- */
    String *getProxyName(SwigType *t) {
     if (proxy_flag) {
       Node *n = classLookup(t);
@@ -171,10 +169,9 @@ public:
     return NULL;
   }
 
-  /* -----------------------------------------------------------------------------
-   * directorClassName()
-   * ----------------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::directorClassName()
+   * --------------------------------------------------------------------------- */
   String *directorClassName(Node *n) {
     String *dirclassname;
     const char *attrib = "director:classname";
@@ -189,12 +186,10 @@ public:
     return dirclassname;
   }
 
-  /* ------------------------------------------------------------
-   * main()
-   * ------------------------------------------------------------ */
-
+  /* ---------------------------------------------------------------------------
+   * D::main()
+   * --------------------------------------------------------------------------- */
   virtual void main(int argc, char *argv[]) {
-
     SWIG_library_directory("d");
 
     // Look for certain command line options
@@ -242,12 +237,10 @@ public:
     allow_overloading();
   }
 
-  /* ---------------------------------------------------------------------
-   * top()
-   * --------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::top()
+   * --------------------------------------------------------------------------- */
   virtual int top(Node *n) {
-
     // Get any options set in the module directive
     Node *optionsnode = Getattr(Getattr(n, "module"), "options");
 
@@ -570,20 +563,20 @@ public:
     return SWIG_OK;
   }
 
-  /* -----------------------------------------------------------------------------
-   * emitBanner()
-   * ----------------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::emitBanner()
+   * --------------------------------------------------------------------------- */
   void emitBanner(File *f) {
     Printf(f, "/* ----------------------------------------------------------------------------\n");
     Swig_banner_target_lang(f, " *");
     Printf(f, " * ----------------------------------------------------------------------------- */\n\n");
   }
 
-  /*-----------------------------------------------------------------------
-   * Add new director upcall signature
-   *----------------------------------------------------------------------*/
-
+  /* ---------------------------------------------------------------------------
+   * D::addUpcallMethod()
+   *
+   * Adds new director upcall signature.
+   * --------------------------------------------------------------------------- */
   UpcallData *addUpcallMethod(String *imclass_method, String *class_method, String *decl, String *overloaded_name) {
     UpcallData *udata;
     String *imclass_methodidx;
@@ -620,24 +613,9 @@ public:
     return new_udata;
   }
 
-  /*-----------------------------------------------------------------------
-   * Get director upcall signature
-   *----------------------------------------------------------------------*/
-
-  /*
-     UpcallData * getUpcallMethodData(String *director_class, String *decl) {
-     String             *key = NewStringf("%s|%s", director_class, decl);
-     UpcallData         *udata = Getattr(dmethods_table, key);
-
-     Delete(key);
-     return udata;
-     }
-   */
-
-  /* ----------------------------------------------------------------------
-   * nativeWrapper()
-   * ---------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::nativeWrapper()
+   * --------------------------------------------------------------------------- */
   virtual int nativeWrapper(Node *n) {
     String *wrapname = Getattr(n, "wrap:name");
 
@@ -659,12 +637,11 @@ public:
   }
 
   /* ---------------------------------------------------------------------------
-   * functionWrapper()
+   * D::functionWrapper()
    *
    * Generates the C wrapper code for a function and the corresponding
    * declaration in the wrap D module.
    * --------------------------------------------------------------------------- */
-
   virtual int functionWrapper(Node *n) {
     String *symname = Getattr(n, "sym:name");
     SwigType *t = Getattr(n, "type");
@@ -1005,10 +982,9 @@ public:
     return SWIG_OK;
   }
 
-  /* -----------------------------------------------------------------------
-   * globalvariableHandler()
-   * ------------------------------------------------------------------------ */
-
+  /* ---------------------------------------------------------------------------
+   * D::globalvariableHandler()
+   * --------------------------------------------------------------------------- */
   virtual int globalvariableHandler(Node *n) {
     variable_name = Getattr(n, "sym:name");
     global_variable_flag = true;
@@ -1019,11 +995,10 @@ public:
   }
 
   /* ---------------------------------------------------------------------------
-   * enumDeclaration()
+   * D::enumDeclaration()
    *
    * Wraps C/C++ enums as D enums.
    * --------------------------------------------------------------------------- */
-
   virtual int enumDeclaration(Node *n) {
     if (ImportMode)
       return SWIG_OK;
@@ -1077,10 +1052,9 @@ public:
     return SWIG_OK;
   }
 
-  /* ----------------------------------------------------------------------
-   * enumvalueDeclaration()
-   * ---------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::enumvalueDeclaration()
+   * --------------------------------------------------------------------------- */
   virtual int enumvalueDeclaration(Node *n) {
     if (getCurrentClass() && (cplus_mode != PUBLIC))
       return SWIG_NOWRAP;
@@ -1132,7 +1106,7 @@ public:
   }
 
   /* ---------------------------------------------------------------------------
-   * constantWrapper()
+   * D::constantWrapper()
    *
    * Used for wrapping constants declared by #define or %constant and also for
    * (primitive) static member constants initialised inline.
@@ -1142,7 +1116,6 @@ public:
    * retrieves the value via a call to the C wrapper. However, if there is a
    * %dconstvalue specified, it overrides all other settings.
    * --------------------------------------------------------------------------- */
-
   virtual int constantWrapper(Node *n) {
     String *symname = Getattr(n, "sym:name");
     if (!addSymbol(symname, n))
@@ -1233,10 +1206,9 @@ public:
     return SWIG_OK;
   }
 
-  /* -----------------------------------------------------------------------------
-   * insertDirective()
-   * ----------------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::insertDirective()
+   * --------------------------------------------------------------------------- */
   virtual int insertDirective(Node *n) {
     String *code = Getattr(n, "code");
     Replaceall(code, "$proxydmodule", proxy_dmodule_name);
@@ -1244,18 +1216,16 @@ public:
     return Language::insertDirective(n);
   }
 
-  /* -----------------------------------------------------------------------------
-   * pragmaDirective()
+  /* ---------------------------------------------------------------------------
+   * D::pragmaDirective()
    *
    * Valid Pragmas:
-   * wrapdmodulecode        - text (D code) is copied verbatim to the wrap module
-   * wrapdmoduleimports     - import statements for the wrap module
+   * wrapdmodulecode      - text (D code) is copied verbatim to the wrap module
+   * wrapdmoduleimports   - import statements for the wrap module
    *
-   * proxydmodulecode        - text (D code) is copied verbatim to the proxy module
-   * proxydmoduleimports     - import statements for the proxy module
-   *
-   * ----------------------------------------------------------------------------- */
-
+   * proxydmodulecode     - text (D code) is copied verbatim to the proxy module
+   * proxydmoduleimports  - import statements for the proxy module
+   * --------------------------------------------------------------------------- */
   virtual int pragmaDirective(Node *n) {
     if (!ImportMode) {
       String *lang = Getattr(n, "lang");
@@ -1291,10 +1261,9 @@ public:
     return Language::pragmaDirective(n);
   }
 
-  /* -----------------------------------------------------------------------------
-   * writeProxyClassAndUpcasts()
-   * ----------------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::writeProxyClassAndUpcasts()
+   * --------------------------------------------------------------------------- */
   void writeProxyClassAndUpcasts(Node *n) {
     String *c_classname = SwigType_namestr(Getattr(n, "name"));
     String *c_baseclass = NULL;
@@ -1490,10 +1459,9 @@ public:
     Delete(baseclass);
   }
 
-  /* ----------------------------------------------------------------------
-   * classHandler()
-   * ---------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::classHandler()
+   * --------------------------------------------------------------------------- */
   virtual int classHandler(Node *n) {
     if (proxy_flag) {
       proxy_class_name = NewString(Getattr(n, "sym:name"));
@@ -1563,10 +1531,9 @@ public:
     return SWIG_OK;
   }
 
-  /* ----------------------------------------------------------------------
-   * memberfunctionHandler()
-   * ---------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::memberfunctionHandler()
+   * --------------------------------------------------------------------------- */
   virtual int memberfunctionHandler(Node *n) {
     Language::memberfunctionHandler(n);
 
@@ -1581,10 +1548,9 @@ public:
     return SWIG_OK;
   }
 
-  /* ----------------------------------------------------------------------
-   * staticmemberfunctionHandler()
-   * ---------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::staticmemberfunctionHandler()
+   * --------------------------------------------------------------------------- */
   virtual int staticmemberfunctionHandler(Node *n) {
 
     static_flag = true;
@@ -1605,7 +1571,7 @@ public:
 
 
   /* ---------------------------------------------------------------------------
-   * writeProxyClassFunction()
+   * D::writeProxyClassFunction()
    *
    * Creates a D proxy function for a C++ function in the wrapped class. Used
    * for both static and non-static C++ class functions.
@@ -1614,7 +1580,6 @@ public:
    *  - "proxyfuncname": The name of the D proxy function.
    *  - "imfuncname": The corresponding function in the wrap D module.
    * --------------------------------------------------------------------------- */
-
   void writeProxyClassFunction(Node *n) {
     SwigType *t = Getattr(n, "type");
     ParmList *l = Getattr(n, "parms");
@@ -1876,10 +1841,9 @@ public:
     Delete(imcall);
   }
 
-  /* ----------------------------------------------------------------------
-   * constructorHandler()
-   * ---------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::constructorHandler()
+   * --------------------------------------------------------------------------- */
   virtual int constructorHandler(Node *n) {
     ParmList *l = Getattr(n, "parms");
     String *tm;
@@ -2089,10 +2053,9 @@ public:
     return SWIG_OK;
   }
 
-  /* ----------------------------------------------------------------------
-   * destructorHandler()
-   * ---------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::destructorHandler()
+   * --------------------------------------------------------------------------- */
   virtual int destructorHandler(Node *n) {
     Language::destructorHandler(n);
     String *symname = Getattr(n, "sym:name");
@@ -2103,10 +2066,9 @@ public:
     return SWIG_OK;
   }
 
-  /* ----------------------------------------------------------------------
-   * membervariableHandler()
-   * ---------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::membervariableHandler()
+   * --------------------------------------------------------------------------- */
   virtual int membervariableHandler(Node *n) {
     variable_name = Getattr(n, "sym:name");
     wrapping_member_flag = true;
@@ -2118,10 +2080,9 @@ public:
     return SWIG_OK;
   }
 
-  /* ----------------------------------------------------------------------
-   * staticmembervariableHandler()
-   * ---------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::staticmembervariableHandler()
+   * --------------------------------------------------------------------------- */
   virtual int staticmembervariableHandler(Node *n) {
     if ( GetFlag(n, "feature:d:const") != 1 ) {
       Delattr(n, "value");
@@ -2137,10 +2098,9 @@ public:
     return SWIG_OK;
   }
 
-  /* ----------------------------------------------------------------------
-   * memberconstantHandler()
-   * ---------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::memberconstantHandler()
+   * --------------------------------------------------------------------------- */
   virtual int memberconstantHandler(Node *n) {
     variable_name = Getattr(n, "sym:name");
     wrapping_member_flag = true;
@@ -2149,12 +2109,10 @@ public:
     return SWIG_OK;
   }
 
-  /* -----------------------------------------------------------------------------
-   * getOverloadedName()
-   * ----------------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::getOverloadedName()
+   * --------------------------------------------------------------------------- */
   String *getOverloadedName(Node *n) {
-
     /* A C# HandleRef is used for all classes in the SWIG intermediary class.
      * The intermediary class methods are thus mangled when overloaded to give
      * a unique name. */
@@ -2167,9 +2125,8 @@ public:
     return overloaded_name;
   }
 
-
   /* ---------------------------------------------------------------------------
-   * writeWrapDModuleFunction()
+   * D::writeWrapDModuleFunction()
    *
    * Writes a function declaration for the given (C) wrapper function to the
    * wrap D module.
@@ -2190,10 +2147,9 @@ public:
     Replaceall(wrapper_loader_bind_code, "$symbol", wrapper_function_name);
   }
 
-  /* -----------------------------------------------------------------------------
-   * writeProxyDModuleFunction()
-   * ----------------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::writeProxyDModuleFunction()
+   * --------------------------------------------------------------------------- */
   void writeProxyDModuleFunction(Node *n) {
     SwigType *t = Getattr(n, "type");
     ParmList *l = Getattr(n, "parms");
@@ -2380,18 +2336,18 @@ public:
     Delete(func_name);
   }
 
-  /*----------------------------------------------------------------------
-   * replaceSpecialVariables()
-   *--------------------------------------------------------------------*/
-
+  /* ---------------------------------------------------------------------------
+   * D::replaceSpecialVariables()
+   * --------------------------------------------------------------------------- */
   virtual void replaceSpecialVariables(String *method, String *tm, Parm *parm) {
     (void)method;
     SwigType *type = Getattr(parm, "type");
     substituteClassname(type, tm);
   }
 
-  /* -----------------------------------------------------------------------
-   * enumValue()
+  /* ---------------------------------------------------------------------------
+   * D::enumValue()
+   *
    * This method will return a string with an enum value to use in C# generated
    * code. If the %csconst feature is not used, the string will contain the intermediary
    * class call to obtain the enum value. The intermediary class and PINVOKE methods to obtain
@@ -2399,8 +2355,7 @@ public:
    * is one and hopefully it will compile as C# code - e.g. 20 as in: enum E{e=20};
    * The %dconstvalue feature overrides all other ways to generate the constant value.
    * The caller must delete memory allocated for the returned string.
-   * ------------------------------------------------------------------------ */
-
+   * --------------------------------------------------------------------------- */
   String *enumValue(Node *n) {
     String *symname = Getattr(n, "sym:name");
 
@@ -2430,10 +2385,9 @@ public:
     return value;
   }
 
-  /* -----------------------------------------------------------------------------
-   * getEnumName()
-   * ----------------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::getEnumName()
+   * --------------------------------------------------------------------------- */
   String *getEnumName(SwigType *t) {
     Node *enum_name = NULL;
     Node *n = enumLookup(t);
@@ -2457,8 +2411,8 @@ public:
     return enum_name;
   }
 
-  /* -----------------------------------------------------------------------------
-   * substituteClassname()
+  /* ---------------------------------------------------------------------------
+   * D::substituteClassname()
    *
    * Substitute the special variable $dclassname with the proxy class name for classes/structs/unions
    * that SWIG knows about. Also substitutes enums with enum name.
@@ -2471,8 +2425,7 @@ public:
    *   tm - typemap contents complete with the special variable substitution
    * Return:
    *   substitution_performed - flag indicating if a substitution was performed
-   * ----------------------------------------------------------------------------- */
-
+   * --------------------------------------------------------------------------- */
   bool substituteClassname(SwigType *pt, String *tm) {
     bool substitution_performed = false;
     SwigType *type = Copy(SwigType_typedef_resolve_all(pt));
@@ -2505,10 +2458,9 @@ public:
     return substitution_performed;
   }
 
-  /* -----------------------------------------------------------------------------
-   * substituteClassnameSpecialVariable()
-   * ----------------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::substituteClassnameSpecialVariable()
+   * --------------------------------------------------------------------------- */
   void substituteClassnameSpecialVariable(SwigType *classnametype, String *tm, const char *classnamespecialvariable) {
     if (SwigType_isenum(classnametype)) {
       String *enumname = getEnumName(classnametype);
@@ -2532,7 +2484,7 @@ public:
   }
 
   /* ---------------------------------------------------------------------------
-   * makeParameterName()
+   * D::makeParameterName()
    *
    * Inputs:
    *   n - Node
@@ -2542,7 +2494,6 @@ public:
    * Return:
    *   arg - a unique parameter name
    * --------------------------------------------------------------------------- */
-
   String *makeParameterName(Node *n, Parm *p, int arg_num, bool setter) {
 
     String *arg = 0;
@@ -2571,10 +2522,9 @@ public:
     return arg;
   }
 
-  /* -----------------------------------------------------------------------------
-   * writeTypeWrapperClass()
-   * ----------------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::writeTypeWrapperClass()
+   * --------------------------------------------------------------------------- */
   void writeTypeWrapperClass(String *classname, SwigType *type) {
     Node *n = NewHash();
     Setfile(n, input_file);
@@ -2605,8 +2555,9 @@ public:
     Delete(n);
   }
 
-  /* -----------------------------------------------------------------------------
-   * typemapLookup()
+  /* ---------------------------------------------------------------------------
+   * D::typemapLookup()
+   *
    * n - for input only and must contain info for Getfile(n) and Getline(n) to work
    * tmap_method - typemap method name
    * type - typemap type to lookup
@@ -2614,8 +2565,7 @@ public:
    * typemap_attributes - the typemap attributes are attached to this node and will
    *   also be used for temporary storage if non null
    * return is never NULL, unlike Swig_typemap_lookup()
-   * ----------------------------------------------------------------------------- */
-
+   * --------------------------------------------------------------------------- */
   const String *typemapLookup(Node *n, const_String_or_char_ptr tmap_method, SwigType *type, int warning, Node *typemap_attributes = 0) {
     Node *node = !typemap_attributes ? NewHash() : typemap_attributes;
     Setattr(node, "type", type);
@@ -2632,12 +2582,12 @@ public:
     return tm;
   }
 
-  /* -----------------------------------------------------------------------------
-   * canThrow()
+  /* ---------------------------------------------------------------------------
+   * D::canThrow()
+   *
    * Determine whether the code in the typemap can throw a C# exception.
    * If so, note it for later when excodeSubstitute() is called.
-   * ----------------------------------------------------------------------------- */
-
+   * --------------------------------------------------------------------------- */
   void canThrow(Node *n, const String *typemap, Node *parameter) {
     String *canthrow_attribute = NewStringf("tmap:%s:canthrow", typemap);
     String *canthrow = Getattr(parameter, canthrow_attribute);
@@ -2646,13 +2596,14 @@ public:
     Delete(canthrow_attribute);
   }
 
-  /* -----------------------------------------------------------------------------
-   * excodeSubstitute()
+  /* ---------------------------------------------------------------------------
+   * D::excodeSubstitute()
+   *
    * If a method can throw a C# exception, additional exception code is added to
    * check for the pending exception so that it can then throw the exception. The
    * $excode special variable is replaced by the exception code in the excode
    * typemap attribute.
-   * ----------------------------------------------------------------------------- */
+   * --------------------------------------------------------------------------- */
 
   void excodeSubstitute(Node *n, String *code, const String *typemap, Node *parameter) {
     String *excode_attribute = NewStringf("tmap:%s:excode", typemap);
@@ -2670,50 +2621,15 @@ public:
   }
 
 
-  /*----------------------------------------------------------------------
+  /*
    * Start of director methods
-   *--------------------------------------------------------------------*/
+   */
 
-#if 0
-  /*----------------------------------------------------------------------
-   * emitDirectorUpcalls()
-   *--------------------------------------------------------------------*/
-
-  void emitDirectorUpcalls() {
-    if (n_dmethods) {
-      Wrapper *w = NewWrapper();
-      String *dmethod_data = NewString("");
-      int n_methods = 0;
-      Iterator udata_iter;
-
-      udata_iter = First(dmethods_seq);
-      while (udata_iter.item) {
-	UpcallData *udata = udata_iter.item;
-	Printf(dmethod_data, "  { \"%s\", \"%s\" }", Getattr(udata, "imclass_method"), Getattr(udata, "imclass_fdesc"));
-	++n_methods;
-
-	udata_iter = Next(udata_iter);
-
-	if (udata_iter.item)
-	  Putc(',', dmethod_data);
-	Putc('\n', dmethod_data);
-      }
-
-
-      Wrapper_print(w, f_wrappers);
-      Delete(dmethod_data);
-      Delete(swig_module_init);
-      DelWrapper(w);
-    }
-  }
-#endif
-
-  /*----------------------------------------------------------------------
-   * emitDirectorExtraMethods()
+  /* ---------------------------------------------------------------------------
+   * D::emitDirectorExtraMethods()
    *
-   * This is where the director connect method is
-   * generated.
-   *--------------------------------------------------------------------*/
+   * This is where the director connect method is generated.
+   * --------------------------------------------------------------------------- */
   void emitDirectorExtraMethods(Node *n) {
     if (!Swig_directorclass(n))
       return;
@@ -2760,14 +2676,12 @@ public:
     Delete(connect_name);
   }
 
-  /* ---------------------------------------------------------------
-   * classDirectorMethod()
+  /* ---------------------------------------------------------------------------
+   * D::classDirectorMethod()
    *
    * Emit a virtual director method to pass a method call on to the
    * underlying D object.
-   *
-   * --------------------------------------------------------------- */
-
+   * --------------------------------------------------------------------------- */
   int classDirectorMethod(Node *n, Node *parent, String *super) {
     String *empty_str = NewString("");
     String *classname = Getattr(parent, "sym:name");
@@ -3228,10 +3142,9 @@ public:
     return status;
   }
 
-  /* ------------------------------------------------------------
-   * classDirectorConstructor()
-   * ------------------------------------------------------------ */
-
+  /* ---------------------------------------------------------------------------
+   * D::classDirectorConstructor()
+   * --------------------------------------------------------------------------- */
   int classDirectorConstructor(Node *n) {
     Node *parent = parentNode(n);
     String *decl = Getattr(n, "decl");;
@@ -3287,10 +3200,9 @@ public:
     return Language::classDirectorConstructor(n);
   }
 
-  /* ------------------------------------------------------------
-   * classDirectorDefaultConstructor()
-   * ------------------------------------------------------------ */
-
+  /* ---------------------------------------------------------------------------
+   * D::classDirectorDefaultConstructor()
+   * --------------------------------------------------------------------------- */
   int classDirectorDefaultConstructor(Node *n) {
     String *classname = Swig_class_name(n);
     String *classtype = SwigType_namestr(Getattr(n, "name"));
@@ -3308,10 +3220,9 @@ public:
   }
 
 
-  /* ------------------------------------------------------------
-   * classDirectorInit()
-   * ------------------------------------------------------------ */
-
+  /* ---------------------------------------------------------------------------
+   * D::classDirectorInit()
+   * --------------------------------------------------------------------------- */
   int classDirectorInit(Node *n) {
     Delete(none_comparison);
     none_comparison = NewString("");	// not used
@@ -3338,10 +3249,9 @@ public:
     return Language::classDirectorInit(n);
   }
 
-  /* ----------------------------------------------------------------------
-   * classDirectorDestructor()
-   * ---------------------------------------------------------------------- */
-
+  /* ---------------------------------------------------------------------------
+   * D::classDirectorDestructor()
+   * --------------------------------------------------------------------------- */
   int classDirectorDestructor(Node *n) {
     Node *current_class = getCurrentClass();
     String *full_classname = Getattr(current_class, "name");
@@ -3376,10 +3286,9 @@ public:
     return SWIG_OK;
   }
 
-  /* ------------------------------------------------------------
-   * classDirectorEnd()
-   * ------------------------------------------------------------ */
-
+  /* ---------------------------------------------------------------------------
+   * D::classDirectorEnd()
+   * --------------------------------------------------------------------------- */
   int classDirectorEnd(Node *n) {
     int i;
     String *director_classname = directorClassName(n);
@@ -3432,31 +3341,28 @@ public:
     return Language::classDirectorEnd(n);
   }
 
-  /* --------------------------------------------------------------------
-   * classDirectorDisown()
-   * ------------------------------------------------------------------*/
+  /* ---------------------------------------------------------------------------
+   * D::classDirectorDisown()
+   * --------------------------------------------------------------------------- */
   virtual int classDirectorDisown(Node *n) {
     (void) n;
     return SWIG_OK;
   }
 
-  /*----------------------------------------------------------------------
-   * extraDirectorProtectedCPPMethodsRequired()
-   *--------------------------------------------------------------------*/
-
+  /* ---------------------------------------------------------------------------
+   * D::extraDirectorProtectedCPPMethodsRequired()
+   * --------------------------------------------------------------------------- */
   bool extraDirectorProtectedCPPMethodsRequired() const {
     return false;
   }
 
-  /*----------------------------------------------------------------------
-   * D_director_declaration()
+  /* ---------------------------------------------------------------------------
+   * D::D_director_declaration()
    *
    * Generate the director class's declaration
    * e.g. "class SwigDirector_myclass : public myclass, public Swig::Director {"
-   *--------------------------------------------------------------------*/
-
+   * --------------------------------------------------------------------------- */
   void D_director_declaration(Node *n) {
-
     String *base = Getattr(n, "classtype");
     String *class_ctor = NewString("Swig::Director()");
 
@@ -3470,24 +3376,22 @@ public:
     Setattr(n, "director:decl", declaration);
     Setattr(n, "director:ctor", class_ctor);
   }
-
-};				/* class D */
-
-/* -----------------------------------------------------------------------------
- * swig_d()    - Instantiate module
- * ----------------------------------------------------------------------------- */
+};
 
 static Language *new_swig_d() {
   return new D();
 }
+
+/* -----------------------------------------------------------------------------
+ * swig_d()    - Instantiate module
+ * ----------------------------------------------------------------------------- */
 extern "C" Language *swig_d(void) {
   return new_swig_d();
 }
 
 /* -----------------------------------------------------------------------------
- * Static member variables
+ * Usage information displayed at the command line.
  * ----------------------------------------------------------------------------- */
-
 const char *D::usage = (char *) "\
 D Options (available with -d)\n\
      -wrapperlibrary <wl> - Sets the name of the wrapper library to <wl>\n\
