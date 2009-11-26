@@ -10,7 +10,6 @@
 char cvsroot_d_cxx[] = "$Id$";
 
 #include "swigmod.h"
-#include <limits.h>		// for INT_MAX
 #include "cparse.h"
 #include <ctype.h>
 
