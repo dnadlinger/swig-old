@@ -21,6 +21,7 @@ class D:public Language {
   const String *empty_string;
   const String *public_string;
   const String *protected_string;
+  const String *static_string;
 
   Hash *swig_types_hash;
   File *f_begin;
@@ -1178,23 +1179,21 @@ public:
       Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(t, 0));
     }
 
-    // Add the stripped quotes back in.
-    String *new_value = NewString("");
-    Swig_save("constantWrapper", n, "value", NIL);
-    if (SwigType_type(t) == T_STRING) {
-      Printf(new_value, "\"%s\"", Copy(Getattr(n, "value")));
-      Setattr(n, "value", new_value);
-    } else if (SwigType_type(t) == T_CHAR) {
-      Printf(new_value, "\'%s\'", Copy(Getattr(n, "value")));
-      Setattr(n, "value", new_value);
-    }
-
     const String *itemname = (proxy_flag && wrapping_member_flag) ? variable_name : symname;
 
-    const String *methodmods = Getattr(n, "feature:d:methodmodifiers");
-    methodmods = methodmods ? methodmods : (is_public(n) ? public_string : protected_string);
+    String *attributes = Getattr(n, "feature:d:methodmodifiers");
+    if ( attributes ) {
+      attributes = Copy( attributes );
+    } else {
+      attributes = Copy( is_public( n ) ? public_string : protected_string );
+    }
 
-    Printf(constants_code, "%s const %s %s = ", methodmods, return_type, itemname);
+    if ( static_flag ) {
+      Printv( attributes, " static", NIL );
+    }
+
+    Printf(constants_code, "%s const %s %s = ", attributes, return_type, itemname);
+    Delete(attributes);
 
     // Retrive the override value set via %dconstvalue, if any.
     String *override_value = Getattr(n, "feature:d:constvalue");
@@ -1202,20 +1201,34 @@ public:
       Printf(constants_code, "%s;\n", override_value);
     } else {
       // Just emit the C code and hope it compiles in D.
-      Printf(constants_code, "%s;\n", Getattr(n, "value"));
+      const String* raw_value = Getattr(n, "wrappedasconstant") ?
+	Getattr(n, "staticmembervariableHandler:value") : Getattr(n, "value");
+
+      // Add the stripped quotes back in.
+      String *value;
+      if (SwigType_type(t) == T_STRING) {
+	value = NewString("");
+	Printf(value, "\"%s\"", raw_value);
+      } else if (SwigType_type(t) == T_CHAR) {
+	value = NewString("");
+	Printf(value, "\'%s\'", raw_value);
+      } else {
+	value = Copy(raw_value);
+      }
+
+      Printf(constants_code, "%s;\n", value);
+      Delete(value);
     }
 
     // Emit the generated code to appropriate place.
     if (proxy_flag && wrapping_member_flag)
-      Printv(proxy_class_code, constants_code, NIL);
+      Printv(proxy_class_code, "  ", constants_code, NIL);
     else
       Printv(module_class_constants_code, constants_code, NIL);
 
     // Cleanup.
-    Delete(new_value);
     Delete(return_type);
     Delete(constants_code);
-    Swig_restore(n);
 
     return SWIG_OK;
   }
