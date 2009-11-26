@@ -40,7 +40,6 @@ class D:public Language {
   bool variable_wrapper_flag;	// Flag for when wrapping a nonstatic member variable
   bool wrapping_member_flag;	// Flag for when wrapping a member variable/enum/const
   bool global_variable_flag;	// Flag for when wrapping a global variable
-  bool old_variable_names;	// Flag for old style variable names in the intermediary class
 
   String *wrap_dmodule_name;	// The name of the D module containing the interface to the C wrapper.
   String *proxy_dmodule_name;	// The name of the proxy module which exposes the (SWIG) module contents as a D module.
@@ -113,7 +112,6 @@ public:
       variable_wrapper_flag(false),
       wrapping_member_flag(false),
       global_variable_flag(false),
-      old_variable_names(false),
       wrap_dmodule_name(NULL),
       proxy_dmodule_name(NULL),
       wrap_dmodule_code(NULL),
@@ -218,9 +216,6 @@ public:
 	} else if ((strcmp(argv[i], "-noproxy") == 0)) {
 	  Swig_mark_arg(i);
 	  proxy_flag = false;
-	} else if (strcmp(argv[i], "-oldvarnames") == 0) {
-	  Swig_mark_arg(i);
-	  old_variable_names = true;
 	} else if (strcmp(argv[i], "-help") == 0) {
 	  Printf(stdout, "%s\n", usage);
 	}
@@ -310,19 +305,12 @@ public:
     swig_types_hash = NewHash();
     filenames_list = NewList();
 
-    // Make the intermediary class and proxy module names.
-    // The intermediary class name can be set in the module directive.
+    // Make the wrap and proxy D module names.
+    // The wrap module name can be set in the module directive.
     if (!wrap_dmodule_name) {
       wrap_dmodule_name = NewStringf("%s_wrap", Getattr(n, "name"));
-      proxy_dmodule_name = Copy(Getattr(n, "name"));
-    } else {
-      // Rename the module name if it is the same as intermediary class name - a backwards compatibility solution
-      // RESEARCH: Is this needed?
-      if (Cmp(wrap_dmodule_name, Getattr(n, "name")) == 0)
-	proxy_dmodule_name = NewStringf("%sModule", Getattr(n, "name"));
-      else
-	proxy_dmodule_name = Copy(Getattr(n, "name"));
     }
+    proxy_dmodule_name = Copy(Getattr(n, "name"));
 
     wrap_dmodule_code = NewString("");
     proxy_class_def = NewString("");
@@ -372,10 +360,6 @@ public:
     Printf(f_runtime, "\n");
 
     Swig_name_register((char *) "wrapper", (char *) "D_%f");
-    if (old_variable_names) {
-      Swig_name_register((char *) "set", (char *) "set_%v");
-      Swig_name_register((char *) "get", (char *) "get_%v");
-    }
 
     Printf(f_wrappers, "\n#ifdef __cplusplus\n");
     Printf(f_wrappers, "extern \"C\" {\n");
@@ -769,9 +753,6 @@ public:
       // Get typemap for this argument
       if ((tm = Getattr(p, "tmap:in"))) {
 	canThrow(n, "in", p);
-	Replaceall(tm, "$source", arg);	/* deprecated */
-	Replaceall(tm, "$target", ln);	/* deprecated */
-	Replaceall(tm, "$arg", arg);	/* deprecated? */
 	Replaceall(tm, "$input", arg);
 	Setattr(p, "emit:input", arg);
 	Printf(f->code, "%s\n", tm);
@@ -789,8 +770,6 @@ public:
     for (p = l; p;) {
       if ((tm = Getattr(p, "tmap:check"))) {
 	canThrow(n, "check", p);
-	Replaceall(tm, "$target", Getattr(p, "lname"));	/* deprecated */
-	Replaceall(tm, "$arg", Getattr(p, "emit:input"));	/* deprecated? */
 	Replaceall(tm, "$input", Getattr(p, "emit:input"));
 	Printv(f->code, tm, "\n", NIL);
 	p = Getattr(p, "tmap:check:next");
@@ -803,8 +782,6 @@ public:
     for (p = l; p;) {
       if ((tm = Getattr(p, "tmap:freearg"))) {
 	canThrow(n, "freearg", p);
-	Replaceall(tm, "$source", Getattr(p, "emit:input"));	/* deprecated */
-	Replaceall(tm, "$arg", Getattr(p, "emit:input"));	/* deprecated? */
 	Replaceall(tm, "$input", Getattr(p, "emit:input"));
 	Printv(cleanup, tm, "\n", NIL);
 	p = Getattr(p, "tmap:freearg:next");
@@ -817,9 +794,6 @@ public:
     for (p = l; p;) {
       if ((tm = Getattr(p, "tmap:argout"))) {
 	canThrow(n, "argout", p);
-	Replaceall(tm, "$source", Getattr(p, "emit:input"));	/* deprecated */
-	Replaceall(tm, "$target", Getattr(p, "lname"));	/* deprecated */
-	Replaceall(tm, "$arg", Getattr(p, "emit:input"));	/* deprecated? */
 	Replaceall(tm, "$result", "jresult");
 	Replaceall(tm, "$input", Getattr(p, "emit:input"));
 	Printv(outarg, tm, "\n", NIL);
@@ -861,8 +835,6 @@ public:
       /* Return value if necessary  */
       if ((tm = Swig_typemap_lookup_out("out", n, "result", f, actioncode))) {
 	canThrow(n, "out", n);
-	Replaceall(tm, "$source", "result");	/* deprecated */
-	Replaceall(tm, "$target", "jresult");	/* deprecated */
 	Replaceall(tm, "$result", "jresult");
 
         if (GetFlag(n, "feature:new"))
@@ -890,7 +862,6 @@ public:
     if (GetFlag(n, "feature:new")) {
       if ((tm = Swig_typemap_lookup("newfree", n, "result", 0))) {
 	canThrow(n, "newfree", n);
-	Replaceall(tm, "$source", "result");	/* deprecated */
 	Printf(f->code, "%s\n", tm);
       }
     }
@@ -899,7 +870,6 @@ public:
     if (!native_function_flag) {
       if ((tm = Swig_typemap_lookup("ret", n, "result", 0))) {
 	canThrow(n, "ret", n);
-	Replaceall(tm, "$source", "result");	/* deprecated */
 	Printf(f->code, "%s\n", tm);
       }
     }
@@ -3398,5 +3368,4 @@ D Options (available with -d)\n\
      -namespace <nm>      - Generate wrappers into C# namespace <nm>\n\
      -noproxy             - Generate the low-level functional interface instead\n\
                             of proxy classes\n\
-     -oldvarnames         - old intermediary method names for variable wrappers\n\
 \n";
