@@ -1590,16 +1590,12 @@ public:
 
     /* Get return types */
     if ((tm = Swig_typemap_lookup("cstype", n, "", 0))) {
-      // Note that in the case of polymorphic (covariant) return types, the method's return type is changed to be the base of the C++ return type
-      SwigType *covariant = Getattr(n, "covariant");
-      String *cstypeout = Getattr(n, "tmap:cstype:out");	// the type in the cstype typemap's out attribute overrides the type in the typemap
+      // the type in the cstype typemap's out attribute overrides the type in the typemap
+      String *cstypeout = Getattr(n, "tmap:cstype:out");
       if (cstypeout)
 	tm = cstypeout;
-      substituteClassname(covariant ? covariant : t, tm);
+      substituteClassname(t, tm);
       Printf(return_type, "%s", tm);
-      if (covariant)
-	Swig_warning(WARN_CSHARP_COVARIANT_RET, input_file, line_number,
-		     "Covariant return types not supported in C#. Proxy method will return %s.\n", SwigType_str(covariant, 0));
     } else {
       Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(t, 0));
     }

@@ -267,11 +267,10 @@
 #define WARN_D_TYPEMAP_CSIN_UNDEF             898
 #define WARN_D_TYPEMAP_CSDIRECTORIN_UNDEF     899
 #define WARN_D_TYPEMAP_CSDIRECTOROUT_UNDEF    900
-#define WARN_D_COVARIANT_RET                  901
-#define WARN_D_TYPEMAP_DCONSTRUCTOR_UNDEF     902
-#define WARN_D_EXCODE                         903
-#define WARN_D_CANTHROW                       904
-#define WARN_D_NO_DIRECTORCONNECT_ATTR        905
+#define WARN_D_TYPEMAP_DCONSTRUCTOR_UNDEF     901
+#define WARN_D_EXCODE                         902
+#define WARN_D_CANTHROW                       903
+#define WARN_D_NO_DIRECTORCONNECT_ATTR        904
 
 /* please leave 890-905 free for D */
 /* FIXME: Used defined warnings start at 900! */
