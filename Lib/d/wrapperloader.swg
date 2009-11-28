@@ -26,10 +26,10 @@ static this() {
   }
 
   //#if !defined(SWIG_D_NO_EXCEPTION_HELPER)
-  bind( __SWIGRegisterExceptionCallbacks_$proxydmodule )( "SWIGRegisterExceptionCallbacks_$proxydmodule" );
+  bind( __SWIGRegisterExceptionCallbacks_$module )( "SWIGRegisterExceptionCallbacks_$module" );
   //#endif // SWIG_D_NO_EXCEPTION_HELPER
   //#if !defined(SWIG_D_NO_STRING_HELPER)
-  bind( __SWIGRegisterStringCallback_$proxydmodule )( "SWIGRegisterStringCallback_$proxydmodule" );
+  bind( __SWIGRegisterStringCallback_$module )( "SWIGRegisterStringCallback_$module" );
   //#endif // SWIG_D_NO_STRING_HELPER
   $wrapperloaderbindcode
 }
@@ -68,11 +68,11 @@ extern( C ) void function(
   __SWIGExceptionCallback illegalArgumentCallback,
   __SWIGExceptionCallback illegalElementCallback,
   __SWIGExceptionCallback ioCallback,
-  __SWIGExceptionCallback noSuchElementCallback) __SWIGRegisterExceptionCallbacks_$proxydmodule;
+  __SWIGExceptionCallback noSuchElementCallback) __SWIGRegisterExceptionCallbacks_$module;
 //#endif // SWIG_D_NO_EXCEPTION_HELPER
 
 //#if !defined(SWIG_D_NO_STRING_HELPER)
-extern( C ) void function(__SWIGStringCallback callback) __SWIGRegisterStringCallback_$proxydmodule;
+extern( C ) void function(__SWIGStringCallback callback) __SWIGRegisterStringCallback_$module;
 //#endif // SWIG_D_NO_STRING_HELPER
 %}
 

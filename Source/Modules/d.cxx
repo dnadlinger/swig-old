@@ -42,7 +42,9 @@ class D:public Language {
   bool global_variable_flag;	// Flag for when wrapping a global variable
 
   String *wrap_dmodule_name;	// The name of the D module containing the interface to the C wrapper.
+  String *wrap_dmodule_fq_name;	// The fully qualified name of the wrap D module (package name included).
   String *proxy_dmodule_name;	// The name of the proxy module which exposes the (SWIG) module contents as a D module.
+  String *proxy_dmodule_fq_name;// The fully qualified name of the proxy D module.
   String *wrap_dmodule_code;	// The D code declaring the wrapper functions.
   String *proxy_class_def;
   String *proxy_class_code;	// The D code making up the body of a proxy class (written to the proxy D module).
@@ -54,7 +56,8 @@ class D:public Language {
   String *module_class_constants_code;
   String *enum_code;
   String *wrap_library_name;		// The name of the library which contains the C wrapper (used for dynamic linking).
-  String *namespce;		// Optional namespace name
+  String *package;		// Optional: Package the D modules are placed in.
+  String *dmodule_directory;	// The directory the generated D module files are written to.
   String *wrap_dmodule_imports;	// Imports for the wrap D module from %pragma.
   String *proxy_dmodule_imports;	// Imports for the proxy D module from %pragma.
   String *upcasts_code;		//C++ casts for inheritance hierarchies C++ code
@@ -113,7 +116,9 @@ public:
       wrapping_member_flag(false),
       global_variable_flag(false),
       wrap_dmodule_name(NULL),
+      wrap_dmodule_fq_name(NULL),
       proxy_dmodule_name(NULL),
+      proxy_dmodule_fq_name(NULL),
       wrap_dmodule_code(NULL),
       proxy_class_def(NULL),
       proxy_class_code(NULL),
@@ -125,7 +130,8 @@ public:
       module_class_constants_code(NULL),
       enum_code(NULL),
       wrap_library_name(NULL),
-      namespce(NULL),
+      package(NULL),
+      dmodule_directory(NULL),
       wrap_dmodule_imports(NULL),
       proxy_dmodule_imports(NULL),
       upcasts_code(NULL),
@@ -203,10 +209,10 @@ public:
 	  } else {
 	    Swig_arg_error();
 	  }
-	} else if (strcmp(argv[i], "-namespace") == 0) {
+	} else if (strcmp(argv[i], "-package") == 0) {
 	  if (argv[i + 1]) {
-	    namespce = NewString("");
-	    Printf(namespce, argv[i + 1]);
+	    package = NewString("");
+	    Printf(package, argv[i + 1]);
 	    Swig_mark_arg(i);
 	    Swig_mark_arg(i + 1);
 	    i++;
@@ -305,12 +311,38 @@ public:
     swig_types_hash = NewHash();
     filenames_list = NewList();
 
+    // Make the package name and the resulting module output path.
+    if (package) {
+      // Append a dot so we can prepend the package variable directly to the
+      // module names in the rest of the code.
+      Printv( package, ".", NIL );
+    } else {
+      // Write the generated D modules to the »root« package by default.
+      package = NewString("");
+    }
+
+    dmodule_directory = Copy(SWIG_output_directory());
+    if (Len(package) > 0) {
+      String *package_directory = Copy(package);
+      Replaceall(package_directory, ".", SWIG_FILE_DELIMITER);
+      Printv(dmodule_directory, package_directory, NIL);
+
+      // TODO: Add some facilities to DOH for automatically creating directories.
+      String *create_directory_command = NewStringf( "mkdir -p %s", package_directory );
+      system(Char(create_directory_command));
+      Delete(create_directory_command);
+
+      Delete(package_directory);
+    }
+
     // Make the wrap and proxy D module names.
     // The wrap module name can be set in the module directive.
     if (!wrap_dmodule_name) {
       wrap_dmodule_name = NewStringf("%s_wrap", Getattr(n, "name"));
     }
+    wrap_dmodule_fq_name = NewStringf("%s%s", package, wrap_dmodule_name);
     proxy_dmodule_name = Copy(Getattr(n, "name"));
+    proxy_dmodule_fq_name = NewStringf("%s%s", package, proxy_dmodule_name);
 
     wrap_dmodule_code = NewString("");
     proxy_class_def = NewString("");
@@ -330,8 +362,10 @@ public:
     dmethods_table = NewHash();
     n_dmethods = 0;
     n_directors = 0;
-    if (!namespce)
-      namespce = NewString("");
+
+    // By default, expect the dynamically loaded wrapper library to be named
+    // like the wrapper D module (i.e. [lib]<module>_wrap[.so/.dll] unless the
+    // user overrides it).
     if (!wrap_library_name)
       wrap_library_name = Copy(wrap_dmodule_name);
 
@@ -359,7 +393,7 @@ public:
 
     Printf(f_runtime, "\n");
 
-    Swig_name_register((char *) "wrapper", (char *) "D_%f");
+    Swig_name_register("wrapper", "D_%f");
 
     Printf(f_wrappers, "\n#ifdef __cplusplus\n");
     Printf(f_wrappers, "extern \"C\" {\n");
@@ -376,7 +410,7 @@ public:
     // Generate the wrap D module.
     // TODO: Add support for »static« linking.
     {
-      String *filen = NewStringf("%s%s.d", SWIG_output_directory(), wrap_dmodule_name);
+      String *filen = NewStringf("%s%s.d", dmodule_directory, wrap_dmodule_name);
       File *f_wrapd = NewFile(filen, "w", SWIG_output_files());
       if (!f_wrapd) {
 	FileErrorDisplay(filen);
@@ -389,19 +423,20 @@ public:
       // Start writing out the intermediary class file.
       emitBanner(f_wrapd);
 
-      Printf(f_wrapd, "module %s;\n", wrap_dmodule_name);
+      Printf(f_wrapd, "module %s;\n", wrap_dmodule_fq_name);
 
       // RESEARCH: Can this actually be null?
       Printv(f_wrapd, wrap_dmodule_imports, NIL);
 
       Replaceall(wrapper_loader_code, "$wraplibrary", wrap_library_name);
       Replaceall(wrapper_loader_code, "$wrapperloaderbindcode", wrapper_loader_bind_code);
-      Replaceall(wrapper_loader_code, "$proxydmodule", proxy_dmodule_name);
+      Replaceall(wrapper_loader_code, "$module", proxy_dmodule_name);
       Printf(f_wrapd, "%s\n", wrapper_loader_code);
 
       // Add the wrapper function declarations.
-      Replaceall(wrap_dmodule_code, "$proxydmodule", proxy_dmodule_name);
-      Replaceall(wrap_dmodule_code, "$wrapdmodule", wrap_dmodule_name);
+      Replaceall(wrap_dmodule_code, "$proxydmodule", proxy_dmodule_fq_name);
+      Replaceall(wrap_dmodule_code, "$wrapdmodule", wrap_dmodule_fq_name);
+      Replaceall(wrap_dmodule_code, "$module", proxy_dmodule_name);
       Printv(f_wrapd, wrap_dmodule_code, NIL);
 
       Close(f_wrapd);
@@ -409,8 +444,7 @@ public:
 
     // Generate the D proxy module for the wrapped module.
     {
-      // TODO: Add target package support (to replace C# namespace support).
-      String *filen = NewStringf("%s%s.d", SWIG_output_directory(), proxy_dmodule_name);
+      String *filen = NewStringf("%s%s.d", dmodule_directory, proxy_dmodule_name);
       File *f_module = NewFile(filen, "w", SWIG_output_files());
       if (!f_module) {
         FileErrorDisplay(filen);
@@ -423,18 +457,21 @@ public:
       // Start writing out the module class file.
       emitBanner(f_module);
 
-      Printf(f_module, "module %s;\n\n", proxy_dmodule_name);
+      Printf(f_module, "module %s;\n\n", proxy_dmodule_fq_name);
 
-      Printf(f_module, "static import %s;\n", wrap_dmodule_name);
+      Printf(f_module, "static import %s;\n", wrap_dmodule_fq_name);
 
       if (proxy_dmodule_imports)
         Printf(f_module, "%s\n", proxy_dmodule_imports);
 
-      Replaceall(proxy_dmodule_code, "$proxydmodule", proxy_dmodule_name);
-      Replaceall(module_class_constants_code, "$proxydmodule", proxy_dmodule_name);
+      Replaceall(proxy_dmodule_code, "$proxydmodule", proxy_dmodule_fq_name);
+      Replaceall(module_class_constants_code, "$proxydmodule", proxy_dmodule_fq_name);
 
-      Replaceall(proxy_dmodule_code, "$wrapdmodule", wrap_dmodule_name);
-      Replaceall(module_class_constants_code, "$wrapdmodule", wrap_dmodule_name);
+      Replaceall(proxy_dmodule_code, "$wrapdmodule", wrap_dmodule_fq_name);
+      Replaceall(module_class_constants_code, "$wrapdmodule", wrap_dmodule_fq_name);
+
+      Replaceall(proxy_dmodule_code, "$module", proxy_dmodule_name);
+      Replaceall(module_class_constants_code, "$module", proxy_dmodule_name);
 
       // Output a D type wrapper class for each SWIG type
       for (Iterator swig_type = First(swig_types_hash); swig_type.key; swig_type = Next(swig_type)) {
@@ -482,6 +519,8 @@ public:
     filenames_list = NULL;
     Delete(wrap_dmodule_name);
     wrap_dmodule_name = NULL;
+    Delete(wrap_dmodule_fq_name);
+    wrap_dmodule_fq_name = NULL;
     Delete(wrap_dmodule_code);
     wrap_dmodule_code = NULL;
     Delete(proxy_class_def);
@@ -494,6 +533,8 @@ public:
     module_class_constants_code = NULL;
     Delete(proxy_dmodule_name);
     proxy_dmodule_name = NULL;
+    Delete(proxy_dmodule_fq_name);
+    proxy_dmodule_fq_name = NULL;
     Delete(proxy_dmodule_code);
     proxy_dmodule_code = NULL;
     Delete(proxy_dmodule_imports);
@@ -512,11 +553,13 @@ public:
     dmethods_seq = NULL;
     Delete(dmethods_table);
     dmethods_table = NULL;
-    Delete(namespce);
-    namespce = NULL;
+    Delete(package);
+    package = NULL;
+    Delete(dmodule_directory);
+    dmodule_directory = NULL;
     n_dmethods = 0;
 
-    /* Close all of the files */
+    // Merge all the generated C/C++ code and close the output files.
     Dump(f_runtime, f_begin);
     Dump(f_header, f_begin);
 
@@ -1179,8 +1222,9 @@ public:
    * --------------------------------------------------------------------------- */
   virtual int insertDirective(Node *n) {
     String *code = Getattr(n, "code");
-    Replaceall(code, "$proxydmodule", proxy_dmodule_name);
-    Replaceall(code, "$wrapdmodule", wrap_dmodule_name);
+    Replaceall(code, "$proxydmodule", proxy_dmodule_fq_name);
+    Replaceall(code, "$wrapdmodule", wrap_dmodule_fq_name);
+    Replaceall(code, "$module", proxy_dmodule_name);
     return Language::insertDirective(n);
   }
 
@@ -1333,12 +1377,12 @@ public:
 	UpcallData *udata = Getitem(dmethods_seq, i);
 	String *method = Getattr(udata, "method");
 	String *methid = Getattr(udata, "class_methodidx");
-	Printf(proxy_class_code, "    %s.__SwigDirector_%s_Callback%s callback%s;\n", wrap_dmodule_name, proxy_class_name, methid, methid);
+	Printf(proxy_class_code, "    %s.__SwigDirector_%s_Callback%s callback%s;\n", wrap_dmodule_fq_name, proxy_class_name, methid, methid);
 	Printf(proxy_class_code, "    if ( __SwigIsMethodOverridden!( \"%s\" ) ) {\n", method);
 	Printf(proxy_class_code, "      callback%s = &__SwigDirector_%s_%s;\n", methid, proxy_class_name, method);
 	Printf(proxy_class_code, "    }\n\n");
       }
-      Printf(proxy_class_code, "    %s.%s_director_connect( __swig_cObject, cast( void* )this", wrap_dmodule_name, proxy_class_name);
+      Printf(proxy_class_code, "    %s.%s_director_connect( __swig_cObject, cast( void* )this", wrap_dmodule_fq_name, proxy_class_name);
       for (i = first_class_dmethod; i < curr_class_dmethod; ++i) {
 	UpcallData *udata = Getitem(dmethods_seq, i);
 	String *methid = Getattr(udata, "class_methodidx");
@@ -1399,11 +1443,15 @@ public:
     Replaceall(proxy_class_code, "$dclassname", proxy_class_name);
     Replaceall(proxy_class_def, "$dclassname", proxy_class_name);
 
-    Replaceall(proxy_class_def, "$proxydmodule", proxy_dmodule_name);
-    Replaceall(proxy_class_code, "$proxydmodule", proxy_dmodule_name);
+    // RESEARCH: Is this needed at all?
+    Replaceall(proxy_class_def, "$proxydmodule", proxy_dmodule_fq_name);
+    Replaceall(proxy_class_code, "$proxydmodule", proxy_dmodule_fq_name);
 
-    Replaceall(proxy_class_def, "$wrapdmodule", wrap_dmodule_name);
-    Replaceall(proxy_class_code, "$wrapdmodule", wrap_dmodule_name);
+    Replaceall(proxy_class_def, "$wrapdmodule", wrap_dmodule_fq_name);
+    Replaceall(proxy_class_code, "$wrapdmodule", wrap_dmodule_fq_name);
+
+    Replaceall(proxy_class_def, "$module", proxy_dmodule_name);
+    Replaceall(proxy_class_code, "$module", proxy_dmodule_name);
 
     // Add code to do C++ casting to base class (only for classes in an inheritance hierarchy)
     if (derived) {
@@ -1438,12 +1486,12 @@ public:
 	return SWIG_ERROR;
 
       if (Cmp(proxy_class_name, wrap_dmodule_name) == 0) {
-	Printf(stderr, "Class name cannot be equal to intermediary class name: %s\n", proxy_class_name);
+	Printf(stderr, "Class name cannot be equal to wrap D module name: %s\n", proxy_class_name);
 	SWIG_exit(EXIT_FAILURE);
       }
 
       if (Cmp(proxy_class_name, proxy_dmodule_name) == 0) {
-	Printf(stderr, "Class name cannot be equal to module class name: %s\n", proxy_class_name);
+	Printf(stderr, "Class name cannot be equal to proxy D module name: %s\n", proxy_class_name);
 	SWIG_exit(EXIT_FAILURE);
       }
 
@@ -1460,14 +1508,22 @@ public:
     if (proxy_flag) {
       writeProxyClassAndUpcasts(n);
 
-      Replaceall(proxy_class_def, "$proxydmodule", proxy_dmodule_name);
-      Replaceall(proxy_class_code, "$proxydmodule", proxy_dmodule_name);
-      Replaceall(proxy_class_enums_code, "$proxydmodule", proxy_dmodule_name);
-      Replaceall(proxy_class_epilogue_code, "$proxydmodule", proxy_dmodule_name);
-      Replaceall(proxy_class_def, "$wrapdmodule", wrap_dmodule_name);
-      Replaceall(proxy_class_code, "$wrapdmodule", wrap_dmodule_name);
-      Replaceall(proxy_class_enums_code, "$wrapdmodule", wrap_dmodule_name);
-      Replaceall(proxy_class_epilogue_code, "$wrapdmodule", wrap_dmodule_name);
+      // RESEARCH: Is this needed at all (we are writing this to the proxy
+      // module, why should it have to refer to itself)?
+      Replaceall(proxy_class_def, "$proxydmodule", proxy_dmodule_fq_name);
+      Replaceall(proxy_class_code, "$proxydmodule", proxy_dmodule_fq_name);
+      Replaceall(proxy_class_enums_code, "$proxydmodule", proxy_dmodule_fq_name);
+      Replaceall(proxy_class_epilogue_code, "$proxydmodule", proxy_dmodule_fq_name);
+
+      Replaceall(proxy_class_def, "$wrapdmodule", wrap_dmodule_fq_name);
+      Replaceall(proxy_class_code, "$wrapdmodule", wrap_dmodule_fq_name);
+      Replaceall(proxy_class_enums_code, "$wrapdmodule", wrap_dmodule_fq_name);
+      Replaceall(proxy_class_epilogue_code, "$wrapdmodule", wrap_dmodule_fq_name);
+
+      Replaceall(proxy_class_def, "$module", proxy_dmodule_name);
+      Replaceall(proxy_class_code, "$module", proxy_dmodule_name);
+      Replaceall(proxy_class_enums_code, "$module", proxy_dmodule_name);
+      Replaceall(proxy_class_epilogue_code, "$module", proxy_dmodule_name);
 
       // Write the proxy class definition (the header part).
       Printv(proxy_dmodule_code, proxy_class_def, NIL);
@@ -1637,7 +1693,7 @@ public:
       Printf(function_code, "static ");
     Printf(function_code, "%s %s(", return_type, proxy_function_name);
 
-    Printv(imcall, wrap_dmodule_name, ".$imfuncname(", NIL);
+    Printv(imcall, wrap_dmodule_fq_name, ".$imfuncname(", NIL);
     if (!static_flag)
       Printf(imcall, "__swig_cObject");
 
@@ -1845,7 +1901,7 @@ public:
       Printf(proxy_constructor_code, "  %s this(", methodmods);
       Printf(helper_code, "  static private %s SwigConstruct%s(", im_return_type, proxy_class_name);
 
-      Printv(imcall, wrap_dmodule_name, ".", mangled_overname, "(", NIL);
+      Printv(imcall, wrap_dmodule_fq_name, ".", mangled_overname, "(", NIL);
 
       /* Attach the non-standard typemaps to the parameter list */
       Swig_typemap_attach_parms("in", l, NULL);
@@ -2025,7 +2081,7 @@ public:
     String *symname = Getattr(n, "sym:name");
 
     if (proxy_flag) {
-      Printv(destructor_call, wrap_dmodule_name, ".", Swig_name_destroy(symname), "(__swig_cObject)", NIL);
+      Printv(destructor_call, wrap_dmodule_fq_name, ".", Swig_name_destroy(symname), "(__swig_cObject)", NIL);
     }
     return SWIG_OK;
   }
@@ -2172,7 +2228,7 @@ public:
     methodmods = methodmods ? methodmods : empty_string;
 
     Printf(function_code, "%s%s %s(", methodmods, return_type, func_name);
-    Printv(imcall, wrap_dmodule_name, ".", overloaded_name, "(", NIL);
+    Printv(imcall, wrap_dmodule_fq_name, ".", overloaded_name, "(", NIL);
 
     /* Get number of required and total arguments */
     num_arguments = emit_num_arguments(l);
@@ -2339,10 +2395,10 @@ public:
 	  // Strange hack to change the name
 	  Setattr(n, "name", Getattr(n, "value"));	/* for wrapping of enums in a namespace when emit_action is used */
 	  constantWrapper(n);
-	  value = NewStringf("%s.%s()", wrap_dmodule_name, Swig_name_get(symname));
+	  value = NewStringf("%s.%s()", wrap_dmodule_fq_name, Swig_name_get(symname));
 	} else {
 	  memberconstantHandler(n);
-	  value = NewStringf("%s.%s()", wrap_dmodule_name, Swig_name_get(Swig_name_member(proxy_class_name, symname)));
+	  value = NewStringf("%s.%s()", wrap_dmodule_fq_name, Swig_name_get(Swig_name_member(proxy_class_name, symname)));
 	}
       }
     }
@@ -2513,8 +2569,9 @@ public:
       "}\n\n", NIL);
 
     Replaceall(proxy_dmodule_code, "$dclassname", classname);
-    Replaceall(proxy_dmodule_code, "$proxydmodule", proxy_dmodule_name);
-    Replaceall(proxy_dmodule_code, "$wrapdmodule", wrap_dmodule_name);
+    Replaceall(proxy_dmodule_code, "$proxydmodule", proxy_dmodule_fq_name);
+    Replaceall(proxy_dmodule_code, "$wrapdmodule", wrap_dmodule_fq_name);
+    Replaceall(proxy_dmodule_code, "$module", proxy_dmodule_name);
 
     Delete(n);
   }
@@ -2876,8 +2933,9 @@ public:
 	    String *din = Copy(Getattr(p, "tmap:csdirectorin"));
 
 	    if (din) {
-	      Replaceall(din, "$proxydmodule", proxy_dmodule_name);
-	      Replaceall(din, "$wrapdmodule", wrap_dmodule_name);
+	      Replaceall(din, "$proxydmodule", proxy_dmodule_fq_name);
+	      Replaceall(din, "$wrapdmodule", wrap_dmodule_fq_name);
+	      Replaceall(din, "$module", proxy_dmodule_name);
 	      substituteClassname(pt, din);
 	      Replaceall(din, "$iminput", ln);
 
@@ -3359,7 +3417,7 @@ extern "C" Language *swig_d(void) {
 const char *D::usage = (char *) "\
 D Options (available with -d)\n\
      -wrapperlibrary <wl> - Sets the name of the wrapper library to <wl>\n\
-     -namespace <nm>      - Generate wrappers into C# namespace <nm>\n\
+     -package <pkg>       - Write generated D modules into package <pkg>\n\
      -noproxy             - Generate the low-level functional interface instead\n\
                             of proxy classes\n\
 \n";

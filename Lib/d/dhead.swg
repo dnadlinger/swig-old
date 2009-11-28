@@ -52,7 +52,7 @@ static void SWIGUNUSED SWIG_DSetPendingException(SWIG_DExceptionCodes code, cons
 #ifdef __cplusplus
 extern "C"
 #endif
-SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionCallbacks_$proxydmodule(
+SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionCallbacks_$module(
   SWIG_DExceptionCallback_t exceptionCallback,
   SWIG_DExceptionCallback_t illegalArgumentCallback,
   SWIG_DExceptionCallback_t illegalElementCallback,
@@ -78,7 +78,7 @@ static import tango.stdc.stringz;
 %pragma(d) wrapdmodulecode=%{
 private class __SWIGExceptionHelper {
   static this() {
-    __SWIGRegisterExceptionCallbacks_$proxydmodule(
+    __SWIGRegisterExceptionCallbacks_$module(
       &setException,
       &setIllegalArgumentException,
       &setIllegalElementException,
@@ -180,7 +180,7 @@ static SWIG_DStringHelperCallback SWIG_d_string_callback = NULL;
 #ifdef __cplusplus
 extern "C"
 #endif
-SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$proxydmodule(SWIG_DStringHelperCallback callback) {
+SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_DStringHelperCallback callback) {
   SWIG_d_string_callback = callback;
 }
 %}
@@ -188,7 +188,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$proxydmodule(SWIG_DStrin
 %pragma(d) wrapdmodulecode=%{
 private class __SWIGStringHelper {
   static this() {
-    __SWIGRegisterStringCallback_$proxydmodule(&createString);
+    __SWIGRegisterStringCallback_$module(&createString);
   }
 
   static char* createString( char* cString ) {
