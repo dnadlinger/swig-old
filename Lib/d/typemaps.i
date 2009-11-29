@@ -82,9 +82,9 @@ In C# you could then use it like this:
 %enddef
 
 INPUT_TYPEMAP(bool,               unsigned int,         bool)
-//INPUT_TYPEMAP(char,               char,                 char)
-INPUT_TYPEMAP(signed char,        signed char,          sbyte)
-INPUT_TYPEMAP(unsigned char,      unsigned char,        byte)
+//INPUT_TYPEMAP(char,               char,                 char) // Why was this commented out?
+INPUT_TYPEMAP(signed char,        signed char,          byte)
+INPUT_TYPEMAP(unsigned char,      unsigned char,        ubyte)
 INPUT_TYPEMAP(short,              short,                short)
 INPUT_TYPEMAP(unsigned short,     unsigned short,       ushort)
 INPUT_TYPEMAP(int,                int,                  int)
@@ -153,7 +153,7 @@ value returned in the second output parameter. In C# you would use it like this:
 %typemap(ctype) TYPE *OUTPUT, TYPE &OUTPUT "CTYPE *"
 %typemap(imtype) TYPE *OUTPUT, TYPE &OUTPUT "out CSTYPE"
 %typemap(cstype) TYPE *OUTPUT, TYPE &OUTPUT "out CSTYPE"
-%typemap(csin) TYPE *OUTPUT, TYPE &OUTPUT "out $csinput"
+%typemap(csin) TYPE *OUTPUT, TYPE &OUTPUT "$csinput"
 %typemap(csdirectorin) TYPE *OUTPUT, TYPE &OUTPUT "$iminput"
 %typemap(csdirectorout) TYPE *OUTPUT, TYPE &OUTPUT "$cscall"
 
@@ -176,8 +176,8 @@ value returned in the second output parameter. In C# you would use it like this:
 %enddef
 
 OUTPUT_TYPEMAP(bool,               unsigned int,         bool,     BOOL_PTR)
-//OUTPUT_TYPEMAP(char,               char,                 char,     CHAR_PTR)
-OUTPUT_TYPEMAP(signed char,        signed char,          sbyte,    INT8_PTR)
+//OUTPUT_TYPEMAP(char,               char,                 char,     CHAR_PTR) // Why was this commented out?
+OUTPUT_TYPEMAP(signed char,        signed char,          ubyte,    INT8_PTR)
 OUTPUT_TYPEMAP(unsigned char,      unsigned char,        byte,     UINT8_PTR)
 OUTPUT_TYPEMAP(short,              short,                short,    INT16_PTR)
 OUTPUT_TYPEMAP(unsigned short,     unsigned short,       ushort,   UINT16_PTR)
@@ -256,7 +256,7 @@ of the function return value.
 %typemap(ctype) TYPE *INOUT, TYPE &INOUT "CTYPE *"
 %typemap(imtype) TYPE *INOUT, TYPE &INOUT "ref CSTYPE"
 %typemap(cstype) TYPE *INOUT, TYPE &INOUT "ref CSTYPE"
-%typemap(csin) TYPE *INOUT, TYPE &INOUT "ref $csinput"
+%typemap(csin) TYPE *INOUT, TYPE &INOUT "$csinput"
 %typemap(csdirectorin) TYPE *INOUT, TYPE &INOUT "$iminput"
 %typemap(csdirectorout) TYPE *INOUT, TYPE &INOUT "$cscall"
 
@@ -278,7 +278,7 @@ of the function return value.
 
 INOUT_TYPEMAP(bool,               unsigned int,         bool,     BOOL_PTR)
 //INOUT_TYPEMAP(char,               char,                 char,     CHAR_PTR)
-INOUT_TYPEMAP(signed char,        signed char,          sbyte,    INT8_PTR)
+INOUT_TYPEMAP(signed char,        signed char,          ubyte,    INT8_PTR)
 INOUT_TYPEMAP(unsigned char,      unsigned char,        byte,     UINT8_PTR)
 INOUT_TYPEMAP(short,              short,                short,    INT16_PTR)
 INOUT_TYPEMAP(unsigned short,     unsigned short,       ushort,   UINT16_PTR)
