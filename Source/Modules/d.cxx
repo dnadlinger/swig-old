@@ -1035,7 +1035,7 @@ public:
     // Emit each enum item.
     Language::enumDeclaration(n);
 
-    if (!Getattr(n, "enumvalues")) {
+    if (!GetFlag(n, "nonempty")) {
       // Do not wrap empty enums; the resulting D code would be illegal.
       Delete(enum_code);
       return SWIG_NOWRAP;
@@ -1052,12 +1052,6 @@ public:
     }
 
     Replaceall(enum_code, "$dclassname", symname);
-
-    // Substitute $enumvalues - intended usage is for typesafe enums
-    if (Getattr(n, "enumvalues"))
-      Replaceall(enum_code, "$enumvalues", Getattr(n, "enumvalues"));
-    else
-      Replaceall(enum_code, "$enumvalues", "");
 
     if (proxy_flag && is_wrapping_class()) {
       // Enums defined within the C++ class are written into the proxy
@@ -1094,7 +1088,8 @@ public:
     Node *parent = parentNode(n);
     String *tmpValue;
 
-    // Strange hack from parent method
+    // Strange hack from parent method.
+    // RESEARCH: What is this doing?
     if (value)
       tmpValue = NewString(value);
     else
@@ -1120,12 +1115,8 @@ public:
 	Printf(enum_code, " = %s", value);
       }
 
-      // Add the enum value to the comma separated list being constructed in the enum declaration.
-      String *enumvalues = Getattr(parent, "enumvalues");
-      if (!enumvalues)
-	Setattr(parent, "enumvalues", Copy(symname));
-      else
-	Printv(enumvalues, ", ", symname, NIL);
+      // Keep track that the currently processed enum has at least one value.
+      SetFlag(parent, "nonempty");
     }
 
     Delete(tmpValue);
