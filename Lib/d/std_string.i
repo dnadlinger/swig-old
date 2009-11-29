@@ -42,7 +42,7 @@ class string;
    $1 = &$1_str; %}
 
 %typemap(out) string %{ $result = SWIG_d_string_callback($1.c_str()); %}
-%typemap(out) const string & %{ $result = SWIG_csharp_string_callback($1->c_str()); %}
+%typemap(out) const string & %{ $result = SWIG_d_string_callback($1->c_str()); %}
 
 %typemap(csin) string, const string & "tango.stdc.stringz.toStringz($csinput)"
 %typemap(csout, excode=SWIGEXCODE) string, const string & {
