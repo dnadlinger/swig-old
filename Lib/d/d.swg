@@ -33,6 +33,7 @@
 %typemap(ctype) unsigned long long, const unsigned long long & "unsigned long long"
 %typemap(ctype) float,              const float &              "float"
 %typemap(ctype) double,             const double &             "double"
+%typemap(ctype) long double,        const long double &        "long double"
 %typemap(ctype) void                                           "void"
 
 %typemap(imtype) bool,               const bool &                   "uint"
@@ -49,7 +50,6 @@
 %typemap(imtype) unsigned long long, const unsigned long long &     "ulong"
 %typemap(imtype) float,              const float &                  "float"
 %typemap(imtype) double,             const double &                 "double"
-%typemap(imtype) long double,        const long double &            "real"
 %typemap(imtype) void                                               "void"
 
 %typemap(cstype) bool,               const bool &                   "bool"
@@ -66,7 +66,6 @@
 %typemap(cstype) unsigned long long, const unsigned long long &     "ulong"
 %typemap(cstype) float,              const float &                  "float"
 %typemap(cstype) double,             const double &                 "double"
-%typemap(cstype) long double,        const long double &            "real"
 %typemap(cstype) void                                               "void"
 
 %typemap(ctype) char *, char *&, char[ANY], char[]   "char *"
@@ -425,7 +424,6 @@
  * issue a warning for overloaded C++ functions that cannot be overloaded in D
  * (as more than one C++ type maps to a single D type).
  */
-// TODO: Add typecheck typemap for long double/real.
 %typecheck(SWIG_TYPECHECK_BOOL)
     bool,
     const bool &
@@ -624,10 +622,6 @@
 }
 %typemap(csout, excode=SWIGEXCODE) double,             const double &             {
   double ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) long double,        const long double &        {
-  real ret = $imcall;$excode
   return ret;
 }
 %typemap(csout, excode=SWIGEXCODE) char *, char *&, char[ANY], char[] {
