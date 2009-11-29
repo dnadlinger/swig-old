@@ -1,5 +1,9 @@
 /* File : example.i */
+#ifndef SWIGD
 %module "template"
+#else
+%module "template_"
+#endif
 
 %warnfilter(SWIGWARN_RUBY_WRONG_NAME) vector<int>;         /* Ruby, wrong class name */
 %warnfilter(SWIGWARN_RUBY_WRONG_NAME) vector<double>;      /* Ruby, wrong class name */
