@@ -157,8 +157,8 @@
 %typemap(directorin) float              "$input = $1;"
 %typemap(directorin) double             "$input = $1;"
 
-%typemap(csdirectorin) bool,
-                       char,
+%typemap(csdirectorin) bool "($iminput ? true : false)"
+%typemap(csdirectorin) char,
                        signed char,
                        unsigned char,
                        short,
