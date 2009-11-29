@@ -704,11 +704,11 @@
    SWIG_DSetPendingException(SWIG_DException, "C++ $1_type exception thrown");
    return $null; %}
 
-%typemap(csin) const enum SWIGTYPE & "(int)$csinput"
+%typemap(csin) const enum SWIGTYPE & "cast(int)$csinput"
 %typemap(csout, excode=SWIGEXCODE) const enum SWIGTYPE & {
-    $*dclassname ret = cast($*dclassname)$imcall;$excode
-    return ret;
-  }
+  $*dclassname ret = cast($*dclassname)$imcall;$excode
+  return ret;
+}
 
 // enum SWIGTYPE typemaps
 %typemap(ctype) enum SWIGTYPE "int"
