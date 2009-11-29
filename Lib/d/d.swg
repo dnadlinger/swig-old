@@ -209,7 +209,7 @@
 %typemap(out) char * %{ $result = SWIG_d_string_callback((const char *)$1); %}
 %typemap(directorout, warning=SWIGWARN_TYPEMAP_DIRECTOROUT_PTR_MSG) char * %{ $result = ($1_ltype)$input; %}
 %typemap(directorin) char * %{ $input = SWIG_d_string_callback((const char *)$1); %}
-%typemap(csdirectorin) char * "$iminput"
+%typemap(csdirectorin) char * "tango.stdc.stringz.fromStringz($iminput)"
 %typemap(csdirectorout) char * "tango.stdc.stringz.toStringz($cscall)"
 
 /* char *& - treat as char[] */
