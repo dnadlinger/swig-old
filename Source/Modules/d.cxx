@@ -2945,18 +2945,12 @@ public:
 		Printf(imcall_args, ", ");
 	      }
 	      Printf(delegate_parms, "%s%s %s", im_directorinattributes ? im_directorinattributes : empty_string, tm, ln);
+	      Printv(proxy_method_types, tm, NIL);
 
 	      if (Cmp(din, ln)) {
 		Printv(imcall_args, din, NIL);
-	      } else
-		Printv(imcall_args, ln, NIL);
-
-	      /* Get the D parameter type */
-	      if ((tm = Getattr(p, "tmap:cstype"))) {
-		substituteClassname(pt, tm);
-		Printv(proxy_method_types, tm, NIL);
 	      } else {
-		Swig_warning(WARN_D_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(pt, 0));
+		Printv(imcall_args, ln, NIL);
 	      }
 	    } else {
 	      Swig_warning(WARN_D_TYPEMAP_CSDIRECTORIN_UNDEF, input_file, line_number, "No csdirectorin typemap defined for %s for use in %s::%s (skipping director method)\n",
