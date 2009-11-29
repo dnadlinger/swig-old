@@ -737,7 +737,7 @@
 }
 
 %typemap(dclassmodifiers) enum SWIGTYPE "enum"
-%typemap(dcode)          enum SWIGTYPE ""
+%typemap(dcode) enum SWIGTYPE ""
 
 /*
  * »Aliases« (applys).
@@ -861,7 +861,7 @@
     __swig_cMemberPtr = null;
   }
 
-  public static void* __swig_getCMemberPtr( $dclassname obj ) {
+  public static char* __swig_getCMemberPtr( $dclassname obj ) {
     return ( obj is null ) ? null : obj.__swig_cMemberPtr;
   }
 %}
