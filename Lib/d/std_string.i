@@ -27,18 +27,22 @@ class string;
 %typemap(imtype) string, const string & "char*"
 %typemap(cstype) string, const string & "char[]"
 
-%typemap(csdirectorin) string, const string & "$iminput"
-%typemap(csdirectorout) string, const string & "tango.stdc.stringz.toStringz($cscall)"
-
 %typemap(in, canthrow=1) string, const string &
 %{ if (!$input) {
     SWIG_DSetPendingException(SWIG_DIllegalArgumentException, "null string");
     return $null;
   }
   $1.assign($input); %}
-%typemap(out) string, const string & %{ $result = SWIG_d_string_callback($1.c_str()); %}
+%typemap(in, canthrow=1) const string &
+%{ if (!$input) {
+    SWIG_DSetPendingException(SWIG_DIllegalArgumentException, "null string");
+    return $null;
+   }
+   std::string $1_str($input);
+   $1 = &$1_str; %}
 
-%typemap(directorin) string, const string & %{ $input = SWIG_d_string_callback($1.c_str()); %}
+%typemap(out) string %{ $result = SWIG_d_string_callback($1.c_str()); %}
+%typemap(out) const string & %{ $result = SWIG_csharp_string_callback($1->c_str()); %}
 
 %typemap(csin) string, const string & "tango.stdc.stringz.toStringz($csinput)"
 %typemap(csout, excode=SWIGEXCODE) string, const string & {
@@ -46,11 +50,7 @@ class string;
   return ret;
 }
 
-%typemap(typecheck) string, const string & = char *;
-
-%typemap(throws, canthrow=1) string, const string &
-%{ SWIG_DSetPendingException(SWIG_DException, $1.c_str());
-  return $null; %}
+%typemap(directorin) string, const string & %{ $input = SWIG_d_string_callback($1.c_str()); %}
 
 %typemap(directorout, canthrow=1) string
 %{ if (!$input) {
@@ -69,4 +69,13 @@ class string;
   $1_str = $input;
   $result = &$1_str; %}
 
-}
+%typemap(csdirectorin) string, const string & "$iminput"
+%typemap(csdirectorout) string, const string & "tango.stdc.stringz.toStringz($cscall)"
+
+%typemap(throws, canthrow=1) string, const string &
+%{ SWIG_DSetPendingException(SWIG_DException, $1.c_str());
+  return $null; %}
+
+%typemap(typecheck) string, const string & = char *;
+
+} // namespace std
