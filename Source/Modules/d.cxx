@@ -1023,18 +1023,27 @@ public:
     String *symname = Getattr(n, "sym:name");
     String *typemap_lookup_type = Getattr(n, "name");
 
-    // Pure D baseclass and interfaces.
-    const String *enummodifiers = typemapLookup(n, "dclassmodifiers", typemap_lookup_type, WARN_D_TYPEMAP_CLASSMOD_UNDEF);
+    // Emit the enum declaration.
+    if (typemap_lookup_type) {
+      const String *enummodifiers = typemapLookup(n, "dclassmodifiers", typemap_lookup_type, WARN_D_TYPEMAP_CLASSMOD_UNDEF);
+      Printv(enum_code, enummodifiers, " ", symname, " {\n", NIL);
+    } else {
+      // Handle anonymous enums.
+      Printv(enum_code, "enum {\n", NIL);
+    }
 
-    // Emit the enum
-    Printv(enum_code, enummodifiers, " ", symname, " {\n", NIL);
-
-    // Emit each enum item
+    // Emit each enum item.
     Language::enumDeclaration(n);
 
-    Printv(enum_code,
-      typemapLookup(n, "dcode", typemap_lookup_type, WARN_NONE), // Extra D code
-      "\n}", NIL);
+    // Finish the enum.
+    if (typemap_lookup_type) {
+      Printv(enum_code,
+	typemapLookup(n, "dcode", typemap_lookup_type, WARN_NONE), // Extra D code
+	"\n}", NIL);
+    } else {
+      // Handle anonymous enums.
+      Printv(enum_code, "\n}", NIL);
+    }
 
     Replaceall(enum_code, "$dclassname", symname);
 
@@ -1088,7 +1097,7 @@ public:
     Setattr(n, "value", tmpValue);
 
     {
-      // Wrap (non-anonymous) C/C++ enum with a proper C# enum
+      // Wrap (non-anonymous) C/C++ enum with a proper D enum.
       // Emit the enum item.
       if (!GetFlag(n, "firstenumitem"))
 	Printf(enum_code, ",\n");
@@ -1099,7 +1108,7 @@ public:
       String *value = Getattr(n, "feature:d:constvalue");
 
       // Note that in D, enum values must be compile-time constants. Thus,
-      // %csconst(0) is not supported.
+      // %dconst(0) (getting the enum values at runtime) is not supported.
       value = value ? value : Getattr(n, "enumvalue");
       if (value) {
 	Printf(enum_code, " = %s", value);
