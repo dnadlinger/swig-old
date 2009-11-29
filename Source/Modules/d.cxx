@@ -1035,6 +1035,12 @@ public:
     // Emit each enum item.
     Language::enumDeclaration(n);
 
+    if (!Getattr(n, "enumvalues")) {
+      // Do not wrap empty enums; the resulting D code would be illegal.
+      Delete(enum_code);
+      return SWIG_NOWRAP;
+    }
+
     // Finish the enum.
     if (typemap_lookup_type) {
       Printv(enum_code,
