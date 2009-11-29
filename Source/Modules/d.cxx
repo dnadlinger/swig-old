@@ -1202,20 +1202,18 @@ public:
       Printf(constants_code, "%s;\n", override_value);
     } else {
       // Just emit the C code and hope it compiles in D.
-      const String* raw_value = Getattr(n, "wrappedasconstant") ?
+      String* value = Getattr(n, "wrappedasconstant") ?
 	Getattr(n, "staticmembervariableHandler:value") : Getattr(n, "value");
 
       // Add the stripped quotes back in.
-      String *value;
       if (SwigType_type(t) == T_STRING) {
-	value = NewStringf("\"%s\"", raw_value);
+	Printf(constants_code, "\"%s\";\n", value);
       } else if (SwigType_type(t) == T_CHAR) {
-	value = NewStringf("\'%s\'", raw_value);
+	Printf(constants_code, "\'%s\';\n", value);
       } else {
-	value = Copy(raw_value);
+	Printf(constants_code, "%s;\n", value);
       }
 
-      Printf(constants_code, "%s;\n", value);
       Delete(value);
     }
 
