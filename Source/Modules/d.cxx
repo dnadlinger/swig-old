@@ -1157,7 +1157,24 @@ public:
       // in D) which retrieves the value via by calling the C wrapper.
       // Note that this is only called for global constants, static member
       // constants are already handeled in staticmemberfunctionHandler().
-      return globalvariableHandler(n);
+
+      Swig_save("constantWrapper", n, "value", NIL);
+
+      // Add the stripped quotes back in.
+      String *old_value = Getattr(n, "value");
+      SwigType *t = Getattr(n, "type");
+      if (SwigType_type(t) == T_STRING) {
+	Setattr(n, "value", NewStringf("\"%s\"", old_value));
+	Delete(old_value);
+      } else if (SwigType_type(t) == T_CHAR) {
+	Setattr(n, "value", NewStringf("\'%s\'", old_value));
+	Delete(old_value);
+      }
+
+      int result = globalvariableHandler(n);
+
+      Swig_restore(n);
+      return result;
     }
 
     String *constants_code = NewString("");
@@ -1213,8 +1230,6 @@ public:
       } else {
 	Printf(constants_code, "%s;\n", value);
       }
-
-      Delete(value);
     }
 
     // Emit the generated code to appropriate place.
