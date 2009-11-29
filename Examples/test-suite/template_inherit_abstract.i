@@ -4,7 +4,8 @@
 
 %warnfilter(SWIGWARN_JAVA_MULTIPLE_INHERITANCE,
 	    SWIGWARN_CSHARP_MULTIPLE_INHERITANCE,
-	    SWIGWARN_PHP_MULTIPLE_INHERITANCE) oss::Module;	/* C#, Java, PHP multiple inheritance */
+	    SWIGWARN_D_MULTIPLE_INHERITANCE,
+	    SWIGWARN_PHP_MULTIPLE_INHERITANCE) oss::Module;	/* C#, D, Java, PHP multiple inheritance */
 
 %inline %{ 
  
