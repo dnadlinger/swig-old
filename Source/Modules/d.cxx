@@ -2940,8 +2940,8 @@ public:
 	      Replaceall(din, "$iminput", ln);
 
 	      Printf(proxy_method_types, ", ");
+	      Printf(delegate_parms, ", ");
 	      if (gencomma > 0) {
-		Printf(delegate_parms, ", ");
 		Printf(imcall_args, ", ");
 	      }
 	      Printf(delegate_parms, "%s%s %s", im_directorinattributes ? im_directorinattributes : empty_string, tm, ln);
@@ -2951,20 +2951,20 @@ public:
 	      } else
 		Printv(imcall_args, ln, NIL);
 
-	      /* Get the C# parameter type */
+	      /* Get the D parameter type */
 	      if ((tm = Getattr(p, "tmap:cstype"))) {
 		substituteClassname(pt, tm);
-		Printf(proxy_method_types, "typeof(%s)", tm);
+		Printv(proxy_method_types, tm, NIL);
 	      } else {
-		Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(pt, 0));
+		Swig_warning(WARN_D_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(pt, 0));
 	      }
 	    } else {
-	      Swig_warning(WARN_CSHARP_TYPEMAP_CSDIRECTORIN_UNDEF, input_file, line_number, "No csdirectorin typemap defined for %s for use in %s::%s (skipping director method)\n",
+	      Swig_warning(WARN_D_TYPEMAP_CSDIRECTORIN_UNDEF, input_file, line_number, "No csdirectorin typemap defined for %s for use in %s::%s (skipping director method)\n",
 		  SwigType_str(pt, 0), SwigType_namestr(c_classname), SwigType_namestr(name));
 	      output_director = false;
 	    }
 	  } else {
-	    Swig_warning(WARN_CSHARP_TYPEMAP_CSTYPE_UNDEF, input_file, line_number, "No imtype typemap defined for %s for use in %s::%s (skipping director method)\n",
+	    Swig_warning(WARN_D_TYPEMAP_CSTYPE_UNDEF, input_file, line_number, "No imtype typemap defined for %s for use in %s::%s (skipping director method)\n",
 		SwigType_str(pt, 0), SwigType_namestr(c_classname), SwigType_namestr(name));
 	    output_director = false;
 	  }
@@ -2974,12 +2974,12 @@ public:
 	  Delete(desc_tm);
 	} else {
 	  if (!desc_tm) {
-	    Swig_warning(WARN_CSHARP_TYPEMAP_CSDIRECTORIN_UNDEF, input_file, line_number,
+	    Swig_warning(WARN_D_TYPEMAP_CSDIRECTORIN_UNDEF, input_file, line_number,
 			 "No or improper directorin typemap defined for %s for use in %s::%s (skipping director method)\n",
 			 SwigType_str(c_param_type, 0), SwigType_namestr(c_classname), SwigType_namestr(name));
 	    p = nextSibling(p);
 	  } else if (!tm) {
-	    Swig_warning(WARN_CSHARP_TYPEMAP_CSDIRECTORIN_UNDEF, input_file, line_number,
+	    Swig_warning(WARN_D_TYPEMAP_CSDIRECTORIN_UNDEF, input_file, line_number,
 			 "No or improper directorin typemap defined for argument %s for use in %s::%s (skipping director method)\n",
 			 SwigType_str(pt, 0), SwigType_namestr(c_classname), SwigType_namestr(name));
 	    p = nextSibling(p);
@@ -2990,7 +2990,7 @@ public:
 
 	Delete(tp);
       } else {
-	Swig_warning(WARN_CSHARP_TYPEMAP_CTYPE_UNDEF, input_file, line_number, "No ctype typemap defined for %s for use in %s::%s (skipping director method)\n",
+	Swig_warning(WARN_D_TYPEMAP_CTYPE_UNDEF, input_file, line_number, "No ctype typemap defined for %s for use in %s::%s (skipping director method)\n",
 	    SwigType_str(pt, 0), SwigType_namestr(c_classname), SwigType_namestr(name));
 	output_director = false;
 	p = nextSibling(p);
@@ -3041,8 +3041,7 @@ public:
     Append(w->def, " {");
     Append(declaration, ";\n");
 
-    /* Finish off the inherited upcall's definition */
-
+    // Finish the callback function declaraction.
     Printf(callback_def, "%s)", delegate_parms);
     Printf(callback_def, " {\n");
 
