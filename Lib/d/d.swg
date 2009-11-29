@@ -693,9 +693,9 @@
 %typemap(directorout,warning=SWIGWARN_TYPEMAP_THREAD_UNSAFE_MSG) const enum SWIGTYPE &
 %{ static $*1_ltype temp = ($*1_ltype)$input;
    $result = &temp; %}
-%typemap(directorin) const enum SWIGTYPE &    "$input = $1_name;"
-%typemap(csdirectorin) const enum SWIGTYPE & "($*dclassname)$iminput"
-%typemap(csdirectorout) const enum SWIGTYPE & "(int)$cscall"
+%typemap(directorin) const enum SWIGTYPE & "$input = $1_name;"
+%typemap(csdirectorin) const enum SWIGTYPE & "cast($*dclassname)$iminput"
+%typemap(csdirectorout) const enum SWIGTYPE & "cast(int)$cscall"
 
 %typecheck(SWIG_TYPECHECK_POINTER) const enum SWIGTYPE & ""
 
@@ -706,16 +706,9 @@
 
 %typemap(csin) const enum SWIGTYPE & "(int)$csinput"
 %typemap(csout, excode=SWIGEXCODE) const enum SWIGTYPE & {
-    $*dclassname ret = ($*dclassname)$imcall;$excode
+    $*dclassname ret = cast($*dclassname)$imcall;$excode
     return ret;
   }
-
-%typemap(csvarout, excode=SWIGEXCODE2) const enum SWIGTYPE & %{
-    get {
-      $*dclassname ret = ($*dclassname)$imcall;$excode
-      return ret;
-    } %}
-
 
 // enum SWIGTYPE typemaps
 %typemap(ctype) enum SWIGTYPE "int"
@@ -725,10 +718,10 @@
 %typemap(in) enum SWIGTYPE %{ $1 = ($1_ltype)$input; %}
 %typemap(out) enum SWIGTYPE %{ $result = $1; %}
 
-%typemap(directorout) enum SWIGTYPE  %{ $result = ($1_ltype)$input; %}
-%typemap(directorin) enum SWIGTYPE    "$input = $1;"
-%typemap(csdirectorin) enum SWIGTYPE "($dclassname)$iminput"
-%typemap(csdirectorout) enum SWIGTYPE "(int)$cscall"
+%typemap(directorout) enum SWIGTYPE %{ $result = ($1_ltype)$input; %}
+%typemap(directorin) enum SWIGTYPE "$input = $1;"
+%typemap(csdirectorin) enum SWIGTYPE "cast($dclassname)$iminput"
+%typemap(csdirectorout) enum SWIGTYPE "cast(int)$cscall"
 
 %typecheck(SWIG_TYPECHECK_POINTER) enum SWIGTYPE ""
 
@@ -739,15 +732,9 @@
 
 %typemap(csin) enum SWIGTYPE "cast(int)$csinput"
 %typemap(csout, excode=SWIGEXCODE) enum SWIGTYPE {
-    $dclassname ret = ($dclassname)$imcall;$excode
-    return ret;
-  }
-
-%typemap(csvarout, excode=SWIGEXCODE2) enum SWIGTYPE %{
-    get {
-      $dclassname ret = ($dclassname)$imcall;$excode
-      return ret;
-    } %}
+  $dclassname ret = cast($dclassname)$imcall;$excode
+  return ret;
+}
 
 %typemap(dclassmodifiers) enum SWIGTYPE "enum"
 %typemap(dcode)          enum SWIGTYPE ""
