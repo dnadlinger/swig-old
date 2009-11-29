@@ -13,9 +13,9 @@
  * the D proxy code.
  *
  * The ctype typemap is used to determine the types to use in the C wrapper
- * functions. The types from the imtype typemap are used in the function
- * declarations in the wrap D module. The dtype typemap contains the D types
- * used in the D proxy modules and classes.
+ * functions. The types from the imtype typemap are used in the extern( C )
+ * declarations of these functions in the wrap D module. The cstype typemap
+ * contains the D types used in the D proxy module/class.
  */
 
 // Primitive types.
@@ -35,6 +35,7 @@
 %typemap(ctype) double,             const double &             "double"
 %typemap(ctype) void                                           "void"
 
+%typemap(imtype) bool,               const bool &                   "uint"
 %typemap(imtype) char,               const char &                   "char"
 %typemap(imtype) signed char,        const signed char &            "byte"
 %typemap(imtype) unsigned char,      const unsigned char &          "ubyte"
@@ -51,6 +52,7 @@
 %typemap(imtype) long double,        const long double &            "real"
 %typemap(imtype) void                                               "void"
 
+%typemap(cstype) bool,               const bool &                   "bool"
 %typemap(cstype) char,               const char &                   "char"
 %typemap(cstype) signed char,        const signed char &            "byte"
 %typemap(cstype) unsigned char,      const unsigned char &          "ubyte"
@@ -95,20 +97,17 @@
 
 
 /*
- * The following typemaps, in and out, are used for converting between the types
- * for C/C++ and D when generating the code for the wrapper functions (on the
- * C++ side.
+ * The following typemaps are used for converting between the types for C/C++
+ * and D when generating the code for the wrapper functions (on the C++ side):
+ * the code from the in typemap is used to convert arguments to the C wrapper
+ * function to the type used in the wrapped code (ctype->original c++ type), the
+ * out typemap is utilized to convert values from the wrapped code to wrapper
+ * function return types (original c++ type->ctype).
  */
 
 // Primitive types.
 %typemap(in) bool
 %{ $1 = $input ? true : false; %}
-
-%typemap(directorout) bool
-%{ $result = $input ? true : false; %}
-
-%typemap(csdirectorin) bool "$iminput"
-%typemap(csdirectorout) bool "$cscall"
 
 %typemap(in) char,
              signed char,
@@ -124,6 +123,9 @@
              float,
              double
 %{ $1 = ($1_ltype)$input; %}
+
+%typemap(directorout) bool
+%{ $result = $input ? true : false; %}
 
 %typemap(directorout) char,
              signed char,
@@ -155,7 +157,8 @@
 %typemap(directorin) float              "$input = $1;"
 %typemap(directorin) double             "$input = $1;"
 
-%typemap(csdirectorin) char,
+%typemap(csdirectorin) bool,
+                       char,
                        signed char,
                        unsigned char,
                        short,
@@ -170,7 +173,8 @@
                        double
   "$iminput"
 
-%typemap(csdirectorout) char,
+%typemap(csdirectorout) bool,
+                        char,
                         signed char,
                         unsigned char,
                         short,
@@ -567,7 +571,7 @@
 %define SWIGEXCODE2 "\n      if ($wrapdmodule.__SWIGPendingException.isPending) throw $wrapdmodule.__SWIGPendingException.retrieve();" %enddef
 
 %typemap(csout, excode=SWIGEXCODE) bool,               const bool &               {
-  bool ret = $imcall;$excode
+  bool ret = $imcall ? true : false;$excode
   return ret;
 }
 %typemap(csout, excode=SWIGEXCODE) char,               const char &               {
