@@ -604,7 +604,7 @@ public:
    *
    * Adds new director upcall signature.
    * --------------------------------------------------------------------------- */
-  UpcallData *addUpcallMethod(String *imclass_method, String *class_method, String *decl, String *overloaded_name) {
+  UpcallData *addUpcallMethod(String *imclass_method, String *class_method, String *decl, String *overloaded_name, String *return_type, String *param_list) {
     UpcallData *udata;
     String *imclass_methodidx;
     String *class_methodidx;
@@ -628,13 +628,11 @@ public:
     Setattr(dmethods_table, key, new_udata);
 
     Setattr(new_udata, "method", Copy(class_method));
-    // TODO: remove fdesc
-//    Setattr(new_udata, "fdesc", Copy(class_desc));
-//    Setattr(new_udata, "imclass_method", Copy(imclass_method));
-//    Setattr(new_udata, "imclass_methodidx", imclass_methodidx);
     Setattr(new_udata, "class_methodidx", class_methodidx);
     Setattr(new_udata, "decl", Copy(decl));
     Setattr(new_udata, "overname", Copy(overloaded_name));
+    Setattr(new_udata, "return_type", Copy(return_type));
+    Setattr(new_udata, "param_list", Copy(param_list));
 
     Delete(key);
     return new_udata;
@@ -1175,7 +1173,7 @@ public:
     // Attach the non-standard typemaps to the parameter list.
     Swig_typemap_attach_parms("cstype", l, NULL);
 
-    // Get D return types.
+    // Get D return type.
     String *return_type = NewString("");
     String *tm;
     if ((tm = Swig_typemap_lookup("cstype", n, "", 0))) {
@@ -1395,10 +1393,13 @@ public:
       for (i = first_class_dmethod; i < curr_class_dmethod; ++i) {
 	UpcallData *udata = Getitem(dmethods_seq, i);
 	String *method = Getattr(udata, "method");
+	String *overloaded_name = Getattr(udata, "overname");
+	String *return_type = Getattr(udata, "return_type");
+	String *param_list = Getattr(udata, "param_list");
 	String *methid = Getattr(udata, "class_methodidx");
 	Printf(proxy_class_code, "    %s.__SwigDirector_%s_Callback%s callback%s;\n", wrap_dmodule_fq_name, proxy_class_name, methid, methid);
-	Printf(proxy_class_code, "    if ( __SwigIsMethodOverridden!( \"%s\" ) ) {\n", method);
-	Printf(proxy_class_code, "      callback%s = &__SwigDirector_%s_%s;\n", methid, proxy_class_name, method);
+	Printf(proxy_class_code, "    if ( __SwigIsMethodOverridden!( \"%s\", \"%s\", \"%s\" ) ) {\n", method, return_type, param_list);
+	Printf(proxy_class_code, "      callback%s = &__SwigDirector_%s_%s;\n", methid, proxy_class_name, overloaded_name);
 	Printf(proxy_class_code, "    }\n\n");
       }
       Printf(proxy_class_code, "    %s.%s_director_connect( __swig_cObject, cast( void* )this", wrap_dmodule_fq_name, proxy_class_name);
@@ -1418,14 +1419,14 @@ public:
       // TODO: Extend this to support overriden methods.
       if (first_class_dmethod < curr_class_dmethod) {
 	Printf(proxy_class_code, "\n");
-	Printf(proxy_class_code, "  private bool __SwigIsMethodOverridden( char[] methodName )() {\n");
-	Printf(proxy_class_code, "    auto vtblMethod = mixin( \"&\" ~ methodName );\n" );
-	Printf(proxy_class_code, "    auto baseMethod = mixin( \"__SwigAddressOf!(\" ~ methodName ~ \")\" );\n" );
-	Printf(proxy_class_code, "    return ( vtblMethod.funcptr != baseMethod );\n");
+	Printf(proxy_class_code, "  private bool __SwigIsMethodOverridden( char[] methodName, char[] returnType, char[] parameterTypes )() {\n");
+	Printf(proxy_class_code, "    auto vtblMethod = mixin( \"cast(\" ~ returnType ~ \" delegate(\" ~ parameterTypes ~ \"))&\" ~ methodName );\n" );
+	Printf(proxy_class_code, "    void* baseMethod = mixin( \"__SwigAddressOf!(\" ~ methodName ~ \", \" ~ returnType ~ \" function(\" ~ parameterTypes ~ \"))\" );\n" );
+	Printf(proxy_class_code, "    return ( cast(void*)vtblMethod.funcptr != baseMethod );\n");
 	Printf(proxy_class_code, "  }\n");
 	Printf(proxy_class_code, "\n");
-	Printf(proxy_class_code, "  template __SwigAddressOf( alias fn ) {\n");
-	Printf(proxy_class_code, "    const __SwigAddressOf = &fn;\n");
+	Printf(proxy_class_code, "  template __SwigAddressOf( alias fn, Type ) {\n");
+	Printf(proxy_class_code, "    const __SwigAddressOf = cast(Type)&fn;\n");
 	Printf(proxy_class_code, "  }\n");
       }
 
@@ -2752,7 +2753,7 @@ public:
     String *imclass_dmethod;
     String *callback_typedef_parms = NewString("");
     String *delegate_parms = NewString("");
-    String *proxy_method_types = NewString("");
+    String *proxy_method_param_list = NewString("");
     String *proxy_callback_return_type = NewString("");
     String *callback_def = NewString("");
     String *callback_code = NewString("");
@@ -2958,18 +2959,25 @@ public:
 	      substituteClassname(pt, din);
 	      Replaceall(din, "$iminput", ln);
 
-	      Printf(proxy_method_types, ", ");
 	      Printf(delegate_parms, ", ");
 	      if (gencomma > 0) {
+		Printf(proxy_method_param_list, ", ");
 		Printf(imcall_args, ", ");
 	      }
 	      Printf(delegate_parms, "%s%s %s", im_directorinattributes ? im_directorinattributes : empty_string, tm, ln);
-	      Printv(proxy_method_types, tm, NIL);
 
 	      if (Cmp(din, ln)) {
 		Printv(imcall_args, din, NIL);
 	      } else {
 		Printv(imcall_args, ln, NIL);
+	      }
+
+	      // Get the parameter type in the proxy D class.
+	      if ((tm = Getattr(p, "tmap:cstype"))) {
+		substituteClassname(pt, tm);
+		Printf(proxy_method_param_list, "%s", tm);
+	      } else {
+		Swig_warning(WARN_D_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(pt, 0));
 	      }
 	    } else {
 	      Swig_warning(WARN_D_TYPEMAP_CSDIRECTORIN_UNDEF, input_file, line_number, "No csdirectorin typemap defined for %s for use in %s::%s (skipping director method)\n",
@@ -3148,8 +3156,22 @@ public:
     }
 
     if (!ignored_method) {
+      // Get D return types.
+      String *return_type = NewString("");
+      String *tm;
+      if ((tm = Swig_typemap_lookup("cstype", n, "", 0))) {
+	String *cstypeout = Getattr(n, "tmap:cstype:out");	// the type in the cstype typemap's out attribute overrides the type in the typemap
+	if (cstypeout)
+	  tm = cstypeout;
+	substituteClassname(type, tm);
+	Printf(return_type, "%s", tm);
+      } else {
+	Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(type, 0));
+      }
+
       // Write the callback typedef/member to the C++ director class.
-      UpcallData *udata = addUpcallMethod(imclass_dmethod, symname, decl, overloaded_name);
+      UpcallData *udata = addUpcallMethod(imclass_dmethod, symname, decl, overloaded_name, return_type, proxy_method_param_list);
+      Delete(return_type);
       String *methid = Getattr(udata, "class_methodidx");
 
       Printf(director_callback_typedefs, "    typedef %s (SWIGSTDCALL* SWIG_Callback%s_t)", c_ret_type, methid);
@@ -3159,7 +3181,7 @@ public:
       // Write the type alias for the callback to the wrap D module.
       String* proxy_callback_type = NewString("");
       Printf(proxy_callback_type, "__SwigDirector_%s_Callback%s", classname, methid);
-      Printf(wrap_dmodule_code, "alias %s function(void*%s) %s;\n", proxy_callback_return_type, proxy_method_types, proxy_callback_type);
+      Printf(wrap_dmodule_code, "alias %s function(void*%s) %s;\n", proxy_callback_return_type, delegate_parms, proxy_callback_type);
       Delete(proxy_callback_type);
     }
 
@@ -3168,7 +3190,7 @@ public:
     Delete(declaration);
     Delete(callback_typedef_parms);
     Delete(delegate_parms);
-    Delete(proxy_method_types);
+    Delete(proxy_method_param_list);
     Delete(callback_def);
     Delete(callback_code);
     DelWrapper(w);
