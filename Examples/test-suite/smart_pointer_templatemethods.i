@@ -1,5 +1,8 @@
-
 %module smart_pointer_templatemethods
+
+#ifdef SWIGD
+%rename(Objct) Object;
+#endif // »Object« is a reserved class name in D.
 
 %inline %{
 namespace ns {
