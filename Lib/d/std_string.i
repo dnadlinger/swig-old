@@ -69,7 +69,7 @@ class string;
   $1_str = $input;
   $result = &$1_str; %}
 
-%typemap(csdirectorin) string, const string & "$iminput"
+%typemap(csdirectorin) string, const string & "tango.stdc.stringz.fromStringz($iminput)"
 %typemap(csdirectorout) string, const string & "tango.stdc.stringz.toStringz($cscall)"
 
 %typemap(throws, canthrow=1) string, const string &
