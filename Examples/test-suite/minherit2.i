@@ -11,7 +11,7 @@
 	    SWIGWARN_PHP_MULTIPLE_INHERITANCE) RemoteMpe;
 
 
-#if defined(SWIGJAVA) || defined(SWIGCSHARP)
+#if defined(SWIGJAVA) || defined(SWIGCSHARP) || defined(SWIGD)
 
 #if defined(SWIGCSHARP)
 #define javaclassmodifiers   csclassmodifiers
@@ -20,6 +20,16 @@
 #define javadestruct         csdestruct
 #define javaout              csout
 #define javainterfaces       csinterfaces
+#define javabase             csbase
+#endif
+
+#if defined(SWIGD)
+#define javaclassmodifiers   dclassmodifiers
+#define javabody             dbody
+#define javafinalize         ddestructor // There is no D equivalent
+#define javadestruct         ddestructor
+#define javaout              csout
+#define javainterfaces       dinterfaces
 #define javabase             csbase
 #endif
 
@@ -52,6 +62,12 @@
 // Features are inherited by derived classes, so override this
 %csmethodmodifiers RemoteMpe::syncmethod "public"
 %csmethodmodifiers RemoteMpe::asyncmethod "public"
+#elif defined(SWIGD)
+%dmethodmodifiers IRemoteSyncIO::syncmethod "";
+%dmethodmodifiers IRemoteAsyncIO::asyncmethod "";
+// Features are inherited by derived classes, so override this
+%dmethodmodifiers RemoteMpe::syncmethod "public"
+%dmethodmodifiers RemoteMpe::asyncmethod "public"
 #endif
 
 #endif
