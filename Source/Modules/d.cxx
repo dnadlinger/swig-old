@@ -1505,16 +1505,6 @@ public:
       if (!addSymbol(proxy_class_name, n))
 	return SWIG_ERROR;
 
-      if (Cmp(proxy_class_name, wrap_dmodule_name) == 0) {
-	Printf(stderr, "Class name cannot be equal to wrap D module name: %s\n", proxy_class_name);
-	SWIG_exit(EXIT_FAILURE);
-      }
-
-      if (Cmp(proxy_class_name, proxy_dmodule_name) == 0) {
-	Printf(stderr, "Class name cannot be equal to proxy D module name: %s\n", proxy_class_name);
-	SWIG_exit(EXIT_FAILURE);
-      }
-
       Clear(proxy_class_def);
       Clear(proxy_class_code);
       Clear(proxy_class_epilogue_code);
