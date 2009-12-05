@@ -2818,7 +2818,7 @@ public:
 	String *imtypeout = Getattr(tp, "tmap:imtype:out");	// the type in the imtype typemap's out attribute overrides the type in the typemap
 	if (imtypeout)
 	  tm = imtypeout;
-	Printf(callback_def, "%s __SwigDirector_%s_%s(void* dObject", tm, classname, overloaded_name);
+	Printf(callback_def, "extern(C) %s __SwigDirector_%s_%s(void* dObject", tm, classname, overloaded_name);
 	Printv( proxy_callback_return_type, tm, NIL );
       } else {
 	Swig_warning(WARN_D_TYPEMAP_CSTYPE_UNDEF, input_file, line_number, "No imtype typemap defined for %s\n", SwigType_str(returntype, 0));
@@ -3173,7 +3173,7 @@ public:
       // Write the type alias for the callback to the wrap D module.
       String* proxy_callback_type = NewString("");
       Printf(proxy_callback_type, "__SwigDirector_%s_Callback%s", classname, methid);
-      Printf(wrap_dmodule_code, "alias %s function(void*%s) %s;\n", proxy_callback_return_type, delegate_parms, proxy_callback_type);
+      Printf(wrap_dmodule_code, "alias extern(C) %s function(void*%s) %s;\n", proxy_callback_return_type, delegate_parms, proxy_callback_type);
       Delete(proxy_callback_type);
     }
 
