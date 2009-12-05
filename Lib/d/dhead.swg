@@ -87,27 +87,27 @@ private class __SWIGExceptionHelper {
   }
 
   static void setException(char* message) {
-    auto exception = new Exception(tango.stdc.stringz.fromStringz(message));
+    auto exception = new Exception(tango.stdc.stringz.fromStringz(message).dup);
     exception.next = __SWIGPendingException.retrieve();
     __SWIGPendingException.set(exception);
   }
   static void setIllegalArgumentException(char* message) {
-    auto exception = new IllegalArgumentException(tango.stdc.stringz.fromStringz(message));
+    auto exception = new IllegalArgumentException(tango.stdc.stringz.fromStringz(message).dup);
     exception.next = __SWIGPendingException.retrieve();
     __SWIGPendingException.set(exception);
   }
   static void setIllegalElementException(char* message) {
-    auto exception = new IllegalElementException(tango.stdc.stringz.fromStringz(message));
+    auto exception = new IllegalElementException(tango.stdc.stringz.fromStringz(message).dup);
     exception.next = __SWIGPendingException.retrieve();
     __SWIGPendingException.set(exception);
   }
   static void setIOException(char* message) {
-    auto exception = new IOException(tango.stdc.stringz.fromStringz(message));
+    auto exception = new IOException(tango.stdc.stringz.fromStringz(message).dup);
     exception.next = __SWIGPendingException.retrieve();
     __SWIGPendingException.set(exception);
   }
   static void setNoSuchElementException(char* message) {
-    auto exception = new NoSuchElementException(tango.stdc.stringz.fromStringz(message));
+    auto exception = new NoSuchElementException(tango.stdc.stringz.fromStringz(message).dup);
     exception.next = __SWIGPendingException.retrieve();
     __SWIGPendingException.set(exception);
   }
