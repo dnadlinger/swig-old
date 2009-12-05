@@ -1418,7 +1418,6 @@ public:
       // director_connect_function since the method from the C++ class should
       // be called as usual (see above).
       // Only emit it if the proxy class has at least one method.
-      // TODO: Extend this to support overriden methods.
       if (first_class_dmethod < curr_class_dmethod) {
 	Printf(proxy_class_code, "\n");
 	Printf(proxy_class_code, "  private bool __SwigIsMethodOverridden( char[] methodName, char[] returnType, char[] parameterTypes )() {\n");
