@@ -1379,9 +1379,11 @@ public:
       NIL);
 
     // Destructor.
+    Printv(proxy_class_def, typemapLookup(n, "ddestructor", typemap_lookup_type, WARN_NONE), NIL);
     if (*Char(destructor_call)) {
-      Printv(proxy_class_def, typemapLookup(n, "ddestructor", typemap_lookup_type, WARN_NONE), NIL);
       Replaceall(proxy_class_def, "$imcall", destructor_call);
+    } else {
+      Replaceall(proxy_class_def, "$imcall", "throw new Exception(\"C++ destructor does not have public access\")");
     }
 
     if (feature_director) {
