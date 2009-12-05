@@ -296,7 +296,7 @@ SWIGINTERN void SWIG_DThrowException(int code, const char *msg) {
 
 /* rethrow the unknown exception */
 
-#ifdef SWIGCSHARP
+#if defined(SWIGCSHARP) || defined(SWIGD)
 %typemap(throws,noblock=1, canthrow=1) (...) {
   SWIG_exception(SWIG_RuntimeError,"unknown exception");
 }
