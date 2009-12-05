@@ -7,7 +7,7 @@
 #if defined(SWIGJAVA)
 # define csbase javabase
 #elif defined(SWIGD)
-# define csbase dbase
+// Substitute csbase with dbase as soon as the typemap has been renamed.
 #endif
 
 %pragma(csharp) moduleimports=%{
