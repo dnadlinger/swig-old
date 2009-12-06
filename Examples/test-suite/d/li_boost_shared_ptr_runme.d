@@ -12,39 +12,41 @@ const bool TRACE = false;
 
 void main() {
   if (TRACE)
-    Stdout("Started").newline;
+    Stdout("---> STARTED <---").newline;
 
   debug_shared=TRACE;
 
   // Change loop count to run for a long time to monitor memory
-  const int loopCount = 1; //50000;
-  for (int i=0; i<loopCount; i++) {
+  const int LOOP_COUNT = 1; // 50000;
+  for (int i = 0; i < LOOP_COUNT; ++i) {
     runTest();
     GC.collect();
   }
 
   if (TRACE)
-    Stdout("Nearly finished").newline;
+    Stdout("---> NEARLY FINISHED <---").newline;
 
+  // Try to get the GC to collect everything not referenced anymore.
   int countdown = 100;
-  while (true) {
+  while (--countdown) {
     GC.collect();
+    if (Klass.getTotal_count() == 1)
+      break;
     Thread.sleep(0.01);
-    if (--countdown == 0)
-      break;
-    if (Klass.getTotal_count() == 1) // Expect 1 instance - the one global variable (GlobalValue)
-      break;
-  };
+  }
+
+  // A single remaining instance expected: the global variable (GlobalValue).
   if (Klass.getTotal_count() != 1)
     throw new Exception("Klass.total_count=" ~ toString(Klass.getTotal_count()));
 
+  // A single remaining instance expected: the global variable (GlobalSmartValue).
   int wrapper_count = shared_ptr_wrapper_count();
   if (wrapper_count != NOT_COUNTING)
-    if (wrapper_count != 1) // Expect 1 instance - the one global variable (GlobalSmartValue)
+    if (wrapper_count != 1)
       throw new Exception("shared_ptr wrapper count=" ~ toString(wrapper_count));
 
   if (TRACE)
-    Stdout("Finished").newline;
+    Stdout("---> FINISHED <---").newline;
 }
 
 void runTest() {
