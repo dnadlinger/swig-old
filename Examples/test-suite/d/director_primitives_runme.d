@@ -17,7 +17,7 @@ import tango.io.Stdout;
 import director_primitives;
 
 void main() {
-  PrintDebug = true;
+  PrintDebug = false;
   if (PrintDebug) Stdout("------------ Start ------------ ").newline;
 
   Caller myCaller = new Caller();

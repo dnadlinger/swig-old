@@ -3,7 +3,7 @@ module director_classic_runme;
 import tango.io.Stdout;
 import director_classic;
 
-const bool TRACE = true;
+const bool TRACE = false;
 
 void main() {
   {
