@@ -26,8 +26,8 @@
 #if defined(SWIGD)
 #define javaclassmodifiers   dclassmodifiers
 #define javabody             dbody
-#define javafinalize         ddestructor // There is no D equivalent
-#define javadestruct         ddestructor
+#define javafinalize         ddestructor
+#define javadestruct         ddispose
 #define javaout              csout
 #define javainterfaces       dinterfaces
 #define javabase             csbase

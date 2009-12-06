@@ -174,9 +174,8 @@
   }
 %}
 
-%typemap(ddestructor) TYPE %{
-  ~this() {
-    synchronized ( this ) {
+%typemap(ddispose, methodname="dispose", methodmodifiers="public") TYPE {
+    synchronized( this ) {
       if ( __swig_cObject !is null ) {
         if ( __swig_ownCObject ) {
           __swig_ownCObject = false;
@@ -186,7 +185,19 @@
       }
     }
   }
-%}
+
+%typemap(ddispose_derived, methodname="dispose", methodmodifiers="public") TYPE {
+    synchronized( this ) {
+      if ( __swig_cObject !is null ) {
+        if ( __swig_ownCObject ) {
+          __swig_ownCObject = false;
+          $imcall;
+        }
+        __swig_cObject = null;
+      }
+      super.dispose();
+    }
+  }
 
 %typemap(imtype) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > swigSharedPtrUpcast "void*"
 %typemap(csin) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > swigSharedPtrUpcast "PROXYCLASS.__swig_getCObject($csinput)"

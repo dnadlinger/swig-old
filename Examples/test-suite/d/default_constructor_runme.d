@@ -10,7 +10,10 @@ void main() {
 	scope g = new G();
       }
       throw new Exception("Protected destructor exception should have been thrown");
-  } catch (FinalizeException) {
+  } catch (Exception e) {
+    if (e.msg != "C++ destructor does not have public access") {
+      throw e;
+    }
   }
 
   // Private destructor test.
@@ -19,6 +22,9 @@ void main() {
 	scope f = new FFF();
       }
       throw new Exception("Private destructor exception should have been thrown");
-  } catch (FinalizeException) {
+  } catch (Exception e) {
+    if (e.msg != "C++ destructor does not have public access") {
+      throw e;
+    }
   }
 }

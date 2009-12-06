@@ -1301,14 +1301,14 @@ public:
     SwigType *typemap_lookup_type = Getattr(n, "classtypeobj");
     bool feature_director = Swig_directorclass(n) ? true : false;
 
-    // Inheritance from pure C# classes
+    // Inheritance from pure D classes.
     Node *attributes = NewHash();
     const String *pure_baseclass = typemapLookup(n, "csbase", typemap_lookup_type, WARN_NONE, attributes);
     bool purebase_replace = GetFlag(attributes, "tmap:csbase:replace") ? true : false;
     bool purebase_notderived = GetFlag(attributes, "tmap:csbase:notderived") ? true : false;
     Delete(attributes);
 
-    // C++ inheritance
+    // C++ inheritance.
     if (!purebase_replace) {
       List *baselist = Getattr(n, "bases");
       if (baselist) {
@@ -1356,8 +1356,6 @@ public:
 	"Perhaps you need one of the 'replace' or 'notderived' attributes in the csbase typemap?\n", typemap_lookup_type, pure_baseclass);
     }
 
-    // Pure C# interfaces
-    const String *pure_interfaces = typemapLookup(n, derived ? "dinterfaces_derived" : "dinterfaces", typemap_lookup_type, WARN_NONE);
 
     /*
      * Emit the proxy D class.
@@ -1368,27 +1366,92 @@ public:
       typemapLookup(n, "dimports", typemap_lookup_type, WARN_NONE), "\n", NIL);
 
     // Class modifiers.
-    Printv(proxy_class_def, typemapLookup(n, "dclassmodifiers",
-      typemap_lookup_type, WARN_D_TYPEMAP_CLASSMOD_UNDEF), NIL);
+    const String *modifiers =
+      typemapLookup(n, "dclassmodifiers", typemap_lookup_type, WARN_D_TYPEMAP_CLASSMOD_UNDEF);
 
-    Printv( proxy_class_def,
-      " $dclassname", // Class name and base class
-      (*Char(wanted_base) || *Char(pure_interfaces)) ? " : " : "", wanted_base, (*Char(wanted_base) && *Char(pure_interfaces)) ?	// Interfaces
-      ", " : "", pure_interfaces, " {", derived ? typemapLookup(n, "dbody_derived", typemap_lookup_type, WARN_D_TYPEMAP_DBODY_UNDEF) :	// main body of class
-      typemapLookup(n, "dbody", typemap_lookup_type, WARN_D_TYPEMAP_DBODY_UNDEF),	// main body of class
-      NIL);
+    // User-defined interfaces.
+    const String *interfaces =
+      typemapLookup(n, derived ? "dinterfaces_derived" : "dinterfaces", typemap_lookup_type, WARN_NONE);
 
-    // Destructor.
-    Printv(proxy_class_def, typemapLookup(n, "ddestructor", typemap_lookup_type, WARN_NONE), NIL);
-    if (*Char(destructor_call)) {
-      Replaceall(proxy_class_def, "$imcall", destructor_call);
+    // Default class body.
+    const String *body;
+    if (derived) {
+      body = typemapLookup(n, "dbody_derived", typemap_lookup_type, WARN_D_TYPEMAP_DBODY_UNDEF);
     } else {
-      Replaceall(proxy_class_def, "$imcall", "throw new Exception(\"C++ destructor does not have public access\")");
+      body = typemapLookup(n, "dbody", typemap_lookup_type, WARN_D_TYPEMAP_DBODY_UNDEF);
+    }
+
+    Printv(proxy_class_def,
+      modifiers,
+      " $dclassname",
+      (*Char(wanted_base) || *Char(interfaces)) ? " : " : "", wanted_base,
+      (*Char(wanted_base) && *Char(interfaces)) ? ", " : "", interfaces, " {",
+      body, NIL);
+
+    // Destructor and dispose().
+    // If the C++ destructor is accessible (public), it is wrapped by the
+    // dispose() method which is also called by the emitted D constructor. If it
+    // is not accessible, no D destructor is written and the generated dispose()
+    // method throws an exception.
+    // This enables C++ classes with protected or private destructors to be used
+    // in D as it would be used in C++ (GC finalization is a no-op then because
+    // of the empty D destructor) while preventing usage in »scope« variables.
+    // The method name for the dispose() method is specified in a typemap
+    // attribute called »methodname«.
+    const String *tm = NULL;
+
+    String *dispose_methodname;
+    String *dispose_methodmodifiers;
+    attributes = NewHash();
+    if (derived) {
+      tm = typemapLookup(n, "ddispose_derived", typemap_lookup_type, WARN_NONE, attributes);
+      dispose_methodname = Getattr(attributes, "tmap:ddispose_derived:methodname");
+      dispose_methodmodifiers = Getattr(attributes, "tmap:ddispose_derived:methodmodifiers");
+    } else {
+      tm = typemapLookup(n, "ddispose", typemap_lookup_type, WARN_NONE, attributes);
+      dispose_methodname = Getattr(attributes, "tmap:ddispose:methodname");
+      dispose_methodmodifiers = Getattr(attributes, "tmap:ddispose:methodmodifiers");
+    }
+
+    if (tm && *Char(tm)) {
+      if (!dispose_methodname) {
+	Swig_error(input_file, line_number,
+	  "No methodname attribute defined in the ddispose%s typemap for %s\n",
+	  (derived ? "_derived" : ""), proxy_class_name);
+      }
+      if (!dispose_methodmodifiers) {
+	Swig_error(input_file, line_number,
+	  "No methodmodifiers attribute defined in ddispose%s typemap for %s.\n",
+	  (derived ? "_derived" : ""), proxy_class_name);
+      }
+    }
+
+    if (tm) {
+      // Write the destructor if the C++ one is accessible.
+      if (*Char(destructor_call)) {
+	Printv(proxy_class_def, typemapLookup(n, "ddestructor", typemap_lookup_type, WARN_NONE), NIL);
+      }
+
+      // Write the dispose() method.
+      String *dispose_code = NewString("");
+      Printv(dispose_code, tm, NIL);
+
+      if (*Char(destructor_call)) {
+	Replaceall(dispose_code, "$imcall", destructor_call);
+      } else {
+	Replaceall(dispose_code, "$imcall", "throw new Exception(\"C++ destructor does not have public access\")");
+      }
+
+      if (*Char(dispose_code)) {
+	Printv(proxy_class_def, "\n  ", dispose_methodmodifiers,
+	  (derived ? " override" : ""), " void ", dispose_methodname, "() ",
+	  dispose_code, "\n", NIL);
+      }
     }
 
     if (feature_director) {
-      // Generate director connect method
-      // put this in classDirectorEnd ???
+      // Generate director connect method.
+      // TODO: Put this into classDirectorEnd?
       Printf(proxy_class_code, "  private void __SwigDirectorConnect() {\n");
 
       int i;
@@ -1464,7 +1527,7 @@ public:
     Replaceall(proxy_class_code, "$dclassname", proxy_class_name);
     Replaceall(proxy_class_def, "$dclassname", proxy_class_name);
 
-    // RESEARCH: Is this needed at all?
+    // RESEARCH: Is replacing $proxydmodule needed at all?
     Replaceall(proxy_class_def, "$proxydmodule", proxy_dmodule_fq_name);
     Replaceall(proxy_class_code, "$proxydmodule", proxy_dmodule_fq_name);
 

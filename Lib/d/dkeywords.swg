@@ -107,6 +107,8 @@ DKEYWORD(with);
 // Not really a keyword, but a reserved class name.
 DKEYWORD(Object);
 
+// Not really a keyword, but a reserved method name in Tango.
+DKEYWORD(dispose);
 #undef DKEYWORD
 
 #endif //D_DKEYWORDS_SWG_

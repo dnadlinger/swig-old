@@ -777,6 +777,13 @@
 
 %typemap(ddestructor) SWIGTYPE %{
   ~this() {
+    dispose();
+  }
+%}
+
+// Do not use »override« attribute here to stay somewhat compatible to Phobos
+// and older Tango versions.
+%typemap(ddispose, methodname="dispose", methodmodifiers="public") SWIGTYPE {
     synchronized( this ) {
       if ( __swig_cObject !is null ) {
         if ( __swig_ownCObject ) {
@@ -787,7 +794,19 @@
       }
     }
   }
-%}
+
+%typemap(ddispose_derived, methodname="dispose", methodmodifiers="public") SWIGTYPE {
+    synchronized( this ) {
+      if ( __swig_cObject !is null ) {
+        if ( __swig_ownCObject ) {
+          __swig_ownCObject = false;
+          $imcall;
+        }
+        __swig_cObject = null;
+      }
+      super.dispose();
+    }
+  }
 
 %typemap(directordisconnect, methodname="swigDirectorDisconnect") SWIGTYPE %{
   protected void $methodname() {
