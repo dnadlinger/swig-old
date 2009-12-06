@@ -46,7 +46,7 @@ class string;
 
 %typemap(csin) string, const string & "tango.stdc.stringz.toStringz($csinput)"
 %typemap(csout, excode=SWIGEXCODE) string, const string & {
-  char[] ret = tango.stdc.stringz.fromStringz($imcall).dup;$excode
+  char[] ret = tango.stdc.stringz.fromStringz($imcall);$excode
   return ret;
 }
 

@@ -625,7 +625,7 @@
   return ret;
 }
 %typemap(csout, excode=SWIGEXCODE) char *, char *&, char[ANY], char[] {
-  char[] ret = tango.stdc.stringz.fromStringz($imcall).dup;$excode
+  char[] ret = tango.stdc.stringz.fromStringz($imcall);$excode
   return ret;
 }
 %typemap(csout, excode=SWIGEXCODE) void {

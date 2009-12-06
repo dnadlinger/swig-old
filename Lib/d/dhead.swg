@@ -185,16 +185,18 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_DStringHelpe
 }
 %}
 
+// TODO: Make %pragma(d) wrapdmoduleimports appending instead of replacing and
+// add tango.stdc.stringz import here.
+
 %pragma(d) wrapdmodulecode=%{
 private class __SWIGStringHelper {
   static this() {
     __SWIGRegisterStringCallback_$module(&createString);
   }
 
-  static char* createString( char* cString ) {
-    // TODO: Research if this callback mechanism is needed for D.
-    // We are dup'ing the strings in csout anyway…
-    return cString;
+  static char* createString(char* cString) {
+    // We are effectively dup'ing the string here.
+    return tango.stdc.stringz.toStringz(tango.stdc.stringz.fromStringz(cString));
   }
 }
 alias char* function( char* cString ) __SWIGStringCallback;
