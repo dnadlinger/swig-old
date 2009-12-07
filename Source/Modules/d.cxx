@@ -1517,9 +1517,9 @@ public:
       director_connect_parms = NULL;
     }
 
-    // Emit extra user code
-    Printv(proxy_class_def, typemapLookup(n, "cscode", typemap_lookup_type, WARN_NONE),	// extra C# code
-	   "\n", NIL);
+    // Write extra user D code to the class body.
+    Printv(proxy_class_def,
+      typemapLookup(n, "dcode", typemap_lookup_type, WARN_NONE), "\n", NIL);
 
     // Substitute various strings into the above template
     Replaceall(proxy_class_code, "$dclassname", proxy_class_name);
