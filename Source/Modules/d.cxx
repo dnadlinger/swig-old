@@ -1268,13 +1268,11 @@ public:
 	if (Strcmp(code, "wrapdmodulecode") == 0) {
 	  Printf(wrap_dmodule_code, "%s\n", strvalue);
 	} else if (Strcmp(code, "wrapdmoduleimports") == 0) {
-	  Delete(wrap_dmodule_imports);
-	  wrap_dmodule_imports = Copy(strvalue);
+	  Printv(wrap_dmodule_imports, strvalue, NIL);
 	} else if (Strcmp(code, "proxydmodulecode") == 0) {
 	  Printf(proxy_dmodule_code, "%s\n", strvalue);
 	} else if (Strcmp(code, "proxydmoduleimports") == 0) {
-	  Delete(proxy_dmodule_imports);
-	  proxy_dmodule_imports = Copy(strvalue);
+	  Printv(proxy_dmodule_imports, strvalue, NIL);
 	} else if (Strcmp(code, "wrapperloadercode") == 0) {
 	  Delete(wrapper_loader_code);
 	  wrapper_loader_code = Copy(strvalue);
