@@ -29,6 +29,7 @@
 %typemap(ctype) unsigned int,       const unsigned int &       "unsigned int"
 %typemap(ctype) long,               const long &               "long"
 %typemap(ctype) unsigned long,      const unsigned long &      "unsigned long"
+%typemap(ctype) size_t,             const size_t &             "size_t"
 %typemap(ctype) long long,          const long long &          "long long"
 %typemap(ctype) unsigned long long, const unsigned long long & "unsigned long long"
 %typemap(ctype) float,              const float &              "float"
@@ -46,6 +47,7 @@
 %typemap(imtype) unsigned int,       const unsigned int &           "uint"
 %typemap(imtype) long,               const long &                   "int"
 %typemap(imtype) unsigned long,      const unsigned long &          "uint"
+%typemap(imtype) size_t,             const size_t &                 "size_t"
 %typemap(imtype) long long,          const long long &              "long"
 %typemap(imtype) unsigned long long, const unsigned long long &     "ulong"
 %typemap(imtype) float,              const float &                  "float"
@@ -62,6 +64,7 @@
 %typemap(cstype) unsigned int,       const unsigned int &           "uint"
 %typemap(cstype) long,               const long &                   "int"
 %typemap(cstype) unsigned long,      const unsigned long &          "uint"
+%typemap(cstype) size_t,             const size_t &                 "size_t"
 %typemap(cstype) long long,          const long long &              "long"
 %typemap(cstype) unsigned long long, const unsigned long long &     "ulong"
 %typemap(cstype) float,              const float &                  "float"
@@ -117,6 +120,7 @@
              unsigned int,
              long,
              unsigned long,
+             size_t,
              long long,
              unsigned long long,
              float,
@@ -135,6 +139,7 @@
              unsigned int,
              long,
              unsigned long,
+             size_t,
              long long,
              unsigned long long,
              float,
@@ -151,6 +156,7 @@
 %typemap(directorin) unsigned int       "$input = $1;"
 %typemap(directorin) long               "$input = $1;"
 %typemap(directorin) unsigned long      "$input = $1;"
+%typemap(directorin) size_t             "$input = $1;"
 %typemap(directorin) long long          "$input = $1;"
 %typemap(directorin) unsigned long long "$input = $1;"
 %typemap(directorin) float              "$input = $1;"
@@ -166,6 +172,7 @@
                        unsigned int,
                        long,
                        unsigned long,
+                       size_t,
                        long long,
                        unsigned long long,
                        float,
@@ -182,6 +189,7 @@
                         unsigned int,
                         long,
                         unsigned long,
+                        size_t,
                         long long,
                         unsigned long long,
                         float,
@@ -198,6 +206,7 @@
 %typemap(out) unsigned int       %{ $result = $1; %}
 %typemap(out) long               %{ $result = $1; %}
 %typemap(out) unsigned long      %{ $result = (unsigned long)$1; %}
+%typemap(out) size_t             %{ $result = $1; %}
 %typemap(out) long long          %{ $result = $1; %}
 %typemap(out) unsigned long long %{ $result = $1; %}
 %typemap(out) float              %{ $result = $1; %}
@@ -245,6 +254,7 @@
              const unsigned int & ($*1_ltype temp),
              const long & ($*1_ltype temp),
              const unsigned long & ($*1_ltype temp),
+             const size_t & ($*1_ltype temp),
              const long long & ($*1_ltype temp),
              const unsigned long long & ($*1_ltype temp),
              const float & ($*1_ltype temp),
@@ -261,6 +271,7 @@
              const unsigned int &,
              const long &,
              const unsigned long &,
+             const size_t &,
              const long long &,
              const float &,
              const double &
@@ -278,6 +289,7 @@
 %typemap(directorin) const unsigned int &   "$input = $1_name;"
 %typemap(directorin) const long &           "$input = $1_name;"
 %typemap(directorin) const unsigned long &  "$input = $1_name;"
+%typemap(directorin) const size_t &         "$input = $1_name;"
 %typemap(directorin) const long long &      "$input = $1_name;"
 %typemap(directorin) const float &          "$input = $1_name;"
 %typemap(directorin) const double &         "$input = $1_name;"
@@ -291,6 +303,7 @@
                        const unsigned int & ($*1_ltype temp),
                        const long & ($*1_ltype temp),
                        const unsigned long & ($*1_ltype temp),
+                       const size_t & ($*1_ltype temp),
                        const long long & ($*1_ltype temp),
                        const float & ($*1_ltype temp),
                        const double & ($*1_ltype temp)
@@ -305,6 +318,7 @@
                         const unsigned int & ($*1_ltype temp),
                         const long & ($*1_ltype temp),
                         const unsigned long & ($*1_ltype temp),
+                        const size_t & ($*1_ltype temp),
                         const long long & ($*1_ltype temp),
                         const float & ($*1_ltype temp),
                         const double & ($*1_ltype temp)
@@ -321,6 +335,7 @@
 %typemap(out) const unsigned int &       %{ $result = *$1; %}
 %typemap(out) const long &               %{ $result = *$1; %}
 %typemap(out) const unsigned long &      %{ $result = (unsigned long)*$1; %}
+%typemap(out) const size_t &             %{ $result = *$1; %}
 %typemap(out) const long long &          %{ $result = *$1; %}
 %typemap(out) const unsigned long long & %{ $result = *$1; %}
 %typemap(out) const float &              %{ $result = *$1; %}
@@ -544,6 +559,7 @@
                  unsigned int,       const unsigned int &,
                  long,               const long &,
                  unsigned long,      const unsigned long &,
+                 size_t,             const size_t &,
                  long long,          const long long &,
                  unsigned long long, const unsigned long long &,
                  float,              const float &,
@@ -606,6 +622,10 @@
 }
 %typemap(csout, excode=SWIGEXCODE) unsigned long,      const unsigned long &      {
   uint ret = $imcall;$excode
+  return ret;
+}
+%typemap(csout, excode=SWIGEXCODE) size_t,             const size_t &             {
+  size_t ret = $imcall;$excode
   return ret;
 }
 %typemap(csout, excode=SWIGEXCODE) long long,          const long long &          {
@@ -739,10 +759,6 @@
 
 // Treat references to arrays like like references to a single element.
 %apply SWIGTYPE & { SWIGTYPE ((&)[ANY]) }
-
-// RESEARCH: Is this correct for all platforms?
-%apply unsigned long { size_t };
-%apply const unsigned long & { const size_t & };
 
 // RESEARCH: Is anything similar needed for D?
 // /* Marshal C/C++ pointer to IntPtr */
