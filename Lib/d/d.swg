@@ -579,10 +579,10 @@
 // replaced by nothing (not yet ported).
 
 // Code which is inserted via excode if exceptions can be thrown.
-%define SWIGEXCODE "\n  if ($wrapdmodule.__SWIGPendingException.isPending) throw $wrapdmodule.__SWIGPendingException.retrieve();" %enddef
+%define SWIGEXCODE "\n  if ($wrapdmodule.SwigPendingException.isPending) throw $wrapdmodule.SwigPendingException.retrieve();" %enddef
 
 // Indented version of the above.
-%define SWIGEXCODE2 "\n    if ($wrapdmodule.__SWIGPendingException.isPending) throw $wrapdmodule.__SWIGPendingException.retrieve();" %enddef
+%define SWIGEXCODE2 "\n    if ($wrapdmodule.SwigPendingException.isPending) throw $wrapdmodule.SwigPendingException.retrieve();" %enddef
 
 %typemap(csout, excode=SWIGEXCODE) bool,               const bool &               {
   bool ret = $imcall ? true : false;$excode

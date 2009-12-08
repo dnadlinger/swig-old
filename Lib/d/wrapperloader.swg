@@ -18,18 +18,18 @@
 import tango.sys.SharedLib;
 
 static this() {
-  version ( Posix ) {
-    Binder.library = SharedLib.load( "lib$wraplibrary.so" );
+  version (Posix) {
+    Binder.library = SharedLib.load("lib$wraplibrary.so");
   }
-  version ( Win32 ) {
-    Binder.library = SharedLib.load( "$wraplibrary.dll" );
+  version (Win32) {
+    Binder.library = SharedLib.load("$wraplibrary.dll");
   }
 
   //#if !defined(SWIG_D_NO_EXCEPTION_HELPER)
-  bind( __SWIGRegisterExceptionCallbacks_$module )( "SWIGRegisterExceptionCallbacks_$module" );
+  bind(swigRegisterExceptionCallbacks)("SWIGRegisterExceptionCallbacks_$module");
   //#endif // SWIG_D_NO_EXCEPTION_HELPER
   //#if !defined(SWIG_D_NO_STRING_HELPER)
-  bind( __SWIGRegisterStringCallback_$module )( "SWIGRegisterStringCallback_$module" );
+  bind(swigRegisterStringCallback)("SWIGRegisterStringCallback_$module");
   //#endif // SWIG_D_NO_STRING_HELPER
   $wrapperloaderbindcode
 }
@@ -40,42 +40,42 @@ private {
   public:
     static SharedLib library;
 
-    static Binder opCall( void** functionPointerAddress ) {
+    static Binder opCall(void** functionPointerAddress) {
       Binder binder;
       binder.m_functionPointerAddress = functionPointerAddress;
       return binder;
     }
 
-    void opCall( char* name ) {
-      *m_functionPointerAddress = library.getSymbol( name );
+    void opCall(char* name) {
+      *m_functionPointerAddress = library.getSymbol(name);
     }
 
   private:
     void** m_functionPointerAddress;
   }
 
-  template bind( Function ) {
-    static Binder bind( inout Function a ) {
-      Binder binder = Binder( cast( void** ) &a );
+  template bind(Function) {
+    static Binder bind(inout Function a) {
+      Binder binder = Binder(cast(void**) &a);
       return binder;
     }
   }
 }
 
 //#if !defined(SWIG_D_NO_EXCEPTION_HELPER)
-extern( C ) void function(
-  __SWIGExceptionCallback exceptionCallback,
-  __SWIGExceptionCallback illegalArgumentCallback,
-  __SWIGExceptionCallback illegalElementCallback,
-  __SWIGExceptionCallback ioCallback,
-  __SWIGExceptionCallback noSuchElementCallback) __SWIGRegisterExceptionCallbacks_$module;
+extern(C) void function(
+  SwigExceptionCallback exceptionCallback,
+  SwigExceptionCallback illegalArgumentCallback,
+  SwigExceptionCallback illegalElementCallback,
+  SwigExceptionCallback ioCallback,
+  SwigExceptionCallback noSuchElementCallback) swigRegisterExceptionCallbacks;
 //#endif // SWIG_D_NO_EXCEPTION_HELPER
 
 //#if !defined(SWIG_D_NO_STRING_HELPER)
-extern( C ) void function(__SWIGStringCallback callback) __SWIGRegisterStringCallback_$module;
+extern(C) void function(SwigStringCallback callback) swigRegisterStringCallback;
 //#endif // SWIG_D_NO_STRING_HELPER
 %}
 
 
 %pragma(d) wrapperloaderbindcommand=%{
-  bind( $function )( "$symbol" );%}
+  bind($function)("$symbol");%}

@@ -58,7 +58,6 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionCallbacks_$module(
   SWIG_DExceptionCallback_t illegalElementCallback,
   SWIG_DExceptionCallback_t ioCallback,
   SWIG_DExceptionCallback_t noSuchElementCallback) {
-
   SWIG_d_exceptions[SWIG_DException].callback = exceptionCallback;
   SWIG_d_exceptions[SWIG_DIllegalArgumentException].callback = illegalArgumentCallback;
   SWIG_d_exceptions[SWIG_DIllegalElementException].callback = illegalElementCallback;
@@ -70,15 +69,15 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionCallbacks_$module(
 %pragma(d) wrapdmoduleimports=%{
 // Exception throwing support currently requires Tango, but there is no reason
 // why it could not support Phobos.
-import tango.core.Exception;
+static import tango.core.Exception;
 static import tango.core.Thread;
 static import tango.stdc.stringz;
 %}
 
 %pragma(d) wrapdmodulecode=%{
-private class __SWIGExceptionHelper {
+private class SwigExceptionHelper {
   static this() {
-    __SWIGRegisterExceptionCallbacks_$module(
+    swigRegisterExceptionCallbacks(
       &setException,
       &setIllegalArgumentException,
       &setIllegalElementException,
@@ -88,36 +87,40 @@ private class __SWIGExceptionHelper {
 
   static void setException(char* message) {
     auto exception = new Exception(tango.stdc.stringz.fromStringz(message).dup);
-    exception.next = __SWIGPendingException.retrieve();
-    __SWIGPendingException.set(exception);
+    exception.next = SwigPendingException.retrieve();
+    SwigPendingException.set(exception);
   }
+
   static void setIllegalArgumentException(char* message) {
-    auto exception = new IllegalArgumentException(tango.stdc.stringz.fromStringz(message).dup);
-    exception.next = __SWIGPendingException.retrieve();
-    __SWIGPendingException.set(exception);
+    auto exception = new tango.core.Exception.IllegalArgumentException(tango.stdc.stringz.fromStringz(message).dup);
+    exception.next = SwigPendingException.retrieve();
+    SwigPendingException.set(exception);
   }
+
   static void setIllegalElementException(char* message) {
-    auto exception = new IllegalElementException(tango.stdc.stringz.fromStringz(message).dup);
-    exception.next = __SWIGPendingException.retrieve();
-    __SWIGPendingException.set(exception);
+    auto exception = new tango.core.Exception.IllegalElementException(tango.stdc.stringz.fromStringz(message).dup);
+    exception.next = SwigPendingException.retrieve();
+    SwigPendingException.set(exception);
   }
+
   static void setIOException(char* message) {
-    auto exception = new IOException(tango.stdc.stringz.fromStringz(message).dup);
-    exception.next = __SWIGPendingException.retrieve();
-    __SWIGPendingException.set(exception);
+    auto exception = new tango.core.Exception.IOException(tango.stdc.stringz.fromStringz(message).dup);
+    exception.next = SwigPendingException.retrieve();
+    SwigPendingException.set(exception);
   }
+
   static void setNoSuchElementException(char* message) {
-    auto exception = new NoSuchElementException(tango.stdc.stringz.fromStringz(message).dup);
-    exception.next = __SWIGPendingException.retrieve();
-    __SWIGPendingException.set(exception);
+    auto exception = new tango.core.Exception.NoSuchElementException(tango.stdc.stringz.fromStringz(message).dup);
+    exception.next = SwigPendingException.retrieve();
+    SwigPendingException.set(exception);
   }
 }
 
-package class __SWIGPendingException {
+package class SwigPendingException {
 public:
   static this() {
     m_sPendingCount = 0;
-    m_sPendingException = new ThreadLocalData( null );
+    m_sPendingException = new ThreadLocalData(null);
   }
 
   static bool isPending() {
@@ -132,9 +135,9 @@ public:
 
   static void set(Exception e) {
     if (m_sPendingException.val !is null) {
-      throw new Exception( "FATAL: An earlier pending exception from C/C++ code " ~
+      throw new Exception("FATAL: An earlier pending exception from C/C++ code " ~
 	"was missed and thus not thrown (" ~ m_sPendingException.val.classinfo.name ~
-	": " ~ m_sPendingException.val.msg ~ ")!", e );
+	": " ~ m_sPendingException.val.msg ~ ")!", e);
     }
 
     m_sPendingException.val = e;
@@ -166,7 +169,7 @@ private:
   static ThreadLocalData m_sPendingException;
 }
 
-alias void function( char* message ) __SWIGExceptionCallback;
+alias void function(char* message) SwigExceptionCallback;
 %}
 // Callback registering function in wrapperloader.swg.
 #endif // SWIG_D_NO_EXCEPTION_HELPER
@@ -185,14 +188,12 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_DStringHelpe
 }
 %}
 
-%pragma(d) wrapdmoduleimports=%{
-static import tango.stdc.stringz;
-%}
+%pragma(d) wrapdmoduleimports = "static import tango.stdc.stringz;";
 
 %pragma(d) wrapdmodulecode=%{
-private class __SWIGStringHelper {
+private class SwigStringHelper {
   static this() {
-    __SWIGRegisterStringCallback_$module(&createString);
+    swigRegisterStringCallback(&createString);
   }
 
   static char* createString(char* cString) {
@@ -200,7 +201,7 @@ private class __SWIGStringHelper {
     return tango.stdc.stringz.toStringz(tango.stdc.stringz.fromStringz(cString));
   }
 }
-alias char* function( char* cString ) __SWIGStringCallback;
+alias char* function(char* cString) SwigStringCallback;
 %}
 // Callback registering function in wrapperloader.swg.
 #endif // SWIG_D_NO_STRING_HELPER
