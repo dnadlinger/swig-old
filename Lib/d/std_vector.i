@@ -25,10 +25,7 @@
 
 // MACRO for use within the std::vector class body
 %define SWIG_STD_VECTOR_MINIMUM_INTERNAL(CONST_REFERENCE_TYPE, CTYPE...)
-%pragma(d) proxydmoduleimports=%{
-import tango.core.Exception;
-import tango.io.Stdout;
-%}
+%pragma(d) proxydmoduleimports="import tango.core.Exception;"
 
 %typemap(dcode) std::vector<CTYPE > %{
   public this($typemap(cstype, CTYPE)[] values) {

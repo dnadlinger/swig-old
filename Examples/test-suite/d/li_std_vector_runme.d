@@ -8,7 +8,7 @@ import li_std_vector;
 const size_t SIZE = 20;
 
 void main() {
-  // Basic indexing tests.
+  // Basic functionality tests.
   {
     auto vector = new IntVector();
     for (size_t i = 0; i < SIZE; ++i) {
@@ -33,12 +33,10 @@ void main() {
 
     foreach (i, value; vector) {
       if (value != (i * 10)) {
-	Stdout(value, (i * 10) ).newline;
-	throw new Exception("foreach test failed, i:" ~ Integer.toString(i));
+	throw new Exception("foreach test failed, i: " ~ Integer.toString(i));
       }
     }
 
-    // clear() test
     vector.clear();
     if (vector.size != 0) {
       throw new Exception("clear test failed");
@@ -55,28 +53,25 @@ void main() {
     double[] dArray = dVector[];
     foreach (i, value; dArray) {
       if (dVector[i] != value) {
-	throw new Exception("slice test 1 failed, i:" ~ Integer.toString(i));
+	throw new Exception("slice test 1 failed, i: " ~ Integer.toString(i));
       }
     }
+
 
     auto sVector = new StructVector();
-    for (int i=0; i < 10; i++) {
-      sVector ~= new Struct(i/10.0);
+    for (size_t i = 0; i < SIZE; i++) {
+      sVector ~= new Struct(i / 10.0);
     }
 
-    Struct[] sArray = sVector[];
-    foreach(i, value; sArray) {
-      if (value.num != sVector[i].num) {
-	throw new Exception("slice test 2 failed, i:" ~ Integer.toString(i));
-      }
-    }
+    Struct[] array = sVector[];
 
-    foreach (ref s; sVector) {
-      s.num = s.num + 20.0;
-    }
-    foreach(i, value; sArray) {
-      if (value.num != sVector[i].num) {
-	throw new Exception("slice test 3 failed (a deep copy was made), i:" ~ Integer.toString(i));
+    for (size_t i = 0; i < SIZE; i++) {
+      // Make sure that a shallow copy has been made.
+      void* aPtr = Struct.__swig_getCObject(array[i]);
+      void* vPtr = Struct.__swig_getCObject(sVector[i]);
+      if (aPtr != vPtr) {
+	throw new Exception("slice test 2 failed, i: " ~
+	  Integer.toString(i));
       }
     }
   }
@@ -99,7 +94,7 @@ void main() {
     }
   }
 
-  // capacity tests.
+  // Capacity tests.
   {
     auto dv = new DoubleVector(10);
     if ((dv.capacity != 10) || (dv.length != 0)) {
@@ -109,18 +104,18 @@ void main() {
     // TODO: Is this really required (and spec'ed) behavior?
     dv.capacity = 20;
     if (dv.capacity != 20) {
-      throw new Exception("capacity test (1) failed");
+      throw new Exception("capacity test 1 failed");
     }
 
     dv ~= 1.11;
     try {
       dv.capacity = dv.length - 1;
-      throw new Exception("capacity test (2) failed");
+      throw new Exception("capacity test 2 failed");
     } catch (IllegalArgumentException) {
     }
   }
 
-  // Finally test the methods being wrapped
+  // Test the methods being wrapped.
   {
     auto iv = new IntVector();
     for (int i=0; i<4; i++) {
@@ -159,33 +154,27 @@ void main() {
     v6 ~= new Struct(123);
   }
 
-  // Test vectors of pointers
+  // Test vectors of pointers.
   {
     auto vector = new StructPtrVector();
     for (size_t i = 0; i < SIZE; i++) {
-      vector ~= new Struct(i/10.0);
+      vector ~= new Struct(i / 10.0);
     }
 
     Struct[] array = vector[];
 
     for (size_t i = 0; i < SIZE; i++) {
-      if (array[i].num != vector[i].num) {
-	throw new Exception("StructPtrVector test 1 failed, i:" ~ Integer.toString(i));
-      }
-    }
-
-    foreach (ref s; vector) {
-      s.num = s.num + 20.0;
-    }
-
-    for (size_t i = 0; i < SIZE; i++) {
-      if (array[i].num != (20.0 + (i / 10.0))) {
-	throw new Exception("StructPtrVector test 2 failed (a deep copy was incorrectly made), i:" ~ Integer.toString(i));
+      // Make sure that a shallow copy has been made.
+      void* aPtr = Struct.__swig_getCObject(array[i]);
+      void* vPtr = Struct.__swig_getCObject(vector[i]);
+      if (aPtr != vPtr) {
+	throw new Exception("StructPtrVector test 1 failed, i: " ~
+	  Integer.toString(i));
       }
     }
   }
 
-  // Test vectors of const pointers
+  // Test vectors of const pointers.
   {
     auto vector = new StructConstPtrVector();
     for (size_t i = 0; i < SIZE; i++) {
@@ -195,23 +184,17 @@ void main() {
     Struct[] array = vector[];
 
     for (size_t i = 0; i < SIZE; i++) {
-      if (array[i].num != vector[i].num) {
-	throw new Exception("StructConstPtrVector test 1 failed, i:" ~ Integer.toString(i));
-      }
-    }
-
-    foreach (ref s; vector) {
-      s.num = s.num + 20.0;
-    }
-
-    for (size_t i = 0; i < SIZE; i++) {
-      if (array[i].num != (20.0 + (i / 10.0))) {
-	throw new Exception("StructConstPtrVector test 2 failed (a deep copy was incorrectly made), i:" ~ Integer.toString(i));
+      // Make sure that a shallow copy has been made.
+      void* aPtr = Struct.__swig_getCObject(array[i]);
+      void* vPtr = Struct.__swig_getCObject(vector[i]);
+      if (aPtr != vPtr) {
+	throw new Exception("StructConstPtrVector test 1 failed, i: " ~
+	  Integer.toString(i));
       }
     }
   }
 
-  // dispose()
+  // Test vectors destroyed via dispose().
   {
     {
       scope vector = new StructVector();
