@@ -98,7 +98,7 @@
 %typemap(csin) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >,
                SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > &,
                SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *,
-               SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& "PROXYCLASS.__swig_getCObject($csinput)"
+               SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& "PROXYCLASS.swigGetCObject($csinput)"
 
 %typemap(csout, excode=SWIGEXCODE) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > {
   void* cPtr = $imcall;
@@ -143,64 +143,64 @@
 
 
 // Proxy base classes (not derived from another class).
-// TODO: How much visibility is needed for __swig_getCObject?
+// TODO: How much visibility is needed for swigGetCObject?
 %typemap(dbody) TYPE %{
-  private void* __swig_cObject;
-  private bool __swig_ownCObject;
+  private void* m_swigCObject;
+  private bool m_swigOwnCObject;
 
   protected this( void* cObject, bool ownCObject ) {
-    __swig_cObject = cObject;
-    __swig_ownCObject = ownCObject;
+    m_swigCObject = cObject;
+    m_swigOwnCObject = ownCObject;
   }
 
-  public static void* __swig_getCObject( $dclassname obj ) {
-    return ( obj is null ) ? null : obj.__swig_cObject;
+  public static void* swigGetCObject( $dclassname obj ) {
+    return ( obj is null ) ? null : obj.m_swigCObject;
   }
 %}
 
 // Derived proxy classes.
 %typemap(dbody_derived) TYPE %{
-  private void* __swig_cObject;
-  private bool __swig_ownCObject;
+  private void* m_swigCObject;
+  private bool m_swigOwnCObject;
 
   protected this( void* cObject, bool ownCObject ) {
     super( $wrapdmodule.$dclassname_SWIGSharedPtrUpcast( cObject ), ownCObject );
-    __swig_cObject = cObject;
-    __swig_ownCObject = ownCObject;
+    m_swigCObject = cObject;
+    m_swigOwnCObject = ownCObject;
   }
 
-  public static void* __swig_getCObject( $dclassname obj ) {
-    return ( obj is null ) ? null : obj.__swig_cObject;
+  public static void* swigGetCObject( $dclassname obj ) {
+    return ( obj is null ) ? null : obj.m_swigCObject;
   }
 %}
 
 %typemap(ddispose, methodname="dispose", methodmodifiers="public") TYPE {
     synchronized( this ) {
-      if ( __swig_cObject !is null ) {
-        if ( __swig_ownCObject ) {
-          __swig_ownCObject = false;
+      if ( m_swigCObject !is null ) {
+        if ( m_swigOwnCObject ) {
+          m_swigOwnCObject = false;
           $imcall;
         }
-        __swig_cObject = null;
+        m_swigCObject = null;
       }
     }
   }
 
 %typemap(ddispose_derived, methodname="dispose", methodmodifiers="public") TYPE {
     synchronized( this ) {
-      if ( __swig_cObject !is null ) {
-        if ( __swig_ownCObject ) {
-          __swig_ownCObject = false;
+      if ( m_swigCObject !is null ) {
+        if ( m_swigOwnCObject ) {
+          m_swigOwnCObject = false;
           $imcall;
         }
-        __swig_cObject = null;
+        m_swigCObject = null;
       }
       super.dispose();
     }
   }
 
 %typemap(imtype) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > swigSharedPtrUpcast "void*"
-%typemap(csin) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > swigSharedPtrUpcast "PROXYCLASS.__swig_getCObject($csinput)"
+%typemap(csin) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > swigSharedPtrUpcast "PROXYCLASS.swigGetCObject($csinput)"
 
 
 %template() SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >;

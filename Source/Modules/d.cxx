@@ -1450,7 +1450,7 @@ public:
     if (feature_director) {
       // Generate director connect method.
       // TODO: Put this into classDirectorEnd?
-      Printf(proxy_class_code, "  private void __SwigDirectorConnect() {\n");
+      Printf(proxy_class_code, "  private void swigDirectorConnect() {\n");
 
       int i;
       for (i = first_class_dmethod; i < curr_class_dmethod; ++i) {
@@ -1460,18 +1460,18 @@ public:
 	String *return_type = Getattr(udata, "return_type");
 	String *param_list = Getattr(udata, "param_list");
 	String *methid = Getattr(udata, "class_methodidx");
-	Printf(proxy_class_code, "    %s.__SwigDirector_%s_Callback%s callback%s;\n", wrap_dmodule_fq_name, proxy_class_name, methid, methid);
-	Printf(proxy_class_code, "    if ( __SwigIsMethodOverridden!( \"%s\", \"%s\", \"%s\" ) ) {\n", method, return_type, param_list);
-	Printf(proxy_class_code, "      callback%s = &__SwigDirector_%s_%s;\n", methid, proxy_class_name, overloaded_name);
+	Printf(proxy_class_code, "    %s.SwigDirector_%s_Callback%s callback%s;\n", wrap_dmodule_fq_name, proxy_class_name, methid, methid);
+	Printf(proxy_class_code, "    if (swigIsMethodOverridden!(\"%s\", \"%s\", \"%s\")) {\n", method, return_type, param_list);
+	Printf(proxy_class_code, "      callback%s = &swigDirectorCallback_%s_%s;\n", methid, proxy_class_name, overloaded_name);
 	Printf(proxy_class_code, "    }\n\n");
       }
-      Printf(proxy_class_code, "    %s.%s_director_connect( __swig_cObject, cast( void* )this", wrap_dmodule_fq_name, proxy_class_name);
+      Printf(proxy_class_code, "    %s.%s_director_connect(m_swigCObject, cast(void*)this", wrap_dmodule_fq_name, proxy_class_name);
       for (i = first_class_dmethod; i < curr_class_dmethod; ++i) {
 	UpcallData *udata = Getitem(dmethods_seq, i);
 	String *methid = Getattr(udata, "class_methodidx");
 	Printf(proxy_class_code, ", callback%s", methid);
       }
-      Printf(proxy_class_code, " );\n");
+      Printf(proxy_class_code, ");\n");
       Printf(proxy_class_code, "  }\n");
 
       // Helper function to determine if a method has been overridden in a
@@ -1481,14 +1481,14 @@ public:
       // Only emit it if the proxy class has at least one method.
       if (first_class_dmethod < curr_class_dmethod) {
 	Printf(proxy_class_code, "\n");
-	Printf(proxy_class_code, "  private bool __SwigIsMethodOverridden( char[] methodName, char[] returnType, char[] parameterTypes )() {\n");
-	Printf(proxy_class_code, "    auto vtblMethod = mixin( \"cast(\" ~ returnType ~ \" delegate(\" ~ parameterTypes ~ \"))&\" ~ methodName );\n" );
-	Printf(proxy_class_code, "    void* baseMethod = mixin( \"__SwigAddressOf!(\" ~ methodName ~ \", \" ~ returnType ~ \" function(\" ~ parameterTypes ~ \"))\" );\n" );
-	Printf(proxy_class_code, "    return ( cast(void*)vtblMethod.funcptr != baseMethod );\n");
+	Printf(proxy_class_code, "  private bool swigIsMethodOverridden(char[] methodName, char[] returnType, char[] parameterTypes)() {\n");
+	Printf(proxy_class_code, "    auto vtblMethod = mixin(\"cast(\" ~ returnType ~ \" delegate(\" ~ parameterTypes ~ \"))&\" ~ methodName);\n" );
+	Printf(proxy_class_code, "    void* baseMethod = mixin(\"SwigAddressOf!(\" ~ methodName ~ \", \" ~ returnType ~ \" function(\" ~ parameterTypes ~ \"))\");\n" );
+	Printf(proxy_class_code, "    return (cast(void*)vtblMethod.funcptr != baseMethod);\n");
 	Printf(proxy_class_code, "  }\n");
 	Printf(proxy_class_code, "\n");
-	Printf(proxy_class_code, "  template __SwigAddressOf( alias fn, Type ) {\n");
-	Printf(proxy_class_code, "    const __SwigAddressOf = cast(Type)&fn;\n");
+	Printf(proxy_class_code, "  private template SwigAddressOf(alias fn, Type) {\n");
+	Printf(proxy_class_code, "    const SwigAddressOf = cast(Type)&fn;\n");
 	Printf(proxy_class_code, "  }\n");
       }
 
@@ -1767,7 +1767,7 @@ public:
 
     Printv(imcall, wrap_dmodule_fq_name, ".$imfuncname(", NIL);
     if (!static_flag)
-      Printf(imcall, "__swig_cObject");
+      Printf(imcall, "m_swigCObject");
 
     emit_mark_varargs(l);
 
@@ -2153,7 +2153,7 @@ public:
     String *symname = Getattr(n, "sym:name");
 
     if (proxy_flag) {
-      Printv(destructor_call, wrap_dmodule_fq_name, ".", Swig_name_destroy(symname), "(__swig_cObject)", NIL);
+      Printv(destructor_call, wrap_dmodule_fq_name, ".", Swig_name_destroy(symname), "(m_swigCObject)", NIL);
     }
     return SWIG_OK;
   }
@@ -2754,7 +2754,7 @@ public:
 
       Printf(code_wrap->def, ", SwigDirector_%s::SWIG_Callback%s_t callback%s", sym_name, methid, methid);
       Printf(code_wrap->code, ", callback%s", methid);
-      Printf(wrap_dmodule_code, ", __SwigDirector_%s_Callback%s callback%s", sym_name, methid, methid);
+      Printf(wrap_dmodule_code, ", SwigDirector_%s_Callback%s callback%s", sym_name, methid, methid);
     }
 
     Printf(code_wrap->def, ") {\n");
@@ -2878,7 +2878,7 @@ public:
 	String *imtypeout = Getattr(tp, "tmap:imtype:out");	// the type in the imtype typemap's out attribute overrides the type in the typemap
 	if (imtypeout)
 	  tm = imtypeout;
-	Printf(callback_def, "extern(C) %s __SwigDirector_%s_%s(void* dObject", tm, classname, overloaded_name);
+	Printf(callback_def, "private extern(C) %s swigDirectorCallback_%s_%s(void* dObject", tm, classname, overloaded_name);
 	Printv( proxy_callback_return_type, tm, NIL );
       } else {
 	Swig_warning(WARN_D_TYPEMAP_CSTYPE_UNDEF, input_file, line_number, "No imtype typemap defined for %s\n", SwigType_str(returntype, 0));
@@ -3120,7 +3120,7 @@ public:
 
     /* Emit the intermediate class's upcall to the actual class */
 
-    String *upcall = NewStringf("( cast(%s)dObject ).%s(%s)", classname, symname, imcall_args);
+    String *upcall = NewStringf("(cast(%s)dObject).%s(%s)", classname, symname, imcall_args);
 
     if (!is_void) {
       Parm *tp = NewParmFromNode(returntype, empty_str, n);
@@ -3232,7 +3232,7 @@ public:
 
       // Write the type alias for the callback to the wrap D module.
       String* proxy_callback_type = NewString("");
-      Printf(proxy_callback_type, "__SwigDirector_%s_Callback%s", classname, methid);
+      Printf(proxy_callback_type, "SwigDirector_%s_Callback%s", classname, methid);
       Printf(wrap_dmodule_code, "alias extern(C) %s function(void*%s) %s;\n", proxy_callback_return_type, delegate_parms, proxy_callback_type);
       Delete(proxy_callback_type);
     }

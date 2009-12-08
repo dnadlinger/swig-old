@@ -13,7 +13,7 @@
  * the D proxy code.
  *
  * The ctype typemap is used to determine the types to use in the C wrapper
- * functions. The types from the imtype typemap are used in the extern( C )
+ * functions. The types from the imtype typemap are used in the extern(C)
  * declarations of these functions in the wrap D module. The cstype typemap
  * contains the D types used in the D proxy module/class.
  */
@@ -372,7 +372,7 @@
 %typemap(directorin) SWIGTYPE
 %{ $input = (void *)&$1; %}
 %typemap(csdirectorin) SWIGTYPE "new $&dclassname($iminput, false)"
-%typemap(csdirectorout) SWIGTYPE "$&dclassname.__swig_getCObject($cscall)"
+%typemap(csdirectorout) SWIGTYPE "$&dclassname.swigGetCObject($cscall)"
 
 // Pointers and references.
 %typemap(in) SWIGTYPE * %{ $1 = ($1_ltype)$input; %}
@@ -414,7 +414,7 @@
 
 %typemap(csdirectorin) SWIGTYPE *, SWIGTYPE (CLASS::*) "($iminput is null) ? null : new $dclassname($iminput, false)"
 %typemap(csdirectorin) SWIGTYPE & "new $dclassname($iminput, false)"
-%typemap(csdirectorout) SWIGTYPE *, SWIGTYPE (CLASS::*), SWIGTYPE & "$dclassname.__swig_getCObject($cscall)"
+%typemap(csdirectorout) SWIGTYPE *, SWIGTYPE (CLASS::*), SWIGTYPE & "$dclassname.swigGetCObject($cscall)"
 
 // Default array handling.
 %typemap(in) SWIGTYPE [] %{ $1 = ($1_ltype)$input; %}
@@ -566,9 +566,9 @@
                  double,             const double &
     "$csinput"
 %typemap(csin) char *, char *&, char[ANY], char[] "tango.stdc.stringz.toStringz($csinput)"
-%typemap(csin) SWIGTYPE "$&dclassname.__swig_getCObject($csinput)"
-%typemap(csin) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] "$dclassname.__swig_getCObject($csinput)"
-%typemap(csin) SWIGTYPE (CLASS::*) "$dclassname.__swig_getCMemberPtr($csinput)"
+%typemap(csin) SWIGTYPE "$&dclassname.swigGetCObject($csinput)"
+%typemap(csin) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] "$dclassname.swigGetCObject($csinput)"
+%typemap(csin) SWIGTYPE (CLASS::*) "$dclassname.swigGetCMemberPtr($csinput)"
 
 
 // The csout typemap is used for converting function return values from the
@@ -678,10 +678,10 @@
 %typemap(imtype) SWIGTYPE *& "void *"
 %typemap(cstype) SWIGTYPE *& "$*dclassname"
 
-%typemap(csin) SWIGTYPE *& "$*dclassname.__swig_getCObject($csinput)"
+%typemap(csin) SWIGTYPE *& "$*dclassname.swigGetCObject($csinput)"
 %typemap(csout, excode=SWIGEXCODE) SWIGTYPE *& {
     void* cPtr = $imcall;
-    $*dclassname ret = ( cPtr is null ) ? null : new $*dclassname( cPtr, $owner );$excode
+    $*dclassname ret = (cPtr is null) ? null : new $*dclassname(cPtr, $owner);$excode
     return ret;
   }
 %typemap(in) SWIGTYPE *& ($*1_ltype temp = 0)
@@ -786,8 +786,8 @@
 %typemap(dinterfaces)                 SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
 %typemap(dinterfaces_derived)         SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
 
-%typemap(dconstructor, excode=SWIGEXCODE,directorconnect="\n    __SwigDirectorConnect();") SWIGTYPE %{{
-    this( $imcall, true );$excode$directorconnect
+%typemap(dconstructor, excode=SWIGEXCODE,directorconnect="\n    swigDirectorConnect();") SWIGTYPE %{{
+    this($imcall, true);$excode$directorconnect
   }
 %}
 
@@ -800,25 +800,25 @@
 // Do not use »override« attribute here to stay somewhat compatible to Phobos
 // and older Tango versions.
 %typemap(ddispose, methodname="dispose", methodmodifiers="public") SWIGTYPE {
-    synchronized( this ) {
-      if ( __swig_cObject !is null ) {
-        if ( __swig_ownCObject ) {
-          __swig_ownCObject = false;
+    synchronized(this) {
+      if (m_swigCObject !is null) {
+        if (m_swigOwnCObject) {
+          m_swigOwnCObject = false;
           $imcall;
         }
-        __swig_cObject = null;
+        m_swigCObject = null;
       }
     }
   }
 
 %typemap(ddispose_derived, methodname="dispose", methodmodifiers="public") SWIGTYPE {
-    synchronized( this ) {
-      if ( __swig_cObject !is null ) {
-        if ( __swig_ownCObject ) {
-          __swig_ownCObject = false;
+    synchronized(this) {
+      if (m_swigCObject !is null) {
+        if (m_swigOwnCObject) {
+          m_swigOwnCObject = false;
           $imcall;
         }
-        __swig_cObject = null;
+        m_swigCObject = null;
       }
       super.dispose();
     }
@@ -832,66 +832,66 @@
 %}
 
 // Proxy base classes (not derived from another class).
-// TODO: How much visibility is needed for __swig_getCObject?
+// TODO: How much visibility is needed for swigGetCObject?
 %typemap(dbody) SWIGTYPE %{
-  private void* __swig_cObject;
-  protected bool __swig_ownCObject;
+  private void* m_swigCObject;
+  protected bool m_swigOwnCObject;
 
-  protected this( void* cObject, bool ownCObject ) {
-    __swig_cObject = cObject;
-    __swig_ownCObject = ownCObject;
+  protected this(void* cObject, bool ownCObject) {
+    m_swigCObject = cObject;
+    m_swigOwnCObject = ownCObject;
   }
 
-  public static void* __swig_getCObject( $dclassname obj ) {
-    return ( obj is null ) ? null : obj.__swig_cObject;
+  public static void* swigGetCObject($dclassname obj) {
+    return (obj is null) ? null : obj.m_swigCObject;
   }
 %}
 
 // Derived proxy classes.
 %typemap(dbody_derived) SWIGTYPE %{
-  private void* __swig_cObject;
+  private void* m_swigCObject;
 
-  protected this( void* cObject, bool ownCObject ) {
-    super( $wrapdmodule.$dclassnameUpcast( cObject ), ownCObject );
-    __swig_cObject = cObject;
+  protected this(void* cObject, bool ownCObject) {
+    super($wrapdmodule.$dclassnameUpcast(cObject), ownCObject);
+    m_swigCObject = cObject;
   }
 
-  public static void* __swig_getCObject( $dclassname obj ) {
-    return ( obj is null ) ? null : obj.__swig_cObject;
+  public static void* swigGetCObject($dclassname obj) {
+    return (obj is null) ? null : obj.m_swigCObject;
   }
 %}
 
 // Typewrapper classes.
 // TODO: How much visibility is needed for the two-arguments constructor?
 %typemap(dbody) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] %{
-  private void* __swig_cObject;
+  private void* m_swigCObject;
 
-  public this( void* cObject, bool futureUse ) {
-    __swig_cObject = cObject;
+  public this(void* cObject, bool futureUse) {
+    m_swigCObject = cObject;
   }
 
   protected this() {
-    __swig_cObject = null;
+    m_swigCObject = null;
   }
 
-  public static void* __swig_getCObject( $dclassname obj ) {
-    return ( obj is null ) ? null : obj.__swig_cObject;
+  public static void* swigGetCObject($dclassname obj) {
+    return (obj is null) ? null : obj.m_swigCObject;
   }
 %}
 
 %typemap(dbody) SWIGTYPE (CLASS::*) %{
-  private char* __swig_cMemberPtr;
+  private char* m_swigCMemberPtr;
 
-  public this( char* cMemberPtr, bool futureUse ) {
-    __swig_cMemberPtr = cMemberPtr;
+  public this(char* cMemberPtr, bool futureUse) {
+    m_swigCMemberPtr = cMemberPtr;
   }
 
   protected this() {
-    __swig_cMemberPtr = null;
+    m_swigCMemberPtr = null;
   }
 
-  public static char* __swig_getCMemberPtr( $dclassname obj ) {
-    return ( obj is null ) ? null : obj.__swig_cMemberPtr;
+  public static char* swigGetCMemberPtr($dclassname obj) {
+    return (obj is null) ? null : obj.m_swigCMemberPtr;
   }
 %}
 
@@ -906,9 +906,6 @@
 
 %pragma(d) proxydmoduleimports=%{
 static import tango.stdc.stringz;
-%}
-
-%pragma(d) wrapdmoduleimports=%{
 %}
 
 
