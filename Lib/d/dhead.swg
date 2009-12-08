@@ -185,8 +185,9 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_DStringHelpe
 }
 %}
 
-// TODO: Make %pragma(d) wrapdmoduleimports appending instead of replacing and
-// add tango.stdc.stringz import here.
+%pragma(d) wrapdmoduleimports=%{
+static import tango.stdc.stringz;
+%}
 
 %pragma(d) wrapdmodulecode=%{
 private class __SWIGStringHelper {
