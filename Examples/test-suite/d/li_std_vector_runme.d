@@ -8,44 +8,53 @@ import li_std_vector;
 const size_t SIZE = 20;
 
 void main() {
-  // Setup vector.
-  auto vect = new DoubleVector();
-  for (size_t i = 0; i < SIZE; ++i) {
-    vect ~= i * 10.1;
-  }
-
-  if (vect.length != SIZE) {
-    throw new Exception("length test failed.");
-  }
-
-  // Item indexing.
-  vect[0] = 200.1;
-  if (vect[0] != 200.1) {
-    throw new Exception("indexing test failed");
-  }
-  vect[0] = 0 * 10.1;
-
-  // Out of range test.
-  try {
-    vect[vect.length] = 777.1;
-    throw new Exception("out of range test failed");
-  } catch (NoSuchElementException) {
-  }
-
-  // foreach test.
+  // Basic indexing tests.
   {
-    foreach (i, value; vect) {
-      if (value != (i * 10.1)) {
+    auto vector = new IntVector();
+    for (size_t i = 0; i < SIZE; ++i) {
+      vector ~= i * 10;
+    }
+
+    if (vector.length != SIZE) {
+      throw new Exception("length test failed.");
+    }
+
+    vector[0] = 200;
+    if (vector[0] != 200) {
+      throw new Exception("indexing test failed");
+    }
+    vector[0] = 0 * 10;
+
+    try {
+      vector[vector.length] = 777;
+      throw new Exception("out of range test failed");
+    } catch (NoSuchElementException) {
+    }
+
+    foreach (i, value; vector) {
+      if (value != (i * 10)) {
+	Stdout(value, (i * 10) ).newline;
 	throw new Exception("foreach test failed, i:" ~ Integer.toString(i));
       }
+    }
+
+    // clear() test
+    vector.clear();
+    if (vector.size != 0) {
+      throw new Exception("clear test failed");
     }
   }
 
   // Slice tests.
   {
-    double[] array = vect[];
-    foreach (i, value; array) {
-      if (vect[i] != value) {
+    auto dVector = new DoubleVector();
+    for (size_t i = 0; i < SIZE; ++i) {
+      dVector ~= i * 10.1f;
+    }
+
+    double[] dArray = dVector[];
+    foreach (i, value; dArray) {
+      if (dVector[i] != value) {
 	throw new Exception("slice test 1 failed, i:" ~ Integer.toString(i));
       }
     }
@@ -109,12 +118,6 @@ void main() {
       throw new Exception("capacity test (2) failed");
     } catch (IllegalArgumentException) {
     }
-  }
-
-  // clear() test
-  vect.clear();
-  if (vect.size != 0) {
-    throw new Exception("clear test failed");
   }
 
   // Finally test the methods being wrapped
@@ -211,14 +214,14 @@ void main() {
   // dispose()
   {
     {
-      scope vs = new StructVector();
-      vs ~= new Struct(0.0);
-      vs ~= new Struct(11.1);
+      scope vector = new StructVector();
+      vector ~= new Struct(0.0);
+      vector ~= new Struct(11.1);
     }
     {
-      scope vd = new DoubleVector();
-      vd ~= 0.0;
-      vd ~= 11.1;
+      scope vector = new DoubleVector();
+      vector ~= 0.0;
+      vector ~= 11.1;
     }
   }
 }
