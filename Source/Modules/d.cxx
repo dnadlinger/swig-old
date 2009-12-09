@@ -3404,22 +3404,11 @@ public:
       Printf(w->def, "SwigDirector_%s::~SwigDirector_%s() {\n", classname, classname);
     }
 
-    /* Ensure that correct directordisconnect typemap's method name is called
-     * here: */
-
-    const String *disconn_tm = NULL;
-    Node *disconn_attr = NewHash();
-    String *disconn_methodname = NULL;
-
-    disconn_tm = typemapLookup(n, "directordisconnect", full_classname, WARN_NONE, disconn_attr);
-    disconn_methodname = Getattr(disconn_attr, "tmap:directordisconnect:methodname");
-
     Printv(w->code, "}\n", NIL);
 
     Wrapper_print(w, f_directors);
 
     DelWrapper(w);
-    Delete(disconn_attr);
     Delete(classname);
     return SWIG_OK;
   }

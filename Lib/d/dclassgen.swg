@@ -61,13 +61,6 @@
   }
 }
 
-%typemap(directordisconnect, methodname="swigDirectorDisconnect") SWIGTYPE %{
-protected void $methodname() {
-  swigCMemOwn = false;
-  $imcall;
-}
-%}
-
 // TODO: How much visibility is needed for swigGetCObject?
 %typemap(dbody) SWIGTYPE %{
 private void* m_swigCObject;
