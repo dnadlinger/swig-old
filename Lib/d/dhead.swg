@@ -127,7 +127,7 @@ public:
     bool pending = false;
     if (m_sPendingCount > 0) {
       if (m_sPendingException.val !is null) {
-	pending = true;
+        pending = true;
       }
     }
     return pending;
@@ -136,8 +136,8 @@ public:
   static void set(Exception e) {
     if (m_sPendingException.val !is null) {
       throw new Exception("FATAL: An earlier pending exception from C/C++ code " ~
-	"was missed and thus not thrown (" ~ m_sPendingException.val.classinfo.name ~
-	": " ~ m_sPendingException.val.msg ~ ")!", e);
+        "was missed and thus not thrown (" ~ m_sPendingException.val.classinfo.name ~
+        ": " ~ m_sPendingException.val.msg ~ ")!", e);
     }
 
     m_sPendingException.val = e;
@@ -150,11 +150,11 @@ public:
     Exception e = null;
     if (m_sPendingCount > 0) {
       if (m_sPendingException.val !is null) {
-	e = m_sPendingException.val;
-	m_sPendingException.val = null;
-	synchronized {
-	  --m_sPendingCount;
-	}
+        e = m_sPendingException.val;
+        m_sPendingException.val = null;
+        synchronized {
+          --m_sPendingCount;
+        }
       }
     }
     return e;
@@ -168,7 +168,6 @@ private:
   alias tango.core.Thread.ThreadLocal!(Exception) ThreadLocalData;
   static ThreadLocalData m_sPendingException;
 }
-
 alias void function(char* message) SwigExceptionCallback;
 %}
 // Callback registering function in wrapperloader.swg.
@@ -190,7 +189,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_DStringHelpe
 
 %pragma(d) wrapdmoduleimports = "static import tango.stdc.stringz;";
 
-%pragma(d) wrapdmodulecode=%{
+%pragma(d) wrapdmodulecode = %{
 private class SwigStringHelper {
   static this() {
     swigRegisterStringCallback(&createString);
@@ -207,7 +206,6 @@ alias char* function(char* cString) SwigStringCallback;
 #endif // SWIG_D_NO_STRING_HELPER
 
 %insert(runtime) %{
-/* Contract support */
-
+/* Contract support. */
 #define SWIG_contract_assert(nullreturn, expr, msg) if (!(expr)) {SWIG_DSetPendingException(SWIG_DException, msg); return nullreturn; } else
 %}

@@ -8,21 +8,21 @@
  * wrapper module.
  * ----------------------------------------------------------------------------- */
 
-%pragma(d) wrapperloadercode=%{
+%pragma(d) wrapperloadercode = %{
 /*
  * Dynamically loads the C wrapper library as a shared library.
  *
  * Currently requires Tango, but there is no reason why Phobos could not be
  * supported too.
  */
-import tango.sys.SharedLib;
+static import tango.sys.SharedLib;
 
 static this() {
   version (Posix) {
-    Binder.library = SharedLib.load("lib$wraplibrary.so");
+    SwigBinder.library = tango.sys.SharedLib.SharedLib.load("lib$wraplibrary.so");
   }
   version (Win32) {
-    Binder.library = SharedLib.load("$wraplibrary.dll");
+    SwigBinder.library = tango.sys.SharedLib.SharedLib.load("$wraplibrary.dll");
   }
 
   //#if !defined(SWIG_D_NO_EXCEPTION_HELPER)
@@ -36,12 +36,12 @@ static this() {
 
 private {
   // The binding code is heavily inspired by Derelict.
-  struct Binder {
+  struct SwigBinder {
   public:
-    static SharedLib library;
+    static tango.sys.SharedLib.SharedLib library;
 
-    static Binder opCall(void** functionPointerAddress) {
-      Binder binder;
+    static SwigBinder opCall(void** functionPointerAddress) {
+      SwigBinder binder;
       binder.m_functionPointerAddress = functionPointerAddress;
       return binder;
     }
@@ -55,9 +55,8 @@ private {
   }
 
   template bind(Function) {
-    static Binder bind(inout Function a) {
-      Binder binder = Binder(cast(void**) &a);
-      return binder;
+    static SwigBinder bind(inout Function a) {
+      return SwigBinder(cast(void**) &a);
     }
   }
 }
@@ -76,6 +75,5 @@ extern(C) void function(SwigStringCallback callback) swigRegisterStringCallback;
 //#endif // SWIG_D_NO_STRING_HELPER
 %}
 
-
-%pragma(d) wrapperloaderbindcommand=%{
+%pragma(d) wrapperloaderbindcommand = %{
   bind($function)("$symbol");%}
