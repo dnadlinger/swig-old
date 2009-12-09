@@ -137,7 +137,7 @@
 %include <wrapperloader.swg>
 
 // List of all reserved D keywords.
-%include <dkeywords.swg>
+%include <dkw.swg>
 
 // D-specific directives.
 %include <ddirectives.swg>

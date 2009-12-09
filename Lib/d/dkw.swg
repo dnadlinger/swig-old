@@ -1,10 +1,10 @@
-#ifndef D_DKEYWORDS_SWG_
-#define D_DKEYWORDS_SWG_
+#ifndef D_DKW_SWG_
+#define D_DKW_SWG_
 
 /* Warnings for D keywords */
 #define DKEYWORD(x) %keywordwarn("'" `x` "' is a D keyword, renaming to '_" `x` "'",rename="_%s")  `x`
 
-// Source: http://www.digitalmars.com/d/1.0/lex.html
+// Source: http://www.digitalmars.com/d/1.0/lex.html.
 DKEYWORD(abstract);
 DKEYWORD(alias);
 DKEYWORD(align);
@@ -111,4 +111,4 @@ DKEYWORD(Object);
 DKEYWORD(dispose);
 #undef DKEYWORD
 
-#endif //D_DKEYWORDS_SWG_
+#endif //D_DKW_SWG_
