@@ -276,7 +276,7 @@ public:
     if (package) {
       // Append a dot so we can prepend the package variable directly to the
       // module names in the rest of the code.
-      Printv( package, ".", NIL );
+      Printv(package, ".", NIL);
     } else {
       // Write the generated D modules to the »root« package by default.
       package = NewString("");
@@ -289,7 +289,7 @@ public:
       Printv(dmodule_directory, package_directory, NIL);
 
       // TODO: Add some facilities to DOH for automatically creating directories.
-      String *create_directory_command = NewStringf( "mkdir -p %s", package_directory );
+      String *create_directory_command = NewStringf("mkdir -p %s", package_directory);
       system(Char(create_directory_command));
       Delete(create_directory_command);
 
@@ -642,9 +642,9 @@ public:
       Printv(proxy_class_enums_code, enum_code, NIL);
     } else {
       // Global enums are just written to the proxy module.
-      Printv( proxy_dmodule_imports,
+      Printv(proxy_dmodule_imports,
 	typemapLookup(n, "dimports", typemap_lookup_type, WARN_NONE), NIL);
-      Printv( proxy_dmodule_code, enum_code, NIL);
+      Printv(proxy_dmodule_code, enum_code, NIL);
     }
 
     Delete(enum_code);
@@ -770,7 +770,7 @@ public:
    * D::staticmembervariableHandler()
    * --------------------------------------------------------------------------- */
   virtual int staticmembervariableHandler(Node *n) {
-    if ( GetFlag(n, "feature:d:const") != 1 ) {
+    if (GetFlag(n, "feature:d:const") != 1) {
       Delattr(n, "value");
     }
 
@@ -952,8 +952,8 @@ public:
 
     // Insert the dconstructor typemap (replacing $directorconnect as needed).
     Hash *attributes = NewHash();
-    String *construct_tm = Copy( typemapLookup( n, "dconstructor",
-      Getattr( n, "name" ), WARN_D_TYPEMAP_DCONSTRUCTOR_UNDEF, attributes ) );
+    String *construct_tm = Copy(typemapLookup(n, "dconstructor",
+      Getattr(n, "name"), WARN_D_TYPEMAP_DCONSTRUCTOR_UNDEF, attributes));
     if (construct_tm) {
       const bool use_director = (parentNode(n) && Swig_directorclass(n));
       if (!use_director) {
@@ -1133,14 +1133,14 @@ public:
     const String *itemname = (proxy_flag && wrapping_member_flag) ? variable_name : symname;
 
     String *attributes = Getattr(n, "feature:d:methodmodifiers");
-    if ( attributes ) {
-      attributes = Copy( attributes );
+    if (attributes) {
+      attributes = Copy(attributes);
     } else {
-      attributes = Copy( is_public( n ) ? public_string : protected_string );
+      attributes = Copy(is_public(n) ? public_string : protected_string);
     }
 
-    if ( static_flag ) {
-      Printv( attributes, " static", NIL );
+    if (static_flag) {
+      Printv(attributes, " static", NIL);
     }
 
     Printf(constants_code, "\n%s const %s %s = ", attributes, return_type, itemname);
@@ -1262,7 +1262,7 @@ public:
 
     // Collect the parameter list for the wrap D module declaration of the
     // generated wrapper function.
-    String *wrap_dmodule_parameters = NewString( "(" );
+    String *wrap_dmodule_parameters = NewString("(");
 
     /* Get number of required and total arguments */
     num_arguments = emit_num_arguments(l);
@@ -1435,9 +1435,9 @@ public:
 
     // Complete D wrapper parameter list and emit the declaration/binding code.
     Printv(wrap_dmodule_parameters, ")", NIL);
-    writeWrapDModuleFunction( overloaded_name, im_return_type,
-      wrap_dmodule_parameters, wname );
-    Delete( wrap_dmodule_parameters );
+    writeWrapDModuleFunction(overloaded_name, im_return_type,
+      wrap_dmodule_parameters, wname);
+    Delete(wrap_dmodule_parameters);
 
     // Finish C function header.
     Printf(f->def, ") {");
@@ -1644,7 +1644,7 @@ public:
 	if (imtypeout)
 	  tm = imtypeout;
 	Printf(callback_def, "\nprivate extern(C) %s swigDirectorCallback_%s_%s(void* dObject", tm, classname, overloaded_name);
-	Printv( proxy_callback_return_type, tm, NIL );
+	Printv(proxy_callback_return_type, tm, NIL);
       } else {
 	Swig_warning(WARN_D_TYPEMAP_CSTYPE_UNDEF, input_file, line_number, "No imtype typemap defined for %s\n", SwigType_str(returntype, 0));
       }
@@ -1711,7 +1711,7 @@ public:
       Printf(w->code, "} else {\n");
 
     // Go through argument list.
-    for (p = l; p; /* empty */ ) {
+    for (p = l; p; /* empty */) {
       /* Is this superfluous? */
       while (checkAttribute(p, "tmap:directorin:numinputs", "0")) {
 	p = Getattr(p, "tmap:directorin:next");
@@ -2170,9 +2170,9 @@ public:
       Printf(f_directors_h, "\n%s", director_callback_typedefs);
     }
 
-    Printf(f_directors_h, "    void swig_connect_director( void* dobj");
+    Printf(f_directors_h, "    void swig_connect_director(void* dobj");
 
-    Printf(w->def, "void %s::swig_connect_director( void* dobj", director_classname);
+    Printf(w->def, "void %s::swig_connect_director(void* dobj", director_classname);
     Printf(w->code, "d_object = dobj;");
 
     for (i = first_class_dmethod; i < curr_class_dmethod; ++i) {
@@ -2188,7 +2188,7 @@ public:
     Printf(f_directors_h, ");\n");
     Printf(w->def, ") {");
 
-    Printf(f_directors_h, "\nprivate:\n" );
+    Printf(f_directors_h, "\nprivate:\n");
     Printf(f_directors_h, "    void swig_init_callbacks();\n");
     Printf(f_directors_h, "    void *d_object;\n");
     if (Len(director_callback_typedefs) > 0) {
@@ -2249,9 +2249,9 @@ private:
    * wrapper_function_name - The name of the exported function in the C wrapper
    *                         (usually d_name prefixed by »D_«).
    * --------------------------------------------------------------------------- */
-  void writeWrapDModuleFunction( const_String_or_char_ptr d_name,
+  void writeWrapDModuleFunction(const_String_or_char_ptr d_name,
     const_String_or_char_ptr return_type, const_String_or_char_ptr parameters,
-    const_String_or_char_ptr wrapper_function_name ) {
+    const_String_or_char_ptr wrapper_function_name) {
 
     // TODO: Add support for static linking here.
     Printf(wrap_dmodule_code, "extern(C) %s function%s %s;\n", return_type,
@@ -2993,7 +2993,7 @@ private:
       " $dclassname",	// Class name and base class
       (*Char(pure_baseclass) || *Char(pure_interfaces)) ? " : " : "", pure_baseclass,
       ((*Char(pure_baseclass)) && *Char(pure_interfaces)) ? ", " : "", pure_interfaces, // Interfaces
-      " {", NIL );
+      " {", NIL);
 
     String* body = NewString("");
     Printv(body, typemapLookup(n, "dbody", type, WARN_D_TYPEMAP_DBODY_UNDEF),
@@ -3047,8 +3047,8 @@ private:
     if (first_class_dmethod < curr_class_dmethod) {
       Printf(proxy_class_code, "\n");
       Printf(proxy_class_code, "private bool swigIsMethodOverridden(char[] methodName, char[] returnType, char[] parameterTypes)() {\n");
-      Printf(proxy_class_code, "  auto vtblMethod = mixin(\"cast(\" ~ returnType ~ \" delegate(\" ~ parameterTypes ~ \"))&\" ~ methodName);\n" );
-      Printf(proxy_class_code, "  void* baseMethod = mixin(\"SwigAddressOf!(\" ~ methodName ~ \", \" ~ returnType ~ \" function(\" ~ parameterTypes ~ \"))\");\n" );
+      Printf(proxy_class_code, "  auto vtblMethod = mixin(\"cast(\" ~ returnType ~ \" delegate(\" ~ parameterTypes ~ \"))&\" ~ methodName);\n");
+      Printf(proxy_class_code, "  void* baseMethod = mixin(\"SwigAddressOf!(\" ~ methodName ~ \", \" ~ returnType ~ \" function(\" ~ parameterTypes ~ \"))\");\n");
       Printf(proxy_class_code, "  return (cast(void*)vtblMethod.funcptr != baseMethod);\n");
       Printf(proxy_class_code, "}\n");
       Printf(proxy_class_code, "\n");
@@ -3100,7 +3100,7 @@ private:
 
     Printv(wrapper_loader_bind_code, wrapper_loader_bind_command, NIL);
     Replaceall(wrapper_loader_bind_code, "$function", connect_name);
-    Replaceall(wrapper_loader_bind_code, "$symbol", Swig_name_wrapper( connect_name ));
+    Replaceall(wrapper_loader_bind_code, "$symbol", Swig_name_wrapper(connect_name));
 
     Printf(wrap_dmodule_code, "extern(C) void function(void* cObject, void* dObject");
 
