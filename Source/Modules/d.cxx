@@ -1180,7 +1180,7 @@ public:
       Printv( attributes, " static", NIL );
     }
 
-    Printf(constants_code, "%s const %s %s = ", attributes, return_type, itemname);
+    Printf(constants_code, "\n%s const %s %s = ", attributes, return_type, itemname);
     Delete(attributes);
 
     // Retrive the override value set via %dconstvalue, if any.
@@ -1188,7 +1188,7 @@ public:
     if (override_value) {
       Printf(constants_code, "%s;\n", override_value);
     } else {
-      // Just emit the C code and hope it compiles in D.
+      // Just take the value from the C definition and hope it compiles in D.
       String* value = Getattr(n, "wrappedasconstant") ?
 	Getattr(n, "staticmembervariableHandler:value") : Getattr(n, "value");
 
@@ -1203,10 +1203,11 @@ public:
     }
 
     // Emit the generated code to appropriate place.
-    if (proxy_flag && wrapping_member_flag)
-      Printv(proxy_class_code, "  ", constants_code, NIL);
-    else
+    if (proxy_flag && wrapping_member_flag) {
+      Printv(proxy_class_code, constants_code, NIL);
+    } else {
       Printv(proxy_dmodule_code, constants_code, NIL);
+    }
 
     // Cleanup.
     Delete(return_type);
