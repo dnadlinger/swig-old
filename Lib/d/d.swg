@@ -156,69 +156,6 @@
  * issue a warning for overloaded C++ functions that cannot be overloaded in D
  * (as more than one C++ type maps to a single D type).
  */
-%typecheck(SWIG_TYPECHECK_BOOL)
-    bool,
-    const bool &
-    ""
-
-%typecheck(SWIG_TYPECHECK_CHAR)
-    char,
-    const char &
-    ""
-
-%typecheck(SWIG_TYPECHECK_INT8)
-    signed char,
-    const signed char &
-    ""
-
-%typecheck(SWIG_TYPECHECK_UINT8)
-    unsigned char,
-    const unsigned char &
-    ""
-
-%typecheck(SWIG_TYPECHECK_INT16)
-    short,
-    const short &
-    ""
-
-%typecheck(SWIG_TYPECHECK_UINT16)
-    unsigned short,
-    const unsigned short &
-    ""
-
-%typecheck(SWIG_TYPECHECK_INT32)
-    int,
-    long,
-    const int &,
-    const long &
-    ""
-
-%typecheck(SWIG_TYPECHECK_UINT32)
-    unsigned int,
-    unsigned long,
-    const unsigned int &,
-    const unsigned long &
-    ""
-
-%typecheck(SWIG_TYPECHECK_INT64)
-    long long,
-    const long long &
-    ""
-
-%typecheck(SWIG_TYPECHECK_UINT64)
-    unsigned long long,
-    const unsigned long long &
-    ""
-
-%typecheck(SWIG_TYPECHECK_FLOAT)
-    float,
-    const float &
-    ""
-
-%typecheck(SWIG_TYPECHECK_DOUBLE)
-    double,
-    const double &
-    ""
 
 %typecheck(SWIG_TYPECHECK_STRING)
     char *,
@@ -266,22 +203,6 @@
 
 // The csin typemap is used for converting function parameter types from the
 // type used in the proxy module or class to the type used in the D wrap module.
-%typemap(csin)   bool,               const bool &,
-                 char,               const char &,
-                 signed char,        const signed char &,
-                 unsigned char,      const unsigned char &,
-                 short,              const short &,
-                 unsigned short,     const unsigned short &,
-                 int,                const int &,
-                 unsigned int,       const unsigned int &,
-                 long,               const long &,
-                 unsigned long,      const unsigned long &,
-                 size_t,             const size_t &,
-                 long long,          const long long &,
-                 unsigned long long, const unsigned long long &,
-                 float,              const float &,
-                 double,             const double &
-    "$csinput"
 %typemap(csin) char *, char *&, char[ANY], char[] "tango.stdc.stringz.toStringz($csinput)"
 %typemap(csin) SWIGTYPE "$&dclassname.swigGetCObject($csinput)"
 %typemap(csin) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] "$dclassname.swigGetCObject($csinput)"
@@ -293,70 +214,6 @@
 // The $excode special variable is replaced by the excode typemap attribute code
 // if the method can throw any exceptions from unmanaged code, otherwise
 // replaced by nothing (not yet ported).
-
-// Code which is inserted via excode if exceptions can be thrown.
-%define SWIGEXCODE "\n  if ($wrapdmodule.SwigPendingException.isPending) throw $wrapdmodule.SwigPendingException.retrieve();" %enddef
-
-%typemap(csout, excode=SWIGEXCODE) bool,               const bool &               {
-  bool ret = $imcall ? true : false;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) char,               const char &               {
-  char ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) signed char,        const signed char &        {
-  byte ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) unsigned char,      const unsigned char &      {
-  ubyte ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) short,              const short &              {
-  short ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) unsigned short,     const unsigned short &     {
-  ushort ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) int,                const int &                {
-  int ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) unsigned int,       const unsigned int &       {
-  uint ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) long,               const long &               {
-  int ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) unsigned long,      const unsigned long &      {
-  uint ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) size_t,             const size_t &             {
-  size_t ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) long long,          const long long &          {
-  long ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) unsigned long long, const unsigned long long & {
-  ulong ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) float,              const float &              {
-  float ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) double,             const double &             {
-  double ret = $imcall;$excode
-  return ret;
-}
 %typemap(csout, excode=SWIGEXCODE) char *, char *&, char[ANY], char[] {
   char[] ret = tango.stdc.stringz.fromStringz($imcall);$excode
   return ret;
@@ -377,6 +234,9 @@
   $dclassname ret = (cPtr is null) ? null : new $dclassname(cPtr, $owner);$excode
   return ret;
 }
+
+// Code which is inserted via excode if exceptions can be thrown.
+%define SWIGEXCODE "\n  if ($wrapdmodule.SwigPendingException.isPending) throw $wrapdmodule.SwigPendingException.retrieve();" %enddef
 
 
 /*
