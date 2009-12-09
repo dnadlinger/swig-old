@@ -14,7 +14,7 @@
 
 
 /*
- * Conversion code generation typemaps.
+ * Conversion generation typemaps.
  */
 
 %typemap(in, fragment="SWIG_UnPackData") SWIGTYPE (CLASS::*) %{
