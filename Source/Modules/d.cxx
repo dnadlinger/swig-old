@@ -34,7 +34,18 @@ class D : public Language {
   File *f_directors_h;
   List *filenames_list;
 
-  bool proxy_flag;		// Flag for generating proxy classes
+  /*
+   * Command line-set modes of operation.
+   */
+  // Whether proxy functions and classes are generated or only the low-level
+  // C-API is provided.
+  bool generate_proxies;
+
+  /*
+   * State flags which indicate what is being wrapped at the moment.
+   * This is probably not the most elegant way of handling state, but it has
+   * proven to work in the C# and Java modules.
+   */
   bool native_function_flag;	// Flag for when wrapping a native function
   bool static_flag;		// Flag for when wrapping a static functions or member variables
   bool variable_wrapper_flag;	// Flag for when wrapping a nonstatic member variable
@@ -63,9 +74,6 @@ class D : public Language {
   String *director_callback_typedefs;	// Director function pointer typedefs for callbacks
   String *director_callbacks;	// Director callback function pointer member variables
   String *director_dcallbacks_code;	// Director callback method that delegates are set to call
-  String *director_delegate_definitions;	// Director delegates definitions in proxy class
-  String *director_delegate_instances;	// Director delegates member variables in proxy class
-  String *director_method_types;	// Director method types
   String *director_connect_parms;	// Director delegates parameter list for director connect call
   String *destructor_call;	//C++ destructor call if any
 
@@ -78,7 +86,6 @@ class D : public Language {
   List *dmethods_seq;
   Hash *dmethods_table;
   int n_dmethods;
-  int n_directors;
   int first_class_dmethod;
   int curr_class_dmethod;
 
@@ -100,7 +107,7 @@ public:
       f_directors(NULL),
       f_directors_h(NULL),
       filenames_list(NULL),
-      proxy_flag(true),
+      generate_proxies(true),
       native_function_flag(false),
       static_flag(false),
       variable_wrapper_flag(false),
@@ -128,9 +135,6 @@ public:
       director_callback_typedefs(NULL),
       director_callbacks(NULL),
       director_dcallbacks_code(NULL),
-      director_delegate_definitions(NULL),
-      director_delegate_instances(NULL),
-      director_method_types(NULL),
       director_connect_parms(NULL),
       destructor_call(NULL),
       wrapper_loader_code(NULL),
@@ -138,8 +142,7 @@ public:
       wrapper_loader_bind_code(NULL),
       dmethods_seq(NULL),
       dmethods_table(NULL),
-      n_dmethods(0),
-      n_directors(0) {
+      n_dmethods(0) {
 
     // For now, multiple inheritance with directors is not possible. It should be
     // easy to implement though.
@@ -182,7 +185,7 @@ public:
 	  }
 	} else if ((strcmp(argv[i], "-noproxy") == 0)) {
 	  Swig_mark_arg(i);
-	  proxy_flag = false;
+	  generate_proxies = false;
 	} else if (strcmp(argv[i], "-help") == 0) {
 	  Printf(stdout, "%s\n", usage);
 	}
@@ -320,7 +323,6 @@ public:
     dmethods_seq = NewList();
     dmethods_table = NewHash();
     n_dmethods = 0;
-    n_directors = 0;
 
     // By default, expect the dynamically loaded wrapper library to be named
     // like the wrapper D module (i.e. [lib]<module>_wrap[.so/.dll] unless the
@@ -635,7 +637,7 @@ public:
 
     Replaceall(enum_code, "$dclassname", symname);
 
-    if (proxy_flag && is_wrapping_class()) {
+    if (generate_proxies && is_wrapping_class()) {
       // Enums defined within the C++ class are written into the proxy
       // class.
       // TODO: Add support for dimports here.
@@ -708,7 +710,7 @@ public:
   virtual int memberfunctionHandler(Node *n) {
     Language::memberfunctionHandler(n);
 
-    if (proxy_flag) {
+    if (generate_proxies) {
       String *overloaded_name = getOverloadedName(n);
       String *intermediary_function_name = Swig_name_member(proxy_class_name, overloaded_name);
       Setattr(n, "proxyfuncname", Getattr(n, "sym:name"));
@@ -727,7 +729,7 @@ public:
     static_flag = true;
     Language::staticmemberfunctionHandler(n);
 
-    if (proxy_flag) {
+    if (generate_proxies) {
       String *overloaded_name = getOverloadedName(n);
       String *intermediary_function_name = Swig_name_member(proxy_class_name, overloaded_name);
       Setattr(n, "proxyfuncname", Getattr(n, "sym:name"));
@@ -802,7 +804,7 @@ public:
     Language::constructorHandler(n);
 
     // Nothing more to do if we do not generate proxy classes.
-    if (!proxy_flag) {
+    if (!generate_proxies) {
       return SWIG_OK;
     }
 
@@ -1024,7 +1026,7 @@ public:
     Language::destructorHandler(n);
     String *symname = Getattr(n, "sym:name");
 
-    if (proxy_flag) {
+    if (generate_proxies) {
       Printv(destructor_call, wrap_dmodule_fq_name, ".", Swig_name_destroy(symname), "(m_swigCObject)", NIL);
     }
     return SWIG_OK;
@@ -1034,7 +1036,7 @@ public:
    * D::classHandler()
    * --------------------------------------------------------------------------- */
   virtual int classHandler(Node *n) {
-    if (proxy_flag) {
+    if (generate_proxies) {
       proxy_class_name = NewString(Getattr(n, "sym:name"));
 
       if (!addSymbol(proxy_class_name, n))
@@ -1049,7 +1051,7 @@ public:
 
     Language::classHandler(n);
 
-    if (proxy_flag) {
+    if (generate_proxies) {
       writeProxyClassAndUpcasts(n);
       writeDirectorConnectWrapper(n);
 
@@ -1130,7 +1132,7 @@ public:
       Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(t, 0));
     }
 
-    const String *itemname = (proxy_flag && wrapping_member_flag) ? variable_name : symname;
+    const String *itemname = (generate_proxies && wrapping_member_flag) ? variable_name : symname;
 
     String *attributes = Getattr(n, "feature:d:methodmodifiers");
     if (attributes) {
@@ -1166,7 +1168,7 @@ public:
     }
 
     // Emit the generated code to appropriate place.
-    if (proxy_flag && wrapping_member_flag) {
+    if (generate_proxies && wrapping_member_flag) {
       Printv(proxy_class_code, constants_code, NIL);
     } else {
       Printv(proxy_dmodule_code, constants_code, NIL);
@@ -1488,13 +1490,13 @@ public:
     // If we are not processing an enum or constant, and we were not generating
     // a wrapper function which will be accessed via a proxy class, write a
     // function to the proxy D module.
-    if (!(proxy_flag && is_wrapping_class())) {
+    if (!(generate_proxies && is_wrapping_class())) {
       writeProxyDModuleFunction(n);
     }
 
     // If we are processing a public member variable, write the property-style
     // member function to the proxy class.
-    if (proxy_flag && wrapping_member_flag) {
+    if (generate_proxies && wrapping_member_flag) {
       Setattr(n, "proxyfuncname", variable_name);
       Setattr(n, "imfuncname", symname);
 
@@ -2124,9 +2126,6 @@ public:
     director_callback_typedefs = NewString("");
     director_callbacks = NewString("");
     director_dcallbacks_code = NewString("");
-    director_delegate_definitions = NewString("");
-    director_delegate_instances = NewString("");
-    director_method_types = NewString("");
     director_connect_parms = NewString("");
 
     return Language::classDirectorInit(n);
@@ -2288,7 +2287,7 @@ private:
     String *terminator_code = NewString("");
 
     // RESEARCH: We shouldn't even get here then?
-    if (!proxy_flag)
+    if (!generate_proxies)
       return;
 
     // Wrappers not wanted for some methods where the parameters cannot be overloaded in C#
@@ -2580,7 +2579,7 @@ private:
     }
 
     /* Change function name for global variables */
-    if (proxy_flag && global_variable_flag) {
+    if (generate_proxies && global_variable_flag) {
       // RESEARCH: Is the Copy() needed here?
       func_name = Copy(variable_name);
     } else {
@@ -3059,12 +3058,6 @@ private:
 
     if (Len(director_dcallbacks_code) > 0)
       Printv(proxy_class_epilogue_code, director_dcallbacks_code, NIL);
-    if (Len(director_delegate_definitions) > 0)
-      Printv(proxy_class_code, "\n", director_delegate_definitions, NIL);
-    if (Len(director_delegate_instances) > 0)
-      Printv(proxy_class_code, "\n", director_delegate_instances, NIL);
-    if (Len(director_method_types) > 0)
-      Printv(proxy_class_code, "\n", director_method_types, NIL);
 
     Delete(director_callback_typedefs);
     director_callback_typedefs = NULL;
@@ -3072,12 +3065,6 @@ private:
     director_callbacks = NULL;
     Delete(director_dcallbacks_code);
     director_dcallbacks_code = NULL;
-    Delete(director_delegate_definitions);
-    director_delegate_definitions = NULL;
-    Delete(director_delegate_instances);
-    director_delegate_instances = NULL;
-    Delete(director_method_types);
-    director_method_types = NULL;
     Delete(director_connect_parms);
     director_connect_parms = NULL;
   }
@@ -3265,10 +3252,11 @@ private:
   void replaceClassnameVariable(String *tm, const char *variable, SwigType *classnametype) {
     if (SwigType_isenum(classnametype)) {
       String *enumname = getEnumName(classnametype);
-      if (enumname)
+      if (enumname) {
 	Replaceall(tm, variable, enumname);
-      else
+      } else {
 	Replaceall(tm, variable, NewStringf("int"));
+      }
     } else {
       String *classname = getProxyName(classnametype);
       if (classname) {
@@ -3336,7 +3324,7 @@ private:
    * Return NULL if not otherwise the proxy class name
    * --------------------------------------------------------------------------- */
    String *getProxyName(SwigType *t) {
-    if (proxy_flag) {
+    if (generate_proxies) {
       Node *n = classLookup(t);
       if (n) {
 	return Getattr(n, "sym:name");
