@@ -123,19 +123,19 @@
 
 
 %typemap(directorout) char,
-             signed char,
-             unsigned char,
-             short,
-             unsigned short,
-             int,
-             unsigned int,
-             long,
-             unsigned long,
-             size_t,
-             long long,
-             unsigned long long,
-             float,
-             double
+                      signed char,
+                      unsigned char,
+                      short,
+                      unsigned short,
+                      int,
+                      unsigned int,
+                      long,
+                      unsigned long,
+                      size_t,
+                      long long,
+                      unsigned long long,
+                      float,
+                      double
   "$result = ($1_ltype)$input;"
 
 %typemap(directorout) bool

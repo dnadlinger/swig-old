@@ -16,6 +16,8 @@
 %typemap(imtype) enum SWIGTYPE "int"
 %typemap(cstype) enum SWIGTYPE "$dclassname"
 
+%typecheck(SWIG_TYPECHECK_POINTER) enum SWIGTYPE ""
+
 %typemap(in) enum SWIGTYPE %{ $1 = ($1_ltype)$input; %}
 %typemap(out) enum SWIGTYPE %{ $result = $1; %}
 
@@ -24,21 +26,11 @@
 %typemap(csdirectorin) enum SWIGTYPE "cast($dclassname)$iminput"
 %typemap(csdirectorout) enum SWIGTYPE "cast(int)$cscall"
 
-%typecheck(SWIG_TYPECHECK_POINTER) enum SWIGTYPE ""
-
-%typemap(throws, canthrow=1) enum SWIGTYPE
-%{ (void)$1;
-   SWIG_DSetPendingException(SWIG_DException, "C++ $1_type exception thrown");
-   return $null; %}
-
 %typemap(csin) enum SWIGTYPE "cast(int)$csinput"
 %typemap(csout, excode=SWIGEXCODE) enum SWIGTYPE {
   $dclassname ret = cast($dclassname)$imcall;$excode
   return ret;
 }
-
-%typemap(dclassmodifiers) enum SWIGTYPE "enum"
-%typemap(dcode) enum SWIGTYPE ""
 
 
 /*
@@ -48,6 +40,8 @@
 %typemap(ctype) const enum SWIGTYPE & "int"
 %typemap(imtype) const enum SWIGTYPE & "int"
 %typemap(cstype) const enum SWIGTYPE & "$*dclassname"
+
+%typecheck(SWIG_TYPECHECK_POINTER) const enum SWIGTYPE & ""
 
 %typemap(in) const enum SWIGTYPE & ($*1_ltype temp)
 %{ temp = ($*1_ltype)$input;
@@ -67,10 +61,3 @@
   $*dclassname ret = cast($*dclassname)$imcall;$excode
   return ret;
 }
-
-%typemap(throws, canthrow=1) const enum SWIGTYPE &
-%{ (void)$1;
-   SWIG_DSetPendingException(SWIG_DException, "C++ $1_type exception thrown");
-   return $null; %}
-
-%typecheck(SWIG_TYPECHECK_POINTER) const enum SWIGTYPE & ""

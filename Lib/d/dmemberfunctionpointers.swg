@@ -12,6 +12,10 @@
 %typemap(imtype) SWIGTYPE (CLASS::*) "char*"
 %typemap(cstype) SWIGTYPE (CLASS::*) "$dclassname"
 
+%typecheck(SWIG_TYPECHECK_POINTER)
+  SWIGTYPE (CLASS::*)
+  ""
+
 
 /*
  * Conversion generation typemaps.
@@ -41,34 +45,6 @@
   $dclassname ret = (cMemberPtr is null) ? null : new $dclassname(cMemberPtr, $owner);$excode
   return ret;
 }
-
-
-/*
- * D proxy class generation typemaps.
- */
-
-%typemap(csbase)                      SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
-%typemap(dclassmodifiers)             SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) "class"
-%typemap(dcode)                       SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
-%typemap(dimports)                    SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
-%typemap(dinterfaces)                 SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
-%typemap(dinterfaces_derived)         SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
-
-%typemap(dbody) SWIGTYPE (CLASS::*) %{
-private char* m_swigCMemberPtr;
-
-public this(char* cMemberPtr, bool futureUse) {
-  m_swigCMemberPtr = cMemberPtr;
-}
-
-protected this() {
-  m_swigCMemberPtr = null;
-}
-
-public static char* swigGetCMemberPtr($dclassname obj) {
-  return (obj is null) ? null : obj.m_swigCMemberPtr;
-}
-%}
 
 
 /*
