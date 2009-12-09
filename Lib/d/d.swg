@@ -400,68 +400,6 @@
 
 
 /*
- * Enumerations.
- */
-// const enum SWIGTYPE & typemaps
-%typemap(ctype) const enum SWIGTYPE & "int"
-%typemap(imtype) const enum SWIGTYPE & "int"
-%typemap(cstype) const enum SWIGTYPE & "$*dclassname"
-
-%typemap(in) const enum SWIGTYPE & ($*1_ltype temp)
-%{ temp = ($*1_ltype)$input;
-   $1 = &temp; %}
-%typemap(out) const enum SWIGTYPE & %{ $result = *$1; %}
-
-%typemap(directorout,warning=SWIGWARN_TYPEMAP_THREAD_UNSAFE_MSG) const enum SWIGTYPE &
-%{ static $*1_ltype temp = ($*1_ltype)$input;
-   $result = &temp; %}
-%typemap(directorin) const enum SWIGTYPE & "$input = $1_name;"
-%typemap(csdirectorin) const enum SWIGTYPE & "cast($*dclassname)$iminput"
-%typemap(csdirectorout) const enum SWIGTYPE & "cast(int)$cscall"
-
-%typecheck(SWIG_TYPECHECK_POINTER) const enum SWIGTYPE & ""
-
-%typemap(throws, canthrow=1) const enum SWIGTYPE &
-%{ (void)$1;
-   SWIG_DSetPendingException(SWIG_DException, "C++ $1_type exception thrown");
-   return $null; %}
-
-%typemap(csin) const enum SWIGTYPE & "cast(int)$csinput"
-%typemap(csout, excode=SWIGEXCODE) const enum SWIGTYPE & {
-  $*dclassname ret = cast($*dclassname)$imcall;$excode
-  return ret;
-}
-
-// enum SWIGTYPE typemaps
-%typemap(ctype) enum SWIGTYPE "int"
-%typemap(imtype) enum SWIGTYPE "int"
-%typemap(cstype) enum SWIGTYPE "$dclassname"
-
-%typemap(in) enum SWIGTYPE %{ $1 = ($1_ltype)$input; %}
-%typemap(out) enum SWIGTYPE %{ $result = $1; %}
-
-%typemap(directorout) enum SWIGTYPE %{ $result = ($1_ltype)$input; %}
-%typemap(directorin) enum SWIGTYPE "$input = $1;"
-%typemap(csdirectorin) enum SWIGTYPE "cast($dclassname)$iminput"
-%typemap(csdirectorout) enum SWIGTYPE "cast(int)$cscall"
-
-%typecheck(SWIG_TYPECHECK_POINTER) enum SWIGTYPE ""
-
-%typemap(throws, canthrow=1) enum SWIGTYPE
-%{ (void)$1;
-   SWIG_DSetPendingException(SWIG_DException, "C++ $1_type exception thrown");
-   return $null; %}
-
-%typemap(csin) enum SWIGTYPE "cast(int)$csinput"
-%typemap(csout, excode=SWIGEXCODE) enum SWIGTYPE {
-  $dclassname ret = cast($dclassname)$imcall;$excode
-  return ret;
-}
-
-%typemap(dclassmodifiers) enum SWIGTYPE "enum"
-%typemap(dcode) enum SWIGTYPE ""
-
-/*
  * »Aliases« (applys).
  */
 
@@ -617,3 +555,6 @@ public static void* swigGetCObject($dclassname obj) {
 
 // Typemaps for primitive types.
 %include <dprimitives.swg>
+
+// Typemaps for enumeration types.
+%include <denums.swg>
