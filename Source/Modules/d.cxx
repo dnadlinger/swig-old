@@ -3393,7 +3393,6 @@ public:
    * --------------------------------------------------------------------------- */
   int classDirectorDestructor(Node *n) {
     Node *current_class = getCurrentClass();
-    String *full_classname = Getattr(current_class, "name");
     String *classname = Swig_class_name(current_class);
     Wrapper *w = NewWrapper();
 
