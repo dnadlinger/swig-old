@@ -1161,7 +1161,7 @@ public:
       String *cstypeout = Getattr(n, "tmap:cstype:out");	// the type in the cstype typemap's out attribute overrides the type in the typemap
       if (cstypeout)
 	tm = cstypeout;
-      substituteClassname(t, tm);
+      replaceClassname(tm, t);
       Printf(return_type, "%s", tm);
     } else {
       Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(t, 0));
@@ -1645,7 +1645,7 @@ public:
       String *cstypeout = Getattr(n, "tmap:cstype:out");
       if (cstypeout)
 	tm = cstypeout;
-      substituteClassname(t, tm);
+      replaceClassname(tm, t);
       Printf(return_type, "%s", tm);
     } else {
       Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(t, 0));
@@ -1726,11 +1726,11 @@ public:
 	  }
 
 	  if ((tm = Getattr(p, "tmap:csin"))) {
-	    substituteClassname(pt, tm);
+	    replaceClassname(tm, pt);
 	    Replaceall(tm, "$csinput", param_name);
 	    String *pre = Getattr(p, "tmap:csin:pre");
 	    if (pre) {
-	      substituteClassname(pt, pre);
+	      replaceClassname(pre, pt);
 	      Replaceall(pre, "$csinput", param_name);
 	      if (Len(pre_code) > 0)
 		Printf(pre_code, "\n");
@@ -1738,7 +1738,7 @@ public:
 	    }
 	    String *post = Getattr(p, "tmap:csin:post");
 	    if (post) {
-	      substituteClassname(pt, post);
+	      replaceClassname(post, pt);
 	      Replaceall(post, "$csinput", param_name);
 	      if (Len(post_code) > 0)
 		Printf(post_code, "\n");
@@ -1746,7 +1746,7 @@ public:
 	    }
 	    String *terminator = Getattr(p, "tmap:csin:terminator");
 	    if (terminator) {
-	      substituteClassname(pt, terminator);
+	      replaceClassname(terminator, pt);
 	      Replaceall(terminator, "$csinput", param_name);
 	      if (Len(terminator_code) > 0)
 		Insert(terminator_code, 0, "\n");
@@ -1764,7 +1764,7 @@ public:
 	  String *proxy_type = NewString("");
 
 	  if ((tm = Getattr(p, "tmap:cstype"))) {
-	    substituteClassname(pt, tm);
+	    replaceClassname(tm, pt);
 	    const String *inattributes = Getattr(p, "tmap:cstype:inattributes");
 	    Printf(proxy_type, "%s%s", inattributes ? inattributes : empty_string, tm);
 	  } else {
@@ -1816,7 +1816,7 @@ public:
 	Replaceall(tm, "$owner", "true");
       else
 	Replaceall(tm, "$owner", "false");
-      substituteClassname(t, tm);
+      replaceClassname(tm, t);
 
       // For director methods: generate code to selectively make a normal
       // polymorphic call or an explicit method call. Needed to prevent infinite
@@ -1947,7 +1947,7 @@ public:
 
       /* Get the C# parameter type */
       if ((tm = Getattr(p, "tmap:cstype"))) {
-	substituteClassname(pt, tm);
+	replaceClassname(tm, pt);
 	const String *inattributes = Getattr(p, "tmap:cstype:inattributes");
 	Printf(param_type, "%s%s", inattributes ? inattributes : empty_string, tm);
       } else {
@@ -1963,11 +1963,11 @@ public:
 
       // Use typemaps to transform type used in C# wrapper function (in proxy class) to type used in PInvoke function (in intermediary class)
       if ((tm = Getattr(p, "tmap:csin"))) {
-	substituteClassname(pt, tm);
+	replaceClassname(tm, pt);
 	Replaceall(tm, "$csinput", arg);
 	String *pre = Getattr(p, "tmap:csin:pre");
 	if (pre) {
-	  substituteClassname(pt, pre);
+	  replaceClassname(pre, pt);
 	  Replaceall(pre, "$csinput", arg);
 	  if (Len(pre_code) > 0)
 	    Printf(pre_code, "\n");
@@ -1975,7 +1975,7 @@ public:
 	}
 	String *post = Getattr(p, "tmap:csin:post");
 	if (post) {
-	  substituteClassname(pt, post);
+	  replaceClassname(post, pt);
 	  Replaceall(post, "$csinput", arg);
 	  if (Len(post_code) > 0)
 	    Printf(post_code, "\n");
@@ -1983,7 +1983,7 @@ public:
 	}
 	String *terminator = Getattr(p, "tmap:csin:terminator");
 	if (terminator) {
-	  substituteClassname(pt, terminator);
+	  replaceClassname(terminator, pt);
 	  Replaceall(terminator, "$csinput", arg);
 	  if (Len(terminator_code) > 0)
 	    Insert(terminator_code, 0, "\n");
@@ -2217,7 +2217,7 @@ public:
       String *cstypeout = Getattr(n, "tmap:cstype:out");	// the type in the cstype typemap's out attribute overrides the type in the typemap
       if (cstypeout)
 	tm = cstypeout;
-      substituteClassname(t, tm);
+      replaceClassname(tm, t);
       Printf(return_type, "%s", tm);
     } else {
       Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(t, 0));
@@ -2263,7 +2263,7 @@ public:
 
       /* Get the C# parameter type */
       if ((tm = Getattr(p, "tmap:cstype"))) {
-	substituteClassname(pt, tm);
+	replaceClassname(tm, pt);
 	const String *inattributes = Getattr(p, "tmap:cstype:inattributes");
 	Printf(param_type, "%s%s", inattributes ? inattributes : empty_string, tm);
       } else {
@@ -2278,11 +2278,11 @@ public:
 
       // Use typemaps to transform type used in C# wrapper function (in proxy class) to type used in PInvoke function (in intermediary class)
       if ((tm = Getattr(p, "tmap:csin"))) {
-	substituteClassname(pt, tm);
+	replaceClassname(tm, pt);
 	Replaceall(tm, "$csinput", arg);
 	String *pre = Getattr(p, "tmap:csin:pre");
 	if (pre) {
-	  substituteClassname(pt, pre);
+	  replaceClassname(pre, pt);
 	  Replaceall(pre, "$csinput", arg);
           if (Len(pre_code) > 0)
             Printf(pre_code, "\n");
@@ -2290,7 +2290,7 @@ public:
 	}
 	String *post = Getattr(p, "tmap:csin:post");
 	if (post) {
-	  substituteClassname(pt, post);
+	  replaceClassname(post, pt);
 	  Replaceall(post, "$csinput", arg);
           if (Len(post_code) > 0)
             Printf(post_code, "\n");
@@ -2298,7 +2298,7 @@ public:
 	}
         String *terminator = Getattr(p, "tmap:csin:terminator");
         if (terminator) {
-          substituteClassname(pt, terminator);
+          replaceClassname(terminator, pt);
           Replaceall(terminator, "$csinput", arg);
           if (Len(terminator_code) > 0)
             Insert(terminator_code, 0, "\n");
@@ -2350,7 +2350,7 @@ public:
 	Replaceall(tm, "$owner", "true");
       else
 	Replaceall(tm, "$owner", "false");
-      substituteClassname(t, tm);
+      replaceClassname(tm, t);
       Replaceall(tm, "$imcall", imcall);
     } else {
       Swig_warning(WARN_D_TYPEMAP_CSOUT_UNDEF, input_file, line_number,
@@ -2369,15 +2369,6 @@ public:
     Delete(return_type);
     Delete(imcall);
     Delete(func_name);
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::replaceSpecialVariables()
-   * --------------------------------------------------------------------------- */
-  virtual void replaceSpecialVariables(String *method, String *tm, Parm *parm) {
-    (void)method;
-    SwigType *type = Getattr(parm, "type");
-    substituteClassname(type, tm);
   }
 
   /* ---------------------------------------------------------------------------
@@ -2447,42 +2438,56 @@ public:
   }
 
   /* ---------------------------------------------------------------------------
-   * D::substituteClassname()
+   * D::replaceSpecialVariables()
+   * --------------------------------------------------------------------------- */
+  virtual void replaceSpecialVariables(String *method, String *tm, Parm *parm) {
+    (void)method;
+    SwigType *type = Getattr(parm, "type");
+    replaceClassname(tm, type);
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::replaceClassname()
    *
-   * Substitute the special variable $dclassname with the proxy class name for classes/structs/unions
-   * that SWIG knows about. Also substitutes enums with enum name.
-   * Otherwise use the $descriptor name for the D class name. Note that the $&dclassname substitution
-   * is the same as a $&descriptor substitution, ie one pointer added to descriptor name.
+   * Replaces the special variable $dclassname with the proxy class name for
+   * classes/structs/unions SWIG knows about. Also substitutes the enumeration
+   * name for non-anonymous enums. Otherwise, $classname is replaced with a
+   * $descriptor(type)-like name.
+   *
+   * $*dclassname and $&classname work like with descriptors (see manual section
+   * 10.4.3), they remove a prointer from respectively add a pointer to the type.
+   *
    * Inputs:
-   *   pt - parameter type
-   *   tm - typemap contents that might contain the special variable to be replaced
+   *   tm - String to perform the substitution at (will usually come from a
+   *        typemap.
+   *   pt - The type to substitute for the variables.
    * Outputs:
-   *   tm - typemap contents complete with the special variable substitution
+   *   tm - String with the variables substituted.
    * Return:
    *   substitution_performed - flag indicating if a substitution was performed
    * --------------------------------------------------------------------------- */
-  bool substituteClassname(SwigType *pt, String *tm) {
+  bool replaceClassname(String *tm, SwigType *pt) {
     bool substitution_performed = false;
     SwigType *type = Copy(SwigType_typedef_resolve_all(pt));
     SwigType *strippedtype = SwigType_strip_qualifiers(type);
 
     if (Strstr(tm, "$dclassname")) {
       SwigType *classnametype = Copy(strippedtype);
-      substituteClassnameSpecialVariable(classnametype, tm, "$dclassname");
+      replaceClassnameVariable(tm, "$dclassname", classnametype);
       substitution_performed = true;
       Delete(classnametype);
     }
     if (Strstr(tm, "$*dclassname")) {
       SwigType *classnametype = Copy(strippedtype);
       Delete(SwigType_pop(classnametype));
-      substituteClassnameSpecialVariable(classnametype, tm, "$*dclassname");
+      replaceClassnameVariable(tm, "$*dclassname", classnametype);
       substitution_performed = true;
       Delete(classnametype);
     }
     if (Strstr(tm, "$&dclassname")) {
       SwigType *classnametype = Copy(strippedtype);
       SwigType_add_pointer(classnametype);
-      substituteClassnameSpecialVariable(classnametype, tm, "$&dclassname");
+      replaceClassnameVariable(tm, "$&dclassname", classnametype);
       substitution_performed = true;
       Delete(classnametype);
     }
@@ -2494,24 +2499,29 @@ public:
   }
 
   /* ---------------------------------------------------------------------------
-   * D::substituteClassnameSpecialVariable()
+   * D::replaceClassnameVariable()
+   *
+   * See D::replaceClassname().
    * --------------------------------------------------------------------------- */
-  void substituteClassnameSpecialVariable(SwigType *classnametype, String *tm, const char *classnamespecialvariable) {
+  void replaceClassnameVariable(String *tm, const char *variable, SwigType *classnametype) {
     if (SwigType_isenum(classnametype)) {
       String *enumname = getEnumName(classnametype);
       if (enumname)
-	Replaceall(tm, classnamespecialvariable, enumname);
+	Replaceall(tm, variable, enumname);
       else
-	Replaceall(tm, classnamespecialvariable, NewStringf("int"));
+	Replaceall(tm, variable, NewStringf("int"));
     } else {
       String *classname = getProxyName(classnametype);
       if (classname) {
-	Replaceall(tm, classnamespecialvariable, classname);	// getProxyName() works for pointers to classes too
-      } else {			// use $descriptor if SWIG does not know anything about this type. Note that any typedefs are resolved.
+	// getProxyName() works for pointers to classes too
+	Replaceall(tm, variable, classname);
+      } else {
+	// SWIG does not know anything about the type (after resolving typedefs).
+	// Just mangle the type name string like $descriptor(type) would do.
 	String *descriptor = NewStringf("SWIGTYPE%s", SwigType_manglestr(classnametype));
-	Replaceall(tm, classnamespecialvariable, descriptor);
+	Replaceall(tm, variable, descriptor);
 
-	// Add to hash table so that the type wrapper classes can be created later
+	// Add to hash table so that a type wrapper class can be created later.
 	Setattr(swig_types_hash, descriptor, classnametype);
 	Delete(descriptor);
       }
@@ -3029,7 +3039,7 @@ public:
 	      Replaceall(din, "$proxydmodule", proxy_dmodule_fq_name);
 	      Replaceall(din, "$wrapdmodule", wrap_dmodule_fq_name);
 	      Replaceall(din, "$module", proxy_dmodule_name);
-	      substituteClassname(pt, din);
+	      replaceClassname(din, pt);
 	      Replaceall(din, "$iminput", ln);
 
 	      Printf(delegate_parms, ", ");
@@ -3047,7 +3057,7 @@ public:
 
 	      // Get the parameter type in the proxy D class.
 	      if ((tm = Getattr(p, "tmap:cstype"))) {
-		substituteClassname(pt, tm);
+		replaceClassname(tm, pt);
 		Printf(proxy_method_param_list, "%s", tm);
 	      } else {
 		Swig_warning(WARN_D_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(pt, 0));
@@ -3147,7 +3157,7 @@ public:
       Parm *tp = NewParmFromNode(returntype, empty_str, n);
 
       if ((tm = Swig_typemap_lookup("csdirectorout", tp, "", 0))) {
-	substituteClassname(returntype, tm);
+	replaceClassname(tm, returntype);
 	Replaceall(tm, "$cscall", upcall);
 
 	Printf(callback_code, "  return %s;\n", tm);
@@ -3236,7 +3246,7 @@ public:
 	String *cstypeout = Getattr(n, "tmap:cstype:out");	// the type in the cstype typemap's out attribute overrides the type in the typemap
 	if (cstypeout)
 	  tm = cstypeout;
-	substituteClassname(type, tm);
+	replaceClassname(tm, type);
 	Printf(return_type, "%s", tm);
       } else {
 	Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(type, 0));
