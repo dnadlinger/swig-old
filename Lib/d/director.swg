@@ -47,5 +47,3 @@ namespace Swig {
 }
 
 #endif /* __cplusplus */
-
-

@@ -92,11 +92,6 @@
 %typemap(imtype) SWIGTYPE & "void*"
 %typemap(cstype) SWIGTYPE & "$dclassname"
 
-// Pointer to a class member. This is really tricky, see below.
-%typemap(ctype) SWIGTYPE (CLASS::*) "char *"
-%typemap(imtype) SWIGTYPE (CLASS::*) "char*"
-%typemap(cstype) SWIGTYPE (CLASS::*) "$dclassname"
-
 
 /*
  * The following typemaps are used for converting between the types for C/C++
@@ -376,31 +371,18 @@
 
 // Pointers and references.
 %typemap(in) SWIGTYPE * %{ $1 = ($1_ltype)$input; %}
-%typemap(in, fragment="SWIG_UnPackData") SWIGTYPE (CLASS::*) %{
-  SWIG_UnpackData($input, (void *)&$1, sizeof($1));
-%}
 %typemap(in, canthrow=1) SWIGTYPE & %{ $1 = ($1_ltype)$input;
   if (!$1) {
     SWIG_DSetPendingException(SWIG_DIllegalArgumentException, "$1_type type is null");
     return $null;
   } %}
 %typemap(out) SWIGTYPE * %{ $result = (void *)$1; %}
-%typemap(out, fragment="SWIG_PackData") SWIGTYPE (CLASS::*) %{
-  char buf[128];
-  char *data = SWIG_PackData(buf, (void *)&$1, sizeof($1));
-  *data = '\0';
-  $result = SWIG_d_string_callback(buf);
-%}
 %typemap(out) SWIGTYPE & %{ $result = (void *)$1; %}
 
 %typemap(directorout, warning=SWIGWARN_TYPEMAP_DIRECTOROUT_PTR_MSG) SWIGTYPE *
 %{ $result = ($1_ltype)$input; %}
-%typemap(directorout, warning=SWIGWARN_TYPEMAP_DIRECTOROUT_PTR_MSG) SWIGTYPE (CLASS::*)
-%{ $result = ($1_ltype)$input; %}
 
 %typemap(directorin) SWIGTYPE *
-%{ $input = (void *) $1; %}
-%typemap(directorin) SWIGTYPE (CLASS::*)
 %{ $input = (void *) $1; %}
 
 %typemap(directorout, warning=SWIGWARN_TYPEMAP_DIRECTOROUT_PTR_MSG) SWIGTYPE &
@@ -412,9 +394,9 @@
 %typemap(directorin) SWIGTYPE &
 %{ $input = ($1_ltype) &$1; %}
 
-%typemap(csdirectorin) SWIGTYPE *, SWIGTYPE (CLASS::*) "($iminput is null) ? null : new $dclassname($iminput, false)"
+%typemap(csdirectorin) SWIGTYPE * "($iminput is null) ? null : new $dclassname($iminput, false)"
 %typemap(csdirectorin) SWIGTYPE & "new $dclassname($iminput, false)"
-%typemap(csdirectorout) SWIGTYPE *, SWIGTYPE (CLASS::*), SWIGTYPE & "$dclassname.swigGetCObject($cscall)"
+%typemap(csdirectorout) SWIGTYPE *, SWIGTYPE & "$dclassname.swigGetCObject($cscall)"
 
 // Default array handling.
 %typemap(in) SWIGTYPE [] %{ $1 = ($1_ltype)$input; %}
@@ -568,7 +550,6 @@
 %typemap(csin) char *, char *&, char[ANY], char[] "tango.stdc.stringz.toStringz($csinput)"
 %typemap(csin) SWIGTYPE "$&dclassname.swigGetCObject($csinput)"
 %typemap(csin) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] "$dclassname.swigGetCObject($csinput)"
-%typemap(csin) SWIGTYPE (CLASS::*) "$dclassname.swigGetCMemberPtr($csinput)"
 
 
 // The csout typemap is used for converting function return values from the
@@ -659,11 +640,6 @@
 %typemap(csout, excode=SWIGEXCODE) SWIGTYPE *, SWIGTYPE [] {
   void* cPtr = $imcall;
   $dclassname ret = (cPtr is null) ? null : new $dclassname(cPtr, $owner);$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) SWIGTYPE (CLASS::*) {
-  char* cMemberPtr = $imcall;
-  $dclassname ret = (cMemberPtr is null) ? null : new $dclassname(cMemberPtr, $owner);$excode
   return ret;
 }
 
@@ -776,12 +752,12 @@
  */
 
 // General.
-%typemap(csbase)                      SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
-%typemap(dclassmodifiers)             SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) "class"
-%typemap(dcode)                       SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
-%typemap(dimports)                    SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
-%typemap(dinterfaces)                 SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
-%typemap(dinterfaces_derived)         SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
+%typemap(csbase)                      SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] ""
+%typemap(dclassmodifiers)             SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] "class"
+%typemap(dcode)                       SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] ""
+%typemap(dimports)                    SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] ""
+%typemap(dinterfaces)                 SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] ""
+%typemap(dinterfaces_derived)         SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] ""
 
 %typemap(dconstructor, excode=SWIGEXCODE,directorconnect="\n  swigDirectorConnect();") SWIGTYPE {
   this($imcall, true);$excode$directorconnect
@@ -875,22 +851,6 @@ public static void* swigGetCObject($dclassname obj) {
 }
 %}
 
-%typemap(dbody) SWIGTYPE (CLASS::*) %{
-private char* m_swigCMemberPtr;
-
-public this(char* cMemberPtr, bool futureUse) {
-  m_swigCMemberPtr = cMemberPtr;
-}
-
-protected this() {
-  m_swigCMemberPtr = null;
-}
-
-public static char* swigGetCMemberPtr($dclassname obj) {
-  return (obj is null) ? null : obj.m_swigCMemberPtr;
-}
-%}
-
 
 /*
  * D-specific directives.
@@ -901,52 +861,6 @@ public static char* swigGetCMemberPtr($dclassname obj) {
 #define %dnothrowexception          %feature("except")
 
 %pragma(d) proxydmoduleimports = "static import tango.stdc.stringz;";
-
-
-/*
- * Fragments.
- */
-%fragment("SWIG_PackData", "header") {
-/* Pack binary data into a string */
-SWIGINTERN char * SWIG_PackData(char *c, void *ptr, size_t sz) {
-  static const char hex[17] = "0123456789abcdef";
-  register const unsigned char *u = (unsigned char *) ptr;
-  register const unsigned char *eu =  u + sz;
-  for (; u != eu; ++u) {
-    register unsigned char uu = *u;
-    *(c++) = hex[(uu & 0xf0) >> 4];
-    *(c++) = hex[uu & 0xf];
-  }
-  return c;
-}
-}
-
-%fragment("SWIG_UnPackData", "header") {
-/* Unpack binary data from a string */
-SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
-  register unsigned char *u = (unsigned char *) ptr;
-  register const unsigned char *eu = u + sz;
-  for (; u != eu; ++u) {
-    register char d = *(c++);
-    register unsigned char uu;
-    if ((d >= '0') && (d <= '9'))
-      uu = ((d - '0') << 4);
-    else if ((d >= 'a') && (d <= 'f'))
-      uu = ((d - ('a'-10)) << 4);
-    else
-      return (char *) 0;
-    d = *(c++);
-    if ((d >= '0') && (d <= '9'))
-      uu |= (d - '0');
-    else if ((d >= 'a') && (d <= 'f'))
-      uu |= (d - ('a'-10));
-    else
-      return (char *) 0;
-    *u = uu;
-  }
-  return c;
-}
-}
 
 
 /*
@@ -962,3 +876,6 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 
 // Helper code for the strings and exceptions (currently unused, not yet ported to D).
 %include <dhead.swg>
+
+// Typemaps for member function pointers.
+%include <dmemberfunctionpointers.swg>

@@ -1,0 +1,119 @@
+/* -----------------------------------------------------------------------------
+ * See the LICENSE file for information on copyright, usage and redistribution
+ * of SWIG, and the README file for authors - http://www.swig.org/release.html.
+ *
+ * dmemberfunctionpointers.swg
+ *
+ * Typemaps for member function pointers.
+ * ----------------------------------------------------------------------------- */
+
+
+%typemap(ctype) SWIGTYPE (CLASS::*) "char *"
+%typemap(imtype) SWIGTYPE (CLASS::*) "char*"
+%typemap(cstype) SWIGTYPE (CLASS::*) "$dclassname"
+
+
+/*
+ * Conversion code generation typemaps.
+ */
+
+%typemap(in, fragment="SWIG_UnPackData") SWIGTYPE (CLASS::*) %{
+  SWIG_UnpackData($input, (void *)&$1, sizeof($1));
+%}
+%typemap(out, fragment="SWIG_PackData") SWIGTYPE (CLASS::*) %{
+  char buf[128];
+  char *data = SWIG_PackData(buf, (void *)&$1, sizeof($1));
+  *data = '\0';
+  $result = SWIG_d_string_callback(buf);
+%}
+
+%typemap(directorin) SWIGTYPE (CLASS::*) "$input = (void *) $1;"
+%typemap(directorout, warning=SWIGWARN_TYPEMAP_DIRECTOROUT_PTR_MSG) SWIGTYPE (CLASS::*)
+  "$result = ($1_ltype)$input;"
+
+%typemap(csdirectorin) SWIGTYPE (CLASS::*)
+  "($iminput is null) ? null : new $dclassname($iminput, false)"
+%typemap(csdirectorout) SWIGTYPE (CLASS::*) "$dclassname.swigGetCObject($cscall)"
+
+%typemap(csin) SWIGTYPE (CLASS::*) "$dclassname.swigGetCMemberPtr($csinput)"
+%typemap(csout, excode=SWIGEXCODE) SWIGTYPE (CLASS::*) {
+  char* cMemberPtr = $imcall;
+  $dclassname ret = (cMemberPtr is null) ? null : new $dclassname(cMemberPtr, $owner);$excode
+  return ret;
+}
+
+
+/*
+ * D proxy class generation typemaps.
+ */
+
+%typemap(csbase)                      SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
+%typemap(dclassmodifiers)             SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) "class"
+%typemap(dcode)                       SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
+%typemap(dimports)                    SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
+%typemap(dinterfaces)                 SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
+%typemap(dinterfaces_derived)         SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
+
+%typemap(dbody) SWIGTYPE (CLASS::*) %{
+private char* m_swigCMemberPtr;
+
+public this(char* cMemberPtr, bool futureUse) {
+  m_swigCMemberPtr = cMemberPtr;
+}
+
+protected this() {
+  m_swigCMemberPtr = null;
+}
+
+public static char* swigGetCMemberPtr($dclassname obj) {
+  return (obj is null) ? null : obj.m_swigCMemberPtr;
+}
+%}
+
+
+/*
+ * Helper functions to pack/unpack arbitrary binary data (member function
+ * pointers in this case) into a string.
+ */
+
+%fragment("SWIG_PackData", "header") {
+/* Pack binary data into a string */
+SWIGINTERN char * SWIG_PackData(char *c, void *ptr, size_t sz) {
+  static const char hex[17] = "0123456789abcdef";
+  register const unsigned char *u = (unsigned char *) ptr;
+  register const unsigned char *eu =  u + sz;
+  for (; u != eu; ++u) {
+    register unsigned char uu = *u;
+    *(c++) = hex[(uu & 0xf0) >> 4];
+    *(c++) = hex[uu & 0xf];
+  }
+  return c;
+}
+}
+
+%fragment("SWIG_UnPackData", "header") {
+/* Unpack binary data from a string */
+SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
+  register unsigned char *u = (unsigned char *) ptr;
+  register const unsigned char *eu = u + sz;
+  for (; u != eu; ++u) {
+    register char d = *(c++);
+    register unsigned char uu;
+    if ((d >= '0') && (d <= '9'))
+      uu = ((d - '0') << 4);
+    else if ((d >= 'a') && (d <= 'f'))
+      uu = ((d - ('a'-10)) << 4);
+    else
+      return (char *) 0;
+    d = *(c++);
+    if ((d >= '0') && (d <= '9'))
+      uu |= (d - '0');
+    else if ((d >= 'a') && (d <= 'f'))
+      uu |= (d - ('a'-10));
+    else
+      return (char *) 0;
+    *u = uu;
+  }
+  return c;
+}
+}
