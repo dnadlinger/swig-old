@@ -82,15 +82,8 @@ class D : public Language {
   int first_class_dmethod;
   int curr_class_dmethod;
 
-  static Parm *NewParmFromNode(SwigType *type, const_String_or_char_ptr name, Node *n) {
-    Parm *p = NewParm(type, name);
-    Setfile(p, Getfile(n));
-    Setline(p, Getline(n));
-    return p;
-  }
 
 public:
-
   /* ---------------------------------------------------------------------------
    * D::D()
    * --------------------------------------------------------------------------- */
@@ -156,39 +149,6 @@ public:
     // Not used:
     Delete(none_comparison);
     none_comparison = NewString("");
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::getProxyName()
-   *
-   * Test to see if a type corresponds to something wrapped with a proxy class
-   * Return NULL if not otherwise the proxy class name
-   * --------------------------------------------------------------------------- */
-   String *getProxyName(SwigType *t) {
-    if (proxy_flag) {
-      Node *n = classLookup(t);
-      if (n) {
-	return Getattr(n, "sym:name");
-      }
-    }
-    return NULL;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::directorClassName()
-   * --------------------------------------------------------------------------- */
-  String *directorClassName(Node *n) {
-    String *dirclassname;
-    const char *attrib = "director:classname";
-
-    if (!(dirclassname = Getattr(n, attrib))) {
-      String *classname = Getattr(n, "sym:name");
-
-      dirclassname = NewStringf("SwigDirector_%s", classname);
-      Setattr(n, attrib, dirclassname);
-    }
-
-    return dirclassname;
   }
 
   /* ---------------------------------------------------------------------------
@@ -576,72 +536,645 @@ public:
   }
 
   /* ---------------------------------------------------------------------------
-   * D::emitBanner()
+   * D::insertDirective()
    * --------------------------------------------------------------------------- */
-  void emitBanner(File *f) {
-    Printf(f, "/* ----------------------------------------------------------------------------\n");
-    Swig_banner_target_lang(f, " *");
-    Printf(f, " * ----------------------------------------------------------------------------- */\n\n");
+  virtual int insertDirective(Node *n) {
+    String *code = Getattr(n, "code");
+    Replaceall(code, "$proxydmodule", proxy_dmodule_fq_name);
+    Replaceall(code, "$wrapdmodule", wrap_dmodule_fq_name);
+    Replaceall(code, "$module", proxy_dmodule_name);
+    return Language::insertDirective(n);
   }
 
   /* ---------------------------------------------------------------------------
-   * D::addUpcallMethod()
+   * D::pragmaDirective()
    *
-   * Adds new director upcall signature.
+   * Valid Pragmas:
+   * wrapdmodulecode      - text (D code) is copied verbatim to the wrap module
+   * wrapdmoduleimports   - import statements for the wrap module
+   *
+   * proxydmodulecode     - text (D code) is copied verbatim to the proxy module
+   * proxydmoduleimports  - import statements for the proxy module
    * --------------------------------------------------------------------------- */
-  UpcallData *addUpcallMethod(String *imclass_method, String *class_method, String *decl, String *overloaded_name, String *return_type, String *param_list) {
-    UpcallData *udata;
-    String *imclass_methodidx;
-    String *class_methodidx;
-    Hash *new_udata;
-    String *key = NewStringf("%s|%s", imclass_method, decl);
+  virtual int pragmaDirective(Node *n) {
+    if (!ImportMode) {
+      String *lang = Getattr(n, "lang");
+      String *code = Getattr(n, "name");
+      String *value = Getattr(n, "value");
 
-    ++curr_class_dmethod;
+      if (Strcmp(lang, "d") == 0) {
+	String *strvalue = NewString(value);
+	Replaceall(strvalue, "\\\"", "\"");
 
-    /* Do we know about this director class already? */
-    if ((udata = Getattr(dmethods_table, key))) {
-      Delete(key);
-      return Getattr(udata, "methodoff");
+	if (Strcmp(code, "wrapdmodulecode") == 0) {
+	  Printf(wrap_dmodule_code, "%s\n", strvalue);
+	} else if (Strcmp(code, "wrapdmoduleimports") == 0) {
+	  Printv(wrap_dmodule_imports, strvalue, NIL);
+	} else if (Strcmp(code, "proxydmodulecode") == 0) {
+	  Printf(proxy_dmodule_code, "%s\n", strvalue);
+	} else if (Strcmp(code, "proxydmoduleimports") == 0) {
+	  Printv(proxy_dmodule_imports, strvalue, NIL);
+	} else if (Strcmp(code, "wrapperloadercode") == 0) {
+	  Delete(wrapper_loader_code);
+	  wrapper_loader_code = Copy(strvalue);
+	} else if (Strcmp(code, "wrapperloaderbindcommand") == 0) {
+	  Delete(wrapper_loader_bind_command);
+	  wrapper_loader_bind_command = Copy(strvalue);
+	} else {
+	  Printf(stderr, "%s : Line %d. Unrecognized pragma.\n", input_file, line_number);
+	}
+	Delete(strvalue);
+      }
+    }
+    return Language::pragmaDirective(n);
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::enumDeclaration()
+   *
+   * Wraps C/C++ enums as D enums.
+   * --------------------------------------------------------------------------- */
+  virtual int enumDeclaration(Node *n) {
+    if (ImportMode)
+      return SWIG_OK;
+
+    if (getCurrentClass() && (cplus_mode != PUBLIC))
+      return SWIG_NOWRAP;
+
+    enum_code = NewString("");
+    String *symname = Getattr(n, "sym:name");
+    String *typemap_lookup_type = Getattr(n, "name");
+
+    // Emit the enum declaration.
+    if (typemap_lookup_type) {
+      const String *enummodifiers = typemapLookup(n, "dclassmodifiers", typemap_lookup_type, WARN_D_TYPEMAP_CLASSMOD_UNDEF);
+      Printv(enum_code, enummodifiers, " ", symname, " {\n", NIL);
+    } else {
+      // Handle anonymous enums.
+      Printv(enum_code, "\nenum {\n", NIL);
     }
 
-    imclass_methodidx = NewStringf("%d", n_dmethods);
-    class_methodidx = NewStringf("%d", n_dmethods - first_class_dmethod);
-    n_dmethods++;
+    // Emit each enum item.
+    Language::enumDeclaration(n);
 
-    new_udata = NewHash();
-    Append(dmethods_seq, new_udata);
-    Setattr(dmethods_table, key, new_udata);
+    if (!GetFlag(n, "nonempty")) {
+      // Do not wrap empty enums; the resulting D code would be illegal.
+      Delete(enum_code);
+      return SWIG_NOWRAP;
+    }
 
-    Setattr(new_udata, "method", Copy(class_method));
-    Setattr(new_udata, "class_methodidx", class_methodidx);
-    Setattr(new_udata, "decl", Copy(decl));
-    Setattr(new_udata, "overname", Copy(overloaded_name));
-    Setattr(new_udata, "return_type", Copy(return_type));
-    Setattr(new_udata, "param_list", Copy(param_list));
+    // Finish the enum.
+    if (typemap_lookup_type) {
+      Printv(enum_code,
+	typemapLookup(n, "dcode", typemap_lookup_type, WARN_NONE), // Extra D code
+	"\n}\n", NIL);
+    } else {
+      // Handle anonymous enums.
+      Printv(enum_code, "\n}\n", NIL);
+    }
 
-    Delete(key);
-    return new_udata;
+    Replaceall(enum_code, "$dclassname", symname);
+
+    if (proxy_flag && is_wrapping_class()) {
+      // Enums defined within the C++ class are written into the proxy
+      // class.
+      // TODO: Add support for dimports here.
+      Printv(proxy_class_enums_code, enum_code, NIL);
+    } else {
+      // Global enums are just written to the proxy module.
+      Printv( proxy_dmodule_imports,
+	typemapLookup(n, "dimports", typemap_lookup_type, WARN_NONE), NIL);
+      Printv( proxy_dmodule_code, enum_code, NIL);
+    }
+
+    Delete(enum_code);
+    enum_code = NULL;
+    return SWIG_OK;
   }
 
   /* ---------------------------------------------------------------------------
-   * D::nativeWrapper()
+   * D::enumvalueDeclaration()
    * --------------------------------------------------------------------------- */
-  virtual int nativeWrapper(Node *n) {
-    String *wrapname = Getattr(n, "wrap:name");
+  virtual int enumvalueDeclaration(Node *n) {
+    if (getCurrentClass() && (cplus_mode != PUBLIC))
+      return SWIG_NOWRAP;
 
-    if (!addSymbol(wrapname, n))
+    Swig_require("enumvalueDeclaration", n, "*name", "?value", NIL);
+    String *symname = Getattr(n, "sym:name");
+    String *value = Getattr(n, "value");
+    String *name = Getattr(n, "name");
+    Node *parent = parentNode(n);
+    String *tmpValue;
+
+    // Strange hack from parent method.
+    // RESEARCH: What is this doing?
+    if (value)
+      tmpValue = NewString(value);
+    else
+      tmpValue = NewString(name);
+    // Note that this is used in enumValue() amongst other places
+    Setattr(n, "value", tmpValue);
+
+    {
+      // Wrap (non-anonymous) C/C++ enum with a proper D enum.
+      // Emit the enum item.
+      if (!GetFlag(n, "firstenumitem"))
+	Printf(enum_code, ",\n");
+
+      Printf(enum_code, "  %s", symname);
+
+      // Check for the %dconstvalue feature
+      String *value = Getattr(n, "feature:d:constvalue");
+
+      // Note that in D, enum values must be compile-time constants. Thus,
+      // %dconst(0) (getting the enum values at runtime) is not supported.
+      value = value ? value : Getattr(n, "enumvalue");
+      if (value) {
+	Printf(enum_code, " = %s", value);
+      }
+
+      // Keep track that the currently processed enum has at least one value.
+      SetFlag(parent, "nonempty");
+    }
+
+    Delete(tmpValue);
+    Swig_restore(n);
+    return SWIG_OK;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::memberfunctionHandler()
+   * --------------------------------------------------------------------------- */
+  virtual int memberfunctionHandler(Node *n) {
+    Language::memberfunctionHandler(n);
+
+    if (proxy_flag) {
+      String *overloaded_name = getOverloadedName(n);
+      String *intermediary_function_name = Swig_name_member(proxy_class_name, overloaded_name);
+      Setattr(n, "proxyfuncname", Getattr(n, "sym:name"));
+      Setattr(n, "imfuncname", intermediary_function_name);
+      writeProxyClassFunction(n);
+      Delete(overloaded_name);
+    }
+    return SWIG_OK;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::staticmemberfunctionHandler()
+   * --------------------------------------------------------------------------- */
+  virtual int staticmemberfunctionHandler(Node *n) {
+
+    static_flag = true;
+    Language::staticmemberfunctionHandler(n);
+
+    if (proxy_flag) {
+      String *overloaded_name = getOverloadedName(n);
+      String *intermediary_function_name = Swig_name_member(proxy_class_name, overloaded_name);
+      Setattr(n, "proxyfuncname", Getattr(n, "sym:name"));
+      Setattr(n, "imfuncname", intermediary_function_name);
+      writeProxyClassFunction(n);
+      Delete(overloaded_name);
+    }
+    static_flag = false;
+
+    return SWIG_OK;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::globalvariableHandler()
+   * --------------------------------------------------------------------------- */
+  virtual int globalvariableHandler(Node *n) {
+    variable_name = Getattr(n, "sym:name");
+    global_variable_flag = true;
+    int ret = Language::globalvariableHandler(n);
+    global_variable_flag = false;
+
+    return ret;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::membervariableHandler()
+   * --------------------------------------------------------------------------- */
+  virtual int membervariableHandler(Node *n) {
+    variable_name = Getattr(n, "sym:name");
+    wrapping_member_flag = true;
+    variable_wrapper_flag = true;
+    Language::membervariableHandler(n);
+    wrapping_member_flag = false;
+    variable_wrapper_flag = false;
+
+    return SWIG_OK;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::staticmembervariableHandler()
+   * --------------------------------------------------------------------------- */
+  virtual int staticmembervariableHandler(Node *n) {
+    if ( GetFlag(n, "feature:d:const") != 1 ) {
+      Delattr(n, "value");
+    }
+
+    variable_name = Getattr(n, "sym:name");
+    wrapping_member_flag = true;
+    static_flag = true;
+    Language::staticmembervariableHandler(n);
+    wrapping_member_flag = false;
+    static_flag = false;
+
+    return SWIG_OK;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::memberconstantHandler()
+   * --------------------------------------------------------------------------- */
+  virtual int memberconstantHandler(Node *n) {
+    variable_name = Getattr(n, "sym:name");
+    wrapping_member_flag = true;
+    Language::memberconstantHandler(n);
+    wrapping_member_flag = false;
+    return SWIG_OK;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::constructorHandler()
+   * --------------------------------------------------------------------------- */
+  virtual int constructorHandler(Node *n) {
+    Language::constructorHandler(n);
+
+    // Nothing more to do if we do not generate proxy classes.
+    if (!proxy_flag) {
+      return SWIG_OK;
+    }
+
+    // Wrappers not wanted for some methods where the parameters cannot be overloaded in D.
+    if (Getattr(n, "overload:ignore")) {
+      return SWIG_OK;
+    }
+
+    ParmList *l = Getattr(n, "parms");
+    String *tm;
+    String *proxy_constructor_code = NewString("");
+
+    // Holds code for the constructor helper method generated only when the csin
+    // typemap has code in the pre or post attributes.
+    String *helper_code = NewString("");
+    String *helper_args = NewString("");
+    String *pre_code = NewString("");
+    String *post_code = NewString("");
+    String *terminator_code = NewString("");
+    NewString("");
+
+    String *overloaded_name = getOverloadedName(n);
+    String *mangled_overname = Swig_name_construct(overloaded_name);
+    String *imcall = NewString("");
+
+    const String *methodmods = Getattr(n, "feature:d:methodmodifiers");
+    methodmods = methodmods ? methodmods : (is_public(n) ? public_string : protected_string);
+
+    // Typemaps were attached earlier to the node, get the return type of the
+    // call to the C++ constructor wrapper.
+    const String *wrapper_return_type = Getattr(n, "tmap:imtype");
+
+    String *imtypeout = Getattr(n, "tmap:imtype:out");
+    if (imtypeout) {
+      // The type in the imtype typemap's out attribute overrides the type in
+      // the typemap.
+      wrapper_return_type = imtypeout;
+    }
+
+    Printf(proxy_constructor_code, "\n%s this(", methodmods);
+    Printf(helper_code, "static private %s SwigConstruct%s(",
+      wrapper_return_type, proxy_class_name);
+
+    Printv(imcall, wrap_dmodule_fq_name, ".", mangled_overname, "(", NIL);
+
+    /* Attach the non-standard typemaps to the parameter list */
+    Swig_typemap_attach_parms("in", l, NULL);
+    Swig_typemap_attach_parms("cstype", l, NULL);
+    Swig_typemap_attach_parms("csin", l, NULL);
+
+    emit_mark_varargs(l);
+
+    int gencomma = 0;
+
+    /* Output each parameter */
+    Parm *p = l;
+    for (uint i = 0; p; i++) {
+      if (checkAttribute(p, "varargs:ignore", "1")) {
+	// Skip ignored varargs.
+	p = nextSibling(p);
+	continue;
+      }
+
+      if (checkAttribute(p, "tmap:in:numinputs", "0")) {
+	// Skip ignored parameters.
+	p = Getattr(p, "tmap:in:next");
+	continue;
+      }
+
+      SwigType *pt = Getattr(p, "type");
+      String *param_type = NewString("");
+
+      /* Get the C# parameter type */
+      if ((tm = Getattr(p, "tmap:cstype"))) {
+	replaceClassname(tm, pt);
+	const String *inattributes = Getattr(p, "tmap:cstype:inattributes");
+	Printf(param_type, "%s%s", inattributes ? inattributes : empty_string, tm);
+      } else {
+	Swig_warning(WARN_D_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number,
+	  "No cstype typemap defined for %s\n", SwigType_str(pt, 0));
+      }
+
+      if (gencomma)
+	Printf(imcall, ", ");
+
+      String *arg = makeParameterName(n, p, i, false);
+      String *cshin = 0;
+
+      // Use typemaps to transform type used in C# wrapper function (in proxy class) to type used in PInvoke function (in intermediary class)
+      if ((tm = Getattr(p, "tmap:csin"))) {
+	replaceClassname(tm, pt);
+	Replaceall(tm, "$csinput", arg);
+	String *pre = Getattr(p, "tmap:csin:pre");
+	if (pre) {
+	  replaceClassname(pre, pt);
+	  Replaceall(pre, "$csinput", arg);
+	  if (Len(pre_code) > 0)
+	    Printf(pre_code, "\n");
+	  Printv(pre_code, pre, NIL);
+	}
+	String *post = Getattr(p, "tmap:csin:post");
+	if (post) {
+	  replaceClassname(post, pt);
+	  Replaceall(post, "$csinput", arg);
+	  if (Len(post_code) > 0)
+	    Printf(post_code, "\n");
+	  Printv(post_code, post, NIL);
+	}
+	String *terminator = Getattr(p, "tmap:csin:terminator");
+	if (terminator) {
+	  replaceClassname(terminator, pt);
+	  Replaceall(terminator, "$csinput", arg);
+	  if (Len(terminator_code) > 0)
+	    Insert(terminator_code, 0, "\n");
+	  Insert(terminator_code, 0, terminator);
+	}
+	cshin = Getattr(p, "tmap:csin:cshin");
+	if (cshin)
+	  Replaceall(cshin, "$csinput", arg);
+	Printv(imcall, tm, NIL);
+      } else {
+	Swig_warning(WARN_D_TYPEMAP_CSIN_UNDEF, input_file, line_number,
+	  "No csin typemap defined for %s\n", SwigType_str(pt, 0));
+      }
+
+      /* Add parameter to proxy function */
+      if (gencomma) {
+	Printf(proxy_constructor_code, ", ");
+	Printf(helper_code, ", ");
+	Printf(helper_args, ", ");
+      }
+      Printf(proxy_constructor_code, "%s %s", param_type, arg);
+      Printf(helper_code, "%s %s", param_type, arg);
+      Printf(helper_args, "%s", cshin ? cshin : arg);
+      ++gencomma;
+
+      Delete(cshin);
+      Delete(arg);
+      Delete(param_type);
+      p = Getattr(p, "tmap:in:next");
+    }
+
+    Printf(imcall, ")");
+
+    Printf(proxy_constructor_code, ")");
+    Printf(helper_code, ")");
+
+    // Insert the dconstructor typemap (replacing $directorconnect as needed).
+    Hash *attributes = NewHash();
+    String *construct_tm = Copy( typemapLookup( n, "dconstructor",
+      Getattr( n, "name" ), WARN_D_TYPEMAP_DCONSTRUCTOR_UNDEF, attributes ) );
+    if (construct_tm) {
+      const bool use_director = (parentNode(n) && Swig_directorclass(n));
+      if (!use_director) {
+	Replaceall(construct_tm, "$directorconnect", "");
+      } else {
+	String *connect_attr = Getattr(attributes, "tmap:dconstructor:directorconnect");
+
+	if (connect_attr) {
+	  Replaceall(construct_tm, "$directorconnect", connect_attr);
+	} else {
+	  Swig_warning(WARN_D_NO_DIRECTORCONNECT_ATTR, input_file, line_number,
+	    "\"directorconnect\" attribute missing in %s \"dconstructor\" typemap.\n",
+	    Getattr(n, "name"));
+	  Replaceall(construct_tm, "$directorconnect", "");
+	}
+      }
+
+      Printv(proxy_constructor_code, " ", construct_tm, NIL);
+    }
+
+    substituteExcode(n, proxy_constructor_code, "dconstructor", attributes);
+
+    bool is_pre_code = Len(pre_code) > 0;
+    bool is_post_code = Len(post_code) > 0;
+    bool is_terminator_code = Len(terminator_code) > 0;
+    if (is_pre_code || is_post_code || is_terminator_code) {
+      Printf(helper_code, " {\n");
+      if (is_pre_code) {
+	Printv(helper_code, pre_code, "\n", NIL);
+      }
+      if (is_post_code) {
+	Printf(helper_code, "  try {\n");
+	Printv(helper_code, "    return ", imcall, ";\n", NIL);
+	Printv(helper_code, "  } finally {\n", post_code, "\n    }", NIL);
+      } else {
+	Printv(helper_code, "  return ", imcall, ";", NIL);
+      }
+      if (is_terminator_code) {
+	Printv(helper_code, "\n", terminator_code, NIL);
+      }
+      Printf(helper_code, "\n}\n");
+      String *helper_name = NewStringf("%s.SwigConstruct%s(%s)",
+	proxy_class_name, proxy_class_name, helper_args);
+      Replaceall(proxy_constructor_code, "$imcall", helper_name);
+      Delete(helper_name);
+    } else {
+      Replaceall(proxy_constructor_code, "$imcall", imcall);
+    }
+
+    Printv(proxy_class_code, proxy_constructor_code, "\n", NIL);
+
+    Delete(helper_args);
+    Delete(pre_code);
+    Delete(post_code);
+    Delete(terminator_code);
+    Delete(construct_tm);
+    Delete(attributes);
+    Delete(overloaded_name);
+    Delete(imcall);
+
+    return SWIG_OK;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::destructorHandler()
+   * --------------------------------------------------------------------------- */
+  virtual int destructorHandler(Node *n) {
+    Language::destructorHandler(n);
+    String *symname = Getattr(n, "sym:name");
+
+    if (proxy_flag) {
+      Printv(destructor_call, wrap_dmodule_fq_name, ".", Swig_name_destroy(symname), "(m_swigCObject)", NIL);
+    }
+    return SWIG_OK;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::classHandler()
+   * --------------------------------------------------------------------------- */
+  virtual int classHandler(Node *n) {
+    if (proxy_flag) {
+      proxy_class_name = NewString(Getattr(n, "sym:name"));
+
+      if (!addSymbol(proxy_class_name, n))
+	return SWIG_ERROR;
+
+      Clear(proxy_class_code);
+      Clear(proxy_class_epilogue_code);
+
+      destructor_call = NewString("");
+      proxy_class_enums_code = NewString("");
+    }
+
+    Language::classHandler(n);
+
+    if (proxy_flag) {
+      writeProxyClassAndUpcasts(n);
+      writeDirectorConnectWrapper(n);
+
+      Replaceall(proxy_dmodule_code, "$dclassname", proxy_class_name);
+
+      Delete(proxy_class_name);
+      proxy_class_name = NULL;
+      Delete(destructor_call);
+      destructor_call = NULL;
+      Delete(proxy_class_enums_code);
+      proxy_class_enums_code = NULL;
+    }
+
+    return SWIG_OK;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::constantWrapper()
+   *
+   * Used for wrapping constants declared by #define or %constant and also for
+   * (primitive) static member constants initialised inline.
+   *
+   * If the %dconst(1) feature is used, the C/C++ constant value is used to
+   * initialize a D »const«. If not, a »getter« method is generated which
+   * retrieves the value via a call to the C wrapper. However, if there is a
+   * %dconstvalue specified, it overrides all other settings.
+   * --------------------------------------------------------------------------- */
+  virtual int constantWrapper(Node *n) {
+    String *symname = Getattr(n, "sym:name");
+    if (!addSymbol(symname, n))
       return SWIG_ERROR;
 
-    if (Getattr(n, "type")) {
-      Swig_save("nativeWrapper", n, "name", NIL);
-      Setattr(n, "name", wrapname);
-      native_function_flag = true;
-      functionWrapper(n);
+    // The %dconst feature determines if a D const or a getter function is
+    // created.
+    if (GetFlag(n, "feature:d:const") != 1) {
+      // Default constant handling will work with any type of C constant. It
+      // generates a getter function (which is the same as a read only property
+      // in D) which retrieves the value via by calling the C wrapper.
+      // Note that this is only called for global constants, static member
+      // constants are already handeled in staticmemberfunctionHandler().
+
+      Swig_save("constantWrapper", n, "value", NIL);
+
+      // Add the stripped quotes back in.
+      String *old_value = Getattr(n, "value");
+      SwigType *t = Getattr(n, "type");
+      if (SwigType_type(t) == T_STRING) {
+	Setattr(n, "value", NewStringf("\"%s\"", old_value));
+	Delete(old_value);
+      } else if (SwigType_type(t) == T_CHAR) {
+	Setattr(n, "value", NewStringf("\'%s\'", old_value));
+	Delete(old_value);
+      }
+
+      int result = globalvariableHandler(n);
+
       Swig_restore(n);
-      native_function_flag = false;
-    } else {
-      Printf(stderr, "%s : Line %d. No return type for %%native method %s.\n", input_file, line_number, Getattr(n, "wrap:name"));
+      return result;
     }
+
+    String *constants_code = NewString("");
+    SwigType *t = Getattr(n, "type");
+    ParmList *l = Getattr(n, "parms");
+
+    // Attach the non-standard typemaps to the parameter list.
+    Swig_typemap_attach_parms("cstype", l, NULL);
+
+    // Get D return type.
+    String *return_type = NewString("");
+    String *tm;
+    if ((tm = Swig_typemap_lookup("cstype", n, "", 0))) {
+      String *cstypeout = Getattr(n, "tmap:cstype:out");	// the type in the cstype typemap's out attribute overrides the type in the typemap
+      if (cstypeout)
+	tm = cstypeout;
+      replaceClassname(tm, t);
+      Printf(return_type, "%s", tm);
+    } else {
+      Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(t, 0));
+    }
+
+    const String *itemname = (proxy_flag && wrapping_member_flag) ? variable_name : symname;
+
+    String *attributes = Getattr(n, "feature:d:methodmodifiers");
+    if ( attributes ) {
+      attributes = Copy( attributes );
+    } else {
+      attributes = Copy( is_public( n ) ? public_string : protected_string );
+    }
+
+    if ( static_flag ) {
+      Printv( attributes, " static", NIL );
+    }
+
+    Printf(constants_code, "\n%s const %s %s = ", attributes, return_type, itemname);
+    Delete(attributes);
+
+    // Retrive the override value set via %dconstvalue, if any.
+    String *override_value = Getattr(n, "feature:d:constvalue");
+    if (override_value) {
+      Printf(constants_code, "%s;\n", override_value);
+    } else {
+      // Just take the value from the C definition and hope it compiles in D.
+      String* value = Getattr(n, "wrappedasconstant") ?
+	Getattr(n, "staticmembervariableHandler:value") : Getattr(n, "value");
+
+      // Add the stripped quotes back in.
+      if (SwigType_type(t) == T_STRING) {
+	Printf(constants_code, "\"%s\";\n", value);
+      } else if (SwigType_type(t) == T_CHAR) {
+	Printf(constants_code, "\'%s\';\n", value);
+      } else {
+	Printf(constants_code, "%s;\n", value);
+      }
+    }
+
+    // Emit the generated code to appropriate place.
+    if (proxy_flag && wrapping_member_flag) {
+      Printv(proxy_class_code, constants_code, NIL);
+    } else {
+      Printv(proxy_dmodule_code, constants_code, NIL);
+    }
+
+    // Cleanup.
+    Delete(return_type);
+    Delete(constants_code);
 
     return SWIG_OK;
   }
@@ -979,1825 +1512,26 @@ public:
   }
 
   /* ---------------------------------------------------------------------------
-   * D::globalvariableHandler()
+   * D::nativeWrapper()
    * --------------------------------------------------------------------------- */
-  virtual int globalvariableHandler(Node *n) {
-    variable_name = Getattr(n, "sym:name");
-    global_variable_flag = true;
-    int ret = Language::globalvariableHandler(n);
-    global_variable_flag = false;
+  virtual int nativeWrapper(Node *n) {
+    String *wrapname = Getattr(n, "wrap:name");
 
-    return ret;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::enumDeclaration()
-   *
-   * Wraps C/C++ enums as D enums.
-   * --------------------------------------------------------------------------- */
-  virtual int enumDeclaration(Node *n) {
-    if (ImportMode)
-      return SWIG_OK;
-
-    if (getCurrentClass() && (cplus_mode != PUBLIC))
-      return SWIG_NOWRAP;
-
-    enum_code = NewString("");
-    String *symname = Getattr(n, "sym:name");
-    String *typemap_lookup_type = Getattr(n, "name");
-
-    // Emit the enum declaration.
-    if (typemap_lookup_type) {
-      const String *enummodifiers = typemapLookup(n, "dclassmodifiers", typemap_lookup_type, WARN_D_TYPEMAP_CLASSMOD_UNDEF);
-      Printv(enum_code, enummodifiers, " ", symname, " {\n", NIL);
-    } else {
-      // Handle anonymous enums.
-      Printv(enum_code, "\nenum {\n", NIL);
-    }
-
-    // Emit each enum item.
-    Language::enumDeclaration(n);
-
-    if (!GetFlag(n, "nonempty")) {
-      // Do not wrap empty enums; the resulting D code would be illegal.
-      Delete(enum_code);
-      return SWIG_NOWRAP;
-    }
-
-    // Finish the enum.
-    if (typemap_lookup_type) {
-      Printv(enum_code,
-	typemapLookup(n, "dcode", typemap_lookup_type, WARN_NONE), // Extra D code
-	"\n}\n", NIL);
-    } else {
-      // Handle anonymous enums.
-      Printv(enum_code, "\n}\n", NIL);
-    }
-
-    Replaceall(enum_code, "$dclassname", symname);
-
-    if (proxy_flag && is_wrapping_class()) {
-      // Enums defined within the C++ class are written into the proxy
-      // class.
-      // TODO: Add support for dimports here.
-      Printv(proxy_class_enums_code, enum_code, NIL);
-    } else {
-      // Global enums are just written to the proxy module.
-      Printv( proxy_dmodule_imports,
-	typemapLookup(n, "dimports", typemap_lookup_type, WARN_NONE), NIL);
-      Printv( proxy_dmodule_code, enum_code, NIL);
-    }
-
-    Delete(enum_code);
-    enum_code = NULL;
-    return SWIG_OK;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::enumvalueDeclaration()
-   * --------------------------------------------------------------------------- */
-  virtual int enumvalueDeclaration(Node *n) {
-    if (getCurrentClass() && (cplus_mode != PUBLIC))
-      return SWIG_NOWRAP;
-
-    Swig_require("enumvalueDeclaration", n, "*name", "?value", NIL);
-    String *symname = Getattr(n, "sym:name");
-    String *value = Getattr(n, "value");
-    String *name = Getattr(n, "name");
-    Node *parent = parentNode(n);
-    String *tmpValue;
-
-    // Strange hack from parent method.
-    // RESEARCH: What is this doing?
-    if (value)
-      tmpValue = NewString(value);
-    else
-      tmpValue = NewString(name);
-    // Note that this is used in enumValue() amongst other places
-    Setattr(n, "value", tmpValue);
-
-    {
-      // Wrap (non-anonymous) C/C++ enum with a proper D enum.
-      // Emit the enum item.
-      if (!GetFlag(n, "firstenumitem"))
-	Printf(enum_code, ",\n");
-
-      Printf(enum_code, "  %s", symname);
-
-      // Check for the %dconstvalue feature
-      String *value = Getattr(n, "feature:d:constvalue");
-
-      // Note that in D, enum values must be compile-time constants. Thus,
-      // %dconst(0) (getting the enum values at runtime) is not supported.
-      value = value ? value : Getattr(n, "enumvalue");
-      if (value) {
-	Printf(enum_code, " = %s", value);
-      }
-
-      // Keep track that the currently processed enum has at least one value.
-      SetFlag(parent, "nonempty");
-    }
-
-    Delete(tmpValue);
-    Swig_restore(n);
-    return SWIG_OK;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::constantWrapper()
-   *
-   * Used for wrapping constants declared by #define or %constant and also for
-   * (primitive) static member constants initialised inline.
-   *
-   * If the %dconst(1) feature is used, the C/C++ constant value is used to
-   * initialize a D »const«. If not, a »getter« method is generated which
-   * retrieves the value via a call to the C wrapper. However, if there is a
-   * %dconstvalue specified, it overrides all other settings.
-   * --------------------------------------------------------------------------- */
-  virtual int constantWrapper(Node *n) {
-    String *symname = Getattr(n, "sym:name");
-    if (!addSymbol(symname, n))
+    if (!addSymbol(wrapname, n))
       return SWIG_ERROR;
 
-    // The %dconst feature determines if a D const or a getter function is
-    // created.
-    if (GetFlag(n, "feature:d:const") != 1) {
-      // Default constant handling will work with any type of C constant. It
-      // generates a getter function (which is the same as a read only property
-      // in D) which retrieves the value via by calling the C wrapper.
-      // Note that this is only called for global constants, static member
-      // constants are already handeled in staticmemberfunctionHandler().
-
-      Swig_save("constantWrapper", n, "value", NIL);
-
-      // Add the stripped quotes back in.
-      String *old_value = Getattr(n, "value");
-      SwigType *t = Getattr(n, "type");
-      if (SwigType_type(t) == T_STRING) {
-	Setattr(n, "value", NewStringf("\"%s\"", old_value));
-	Delete(old_value);
-      } else if (SwigType_type(t) == T_CHAR) {
-	Setattr(n, "value", NewStringf("\'%s\'", old_value));
-	Delete(old_value);
-      }
-
-      int result = globalvariableHandler(n);
-
+    if (Getattr(n, "type")) {
+      Swig_save("nativeWrapper", n, "name", NIL);
+      Setattr(n, "name", wrapname);
+      native_function_flag = true;
+      functionWrapper(n);
       Swig_restore(n);
-      return result;
-    }
-
-    String *constants_code = NewString("");
-    SwigType *t = Getattr(n, "type");
-    ParmList *l = Getattr(n, "parms");
-
-    // Attach the non-standard typemaps to the parameter list.
-    Swig_typemap_attach_parms("cstype", l, NULL);
-
-    // Get D return type.
-    String *return_type = NewString("");
-    String *tm;
-    if ((tm = Swig_typemap_lookup("cstype", n, "", 0))) {
-      String *cstypeout = Getattr(n, "tmap:cstype:out");	// the type in the cstype typemap's out attribute overrides the type in the typemap
-      if (cstypeout)
-	tm = cstypeout;
-      replaceClassname(tm, t);
-      Printf(return_type, "%s", tm);
+      native_function_flag = false;
     } else {
-      Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(t, 0));
-    }
-
-    const String *itemname = (proxy_flag && wrapping_member_flag) ? variable_name : symname;
-
-    String *attributes = Getattr(n, "feature:d:methodmodifiers");
-    if ( attributes ) {
-      attributes = Copy( attributes );
-    } else {
-      attributes = Copy( is_public( n ) ? public_string : protected_string );
-    }
-
-    if ( static_flag ) {
-      Printv( attributes, " static", NIL );
-    }
-
-    Printf(constants_code, "\n%s const %s %s = ", attributes, return_type, itemname);
-    Delete(attributes);
-
-    // Retrive the override value set via %dconstvalue, if any.
-    String *override_value = Getattr(n, "feature:d:constvalue");
-    if (override_value) {
-      Printf(constants_code, "%s;\n", override_value);
-    } else {
-      // Just take the value from the C definition and hope it compiles in D.
-      String* value = Getattr(n, "wrappedasconstant") ?
-	Getattr(n, "staticmembervariableHandler:value") : Getattr(n, "value");
-
-      // Add the stripped quotes back in.
-      if (SwigType_type(t) == T_STRING) {
-	Printf(constants_code, "\"%s\";\n", value);
-      } else if (SwigType_type(t) == T_CHAR) {
-	Printf(constants_code, "\'%s\';\n", value);
-      } else {
-	Printf(constants_code, "%s;\n", value);
-      }
-    }
-
-    // Emit the generated code to appropriate place.
-    if (proxy_flag && wrapping_member_flag) {
-      Printv(proxy_class_code, constants_code, NIL);
-    } else {
-      Printv(proxy_dmodule_code, constants_code, NIL);
-    }
-
-    // Cleanup.
-    Delete(return_type);
-    Delete(constants_code);
-
-    return SWIG_OK;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::insertDirective()
-   * --------------------------------------------------------------------------- */
-  virtual int insertDirective(Node *n) {
-    String *code = Getattr(n, "code");
-    Replaceall(code, "$proxydmodule", proxy_dmodule_fq_name);
-    Replaceall(code, "$wrapdmodule", wrap_dmodule_fq_name);
-    Replaceall(code, "$module", proxy_dmodule_name);
-    return Language::insertDirective(n);
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::pragmaDirective()
-   *
-   * Valid Pragmas:
-   * wrapdmodulecode      - text (D code) is copied verbatim to the wrap module
-   * wrapdmoduleimports   - import statements for the wrap module
-   *
-   * proxydmodulecode     - text (D code) is copied verbatim to the proxy module
-   * proxydmoduleimports  - import statements for the proxy module
-   * --------------------------------------------------------------------------- */
-  virtual int pragmaDirective(Node *n) {
-    if (!ImportMode) {
-      String *lang = Getattr(n, "lang");
-      String *code = Getattr(n, "name");
-      String *value = Getattr(n, "value");
-
-      if (Strcmp(lang, "d") == 0) {
-	String *strvalue = NewString(value);
-	Replaceall(strvalue, "\\\"", "\"");
-
-	if (Strcmp(code, "wrapdmodulecode") == 0) {
-	  Printf(wrap_dmodule_code, "%s\n", strvalue);
-	} else if (Strcmp(code, "wrapdmoduleimports") == 0) {
-	  Printv(wrap_dmodule_imports, strvalue, NIL);
-	} else if (Strcmp(code, "proxydmodulecode") == 0) {
-	  Printf(proxy_dmodule_code, "%s\n", strvalue);
-	} else if (Strcmp(code, "proxydmoduleimports") == 0) {
-	  Printv(proxy_dmodule_imports, strvalue, NIL);
-	} else if (Strcmp(code, "wrapperloadercode") == 0) {
-	  Delete(wrapper_loader_code);
-	  wrapper_loader_code = Copy(strvalue);
-	} else if (Strcmp(code, "wrapperloaderbindcommand") == 0) {
-	  Delete(wrapper_loader_bind_command);
-	  wrapper_loader_bind_command = Copy(strvalue);
-	} else {
-	  Printf(stderr, "%s : Line %d. Unrecognized pragma.\n", input_file, line_number);
-	}
-	Delete(strvalue);
-      }
-    }
-    return Language::pragmaDirective(n);
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::writeProxyClassAndUpcasts()
-   * --------------------------------------------------------------------------- */
-  void writeProxyClassAndUpcasts(Node *n) {
-    SwigType *typemap_lookup_type = Getattr(n, "classtypeobj");
-
-    /*
-     * Handle inheriting from D and C++ classes.
-     */
-
-    String *c_classname = SwigType_namestr(Getattr(n, "name"));
-    String *c_baseclass = NULL;
-    String *baseclass = NULL;
-    String *c_baseclassname = NULL;
-
-    // Inheritance from pure D classes.
-    Node *attributes = NewHash();
-    const String *pure_baseclass = typemapLookup(n, "csbase", typemap_lookup_type, WARN_NONE, attributes);
-    bool purebase_replace = GetFlag(attributes, "tmap:csbase:replace") ? true : false;
-    bool purebase_notderived = GetFlag(attributes, "tmap:csbase:notderived") ? true : false;
-    Delete(attributes);
-
-    // C++ inheritance.
-    if (!purebase_replace) {
-      List *baselist = Getattr(n, "bases");
-      if (baselist) {
-        Iterator base = First(baselist);
-        while (base.item && GetFlag(base.item, "feature:ignore")) {
-          base = Next(base);
-        }
-        if (base.item) {
-          c_baseclassname = Getattr(base.item, "name");
-          baseclass = Copy(getProxyName(c_baseclassname));
-          if (baseclass)
-            c_baseclass = SwigType_namestr(Getattr(base.item, "name"));
-          base = Next(base);
-          /* Warn about multiple inheritance for additional base class(es) */
-          while (base.item) {
-            if (GetFlag(base.item, "feature:ignore")) {
-              base = Next(base);
-              continue;
-            }
-            String *proxyclassname = SwigType_str(Getattr(n, "classtypeobj"), 0);
-            String *baseclassname = SwigType_str(Getattr(base.item, "name"), 0);
-            Swig_warning(WARN_D_MULTIPLE_INHERITANCE, input_file, line_number,
-	      "Base %s of class %s ignored: multiple inheritance is not supported in D.\n", baseclassname, proxyclassname);
-            base = Next(base);
-          }
-        }
-      }
-    }
-
-    bool derived = baseclass && getProxyName(c_baseclassname);
-
-    if (derived && purebase_notderived) {
-      pure_baseclass = empty_string;
-    }
-    const String *wanted_base = baseclass ? baseclass : pure_baseclass;
-
-    if (purebase_replace) {
-      wanted_base = pure_baseclass;
-      derived = false;
-      Delete(baseclass);
-      baseclass = NULL;
-      if (purebase_notderived) {
-        Swig_error(input_file, line_number,
-	  "The csbase typemap for proxy %s must contain just one of the 'replace' or 'notderived' attributes.\n",
-	  typemap_lookup_type);
-      }
-    } else if (Len(pure_baseclass) > 0 && Len(baseclass) > 0) {
-      Swig_warning(WARN_D_MULTIPLE_INHERITANCE, input_file, line_number,
-	"Warning for %s proxy: Base class %s ignored. Multiple inheritance is not supported in D. "
-	"Perhaps you need one of the 'replace' or 'notderived' attributes in the csbase typemap?\n", typemap_lookup_type, pure_baseclass);
-    }
-
-    // Add code to do C++ casting to base class (only for classes in an inheritance hierarchy)
-    if (derived) {
-      writeClassUpcast(proxy_class_name, c_classname, c_baseclass);
-    }
-
-    /*
-     * Write any custom import statements to the proxy module header.
-     */
-    const String *imports = typemapLookup(n, "dimports", typemap_lookup_type, WARN_NONE);
-    if (Len(imports) > 0) {
-      String* imports_trimmed = Copy(imports);
-      Chop(imports_trimmed);
-      Printv(proxy_dmodule_imports, imports_trimmed, "\n", NIL);
-      Delete(imports_trimmed);
-    }
-
-    /*
-     * Write the proxy class header.
-     */
-    // Class modifiers.
-    const String *modifiers =
-      typemapLookup(n, "dclassmodifiers", typemap_lookup_type, WARN_D_TYPEMAP_CLASSMOD_UNDEF);
-
-    // User-defined interfaces.
-    const String *interfaces =
-      typemapLookup(n, derived ? "dinterfaces_derived" : "dinterfaces", typemap_lookup_type, WARN_NONE);
-
-    Printv(proxy_dmodule_code,
-      "\n",
-      modifiers,
-      " $dclassname",
-      (*Char(wanted_base) || *Char(interfaces)) ? " : " : "", wanted_base,
-      (*Char(wanted_base) && *Char(interfaces)) ? ", " : "", interfaces, " {",
-      NIL);
-
-    // wanted_base might refer to it, so we didn't delete earlier.
-    Delete(baseclass);
-
-    /*
-     * Write the proxy class body.
-     */
-    String* body = NewString("");
-
-    // Default class body.
-    const String *dbody;
-    if (derived) {
-      dbody = typemapLookup(n, "dbody_derived", typemap_lookup_type, WARN_D_TYPEMAP_DBODY_UNDEF);
-    } else {
-      dbody = typemapLookup(n, "dbody", typemap_lookup_type, WARN_D_TYPEMAP_DBODY_UNDEF);
-    }
-
-    Printv(body, dbody, NIL);
-
-    // Destructor and dispose().
-    // If the C++ destructor is accessible (public), it is wrapped by the
-    // dispose() method which is also called by the emitted D constructor. If it
-    // is not accessible, no D destructor is written and the generated dispose()
-    // method throws an exception.
-    // This enables C++ classes with protected or private destructors to be used
-    // in D as it would be used in C++ (GC finalization is a no-op then because
-    // of the empty D destructor) while preventing usage in »scope« variables.
-    // The method name for the dispose() method is specified in a typemap
-    // attribute called »methodname«.
-    const String *tm = NULL;
-
-    String *dispose_methodname;
-    String *dispose_methodmodifiers;
-    attributes = NewHash();
-    if (derived) {
-      tm = typemapLookup(n, "ddispose_derived", typemap_lookup_type, WARN_NONE, attributes);
-      dispose_methodname = Getattr(attributes, "tmap:ddispose_derived:methodname");
-      dispose_methodmodifiers = Getattr(attributes, "tmap:ddispose_derived:methodmodifiers");
-    } else {
-      tm = typemapLookup(n, "ddispose", typemap_lookup_type, WARN_NONE, attributes);
-      dispose_methodname = Getattr(attributes, "tmap:ddispose:methodname");
-      dispose_methodmodifiers = Getattr(attributes, "tmap:ddispose:methodmodifiers");
-    }
-
-    if (tm && *Char(tm)) {
-      if (!dispose_methodname) {
-	Swig_error(input_file, line_number,
-	  "No methodname attribute defined in the ddispose%s typemap for %s\n",
-	  (derived ? "_derived" : ""), proxy_class_name);
-      }
-      if (!dispose_methodmodifiers) {
-	Swig_error(input_file, line_number,
-	  "No methodmodifiers attribute defined in ddispose%s typemap for %s.\n",
-	  (derived ? "_derived" : ""), proxy_class_name);
-      }
-    }
-
-    if (tm) {
-      // Write the destructor if the C++ one is accessible.
-      if (*Char(destructor_call)) {
-	Printv(body,
-	  typemapLookup(n, "ddestructor", typemap_lookup_type, WARN_NONE), NIL);
-      }
-
-      // Write the dispose() method.
-      String *dispose_code = NewString("");
-      Printv(dispose_code, tm, NIL);
-
-      if (*Char(destructor_call)) {
-	Replaceall(dispose_code, "$imcall", destructor_call);
-      } else {
-	Replaceall(dispose_code, "$imcall", "throw new Exception(\"C++ destructor does not have public access\")");
-      }
-
-      if (*Char(dispose_code)) {
-	Printv(body, "\n", dispose_methodmodifiers,
-	  (derived ? " override" : ""), " void ", dispose_methodname, "() ",
-	  dispose_code, "\n", NIL);
-      }
-    }
-
-    if (Swig_directorclass(n)) {
-      // If directors are enabled for the current class, generate the
-      // director connect helper function which is called from the constructor
-      // and write it to the class body.
-      writeDirectorConnectProxy();
-    }
-
-    // Write all constants and enumerations first to prevent forward reference
-    // errors.
-    Printv(body, proxy_class_enums_code, NIL);
-
-    // Write the code generated in other methods to the class body.
-    Printv(body, proxy_class_code, NIL);
-
-    // Append extra user D code to the class body.
-    Printv(body,
-      typemapLookup(n, "dcode", typemap_lookup_type, WARN_NONE), "\n", NIL);
-
-    // Write the class body and the curly bracket closing the class definition
-    // to the proxy module.
-    indentCode(body);
-    Printv(proxy_dmodule_code, body, "\n}\n", NIL);
-    Delete(body);
-
-    // Write the epilogue code if there is any.
-    Printv(proxy_dmodule_code, proxy_class_epilogue_code, NIL);
-  }
-
-
-  /* ---------------------------------------------------------------------------
-   * D::writeClassUpcast()
-   * --------------------------------------------------------------------------- */
-  void writeClassUpcast(const String* d_class_name, const String* c_class_name,
-    const String* c_base_name) {
-
-    String *upcast_name = NewString("");
-    Printv(upcast_name, d_class_name, "Upcast", NIL);
-    String *upcast_wrapper_name = Swig_name_wrapper(upcast_name);
-
-    writeWrapDModuleFunction(upcast_name, "void*", "(void* objectRef)",
-      upcast_wrapper_name);
-
-    Printv(upcasts_code,
-      "SWIGEXPORT $cbaseclass * SWIGSTDCALL ", upcast_wrapper_name,
-      "($cclass *objectRef) {\n", "    return ($cbaseclass *)objectRef;\n" "}\n",
-      "\n", NIL);
-
-    Replaceall(upcasts_code, "$cclass", c_class_name);
-    Replaceall(upcasts_code, "$cbaseclass", c_base_name);
-
-    Delete(upcast_name);
-    Delete(upcast_wrapper_name);
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::classHandler()
-   * --------------------------------------------------------------------------- */
-  virtual int classHandler(Node *n) {
-    if (proxy_flag) {
-      proxy_class_name = NewString(Getattr(n, "sym:name"));
-
-      if (!addSymbol(proxy_class_name, n))
-	return SWIG_ERROR;
-
-      Clear(proxy_class_code);
-      Clear(proxy_class_epilogue_code);
-
-      destructor_call = NewString("");
-      proxy_class_enums_code = NewString("");
-    }
-
-    Language::classHandler(n);
-
-    if (proxy_flag) {
-      writeProxyClassAndUpcasts(n);
-      writeDirectorConnectWrapper(n);
-
-      Replaceall(proxy_dmodule_code, "$dclassname", proxy_class_name);
-
-      Delete(proxy_class_name);
-      proxy_class_name = NULL;
-      Delete(destructor_call);
-      destructor_call = NULL;
-      Delete(proxy_class_enums_code);
-      proxy_class_enums_code = NULL;
+      Printf(stderr, "%s : Line %d. No return type for %%native method %s.\n", input_file, line_number, Getattr(n, "wrap:name"));
     }
 
     return SWIG_OK;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::memberfunctionHandler()
-   * --------------------------------------------------------------------------- */
-  virtual int memberfunctionHandler(Node *n) {
-    Language::memberfunctionHandler(n);
-
-    if (proxy_flag) {
-      String *overloaded_name = getOverloadedName(n);
-      String *intermediary_function_name = Swig_name_member(proxy_class_name, overloaded_name);
-      Setattr(n, "proxyfuncname", Getattr(n, "sym:name"));
-      Setattr(n, "imfuncname", intermediary_function_name);
-      writeProxyClassFunction(n);
-      Delete(overloaded_name);
-    }
-    return SWIG_OK;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::staticmemberfunctionHandler()
-   * --------------------------------------------------------------------------- */
-  virtual int staticmemberfunctionHandler(Node *n) {
-
-    static_flag = true;
-    Language::staticmemberfunctionHandler(n);
-
-    if (proxy_flag) {
-      String *overloaded_name = getOverloadedName(n);
-      String *intermediary_function_name = Swig_name_member(proxy_class_name, overloaded_name);
-      Setattr(n, "proxyfuncname", Getattr(n, "sym:name"));
-      Setattr(n, "imfuncname", intermediary_function_name);
-      writeProxyClassFunction(n);
-      Delete(overloaded_name);
-    }
-    static_flag = false;
-
-    return SWIG_OK;
-  }
-
-
-  /* ---------------------------------------------------------------------------
-   * D::writeProxyClassFunction()
-   *
-   * Creates a D proxy function for a C++ function in the wrapped class. Used
-   * for both static and non-static C++ class functions.
-   *
-   * The Node must contain two extra attributes.
-   *  - "proxyfuncname": The name of the D proxy function.
-   *  - "imfuncname": The corresponding function in the wrap D module.
-   * --------------------------------------------------------------------------- */
-  void writeProxyClassFunction(Node *n) {
-    SwigType *t = Getattr(n, "type");
-    ParmList *l = Getattr(n, "parms");
-    String *intermediary_function_name = Getattr(n, "imfuncname");
-    String *proxy_function_name = Getattr(n, "proxyfuncname");
-    String *tm;
-    Parm *p;
-    int i;
-    String *imcall = NewString("");
-    String *return_type = NewString("");
-    String *function_code = NewString("");
-    bool setter_flag = false;
-    String *pre_code = NewString("");
-    String *post_code = NewString("");
-    String *terminator_code = NewString("");
-
-    // RESEARCH: We shouldn't even get here then?
-    if (!proxy_flag)
-      return;
-
-    // Wrappers not wanted for some methods where the parameters cannot be overloaded in C#
-    if (Getattr(n, "overload:ignore"))
-      return;
-
-    // Don't generate proxy method for additional explicitcall method used in directors
-    if (GetFlag(n, "explicitcall"))
-      return;
-
-    // RESEARCH: What is this good for?
-    if (l) {
-      if (SwigType_type(Getattr(l, "type")) == T_VOID) {
-	l = nextSibling(l);
-      }
-    }
-
-    /* Attach the non-standard typemaps to the parameter list */
-    Swig_typemap_attach_parms("in", l, NULL);
-    Swig_typemap_attach_parms("cstype", l, NULL);
-    Swig_typemap_attach_parms("csin", l, NULL);
-
-    /* Get return types */
-    if ((tm = Swig_typemap_lookup("cstype", n, "", 0))) {
-      // the type in the cstype typemap's out attribute overrides the type in the typemap
-      String *cstypeout = Getattr(n, "tmap:cstype:out");
-      if (cstypeout)
-	tm = cstypeout;
-      replaceClassname(tm, t);
-      Printf(return_type, "%s", tm);
-    } else {
-      Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(t, 0));
-    }
-
-    if (wrapping_member_flag) {
-      // Check if this is a setter method for a public member.
-      setter_flag = (Cmp(Getattr(n, "sym:name"),
-	Swig_name_set(Swig_name_member(proxy_class_name, variable_name))) == 0);
-    }
-
-    // Write function modifiers.
-    {
-      String *modifiers;
-
-      const String *mods_override = Getattr(n, "feature:d:methodmodifiers");
-      if (mods_override) {
-	modifiers = Copy(mods_override);
-      } else {
-	modifiers = Copy(is_public(n) ? public_string : protected_string);
-
-	if (Getattr(n, "override")) {
-	  Printf(modifiers, " override");
-	}
-      }
-
-      if (is_smart_pointer()) {
-	// Smart pointer classes do not mirror the inheritance hierarchy of the
-	// underlying pointer type, so no override required.
-	Replaceall(modifiers, "override", "");
-      }
-
-      Chop(modifiers);
-
-      if (static_flag) {
-	Printf(modifiers, " static");
-      }
-
-      Printf(function_code, "%s ", modifiers);
-      Delete(modifiers);
-    }
-
-    // Complete the function declaration up to the parameter list.
-    Printf(function_code, "%s %s(", return_type, proxy_function_name);
-
-    // Write the wrapper function call up to the parameter list.
-    Printv(imcall, wrap_dmodule_fq_name, ".$imfuncname(", NIL);
-    if (!static_flag) {
-      Printf(imcall, "m_swigCObject");
-    }
-
-    // Write the parameter list for the proxy function declaration and the
-    // wrapper function call.
-    emit_mark_varargs(l);
-    int gencomma = !static_flag;
-    for (i = 0, p = l; p; i++) {
-      // Ignored varargs.
-      if (checkAttribute(p, "varargs:ignore", "1")) {
-	p = nextSibling(p);
-	continue;
-      }
-
-      // Ignored parameters.
-      if (checkAttribute(p, "tmap:in:numinputs", "0")) {
-	p = Getattr(p, "tmap:in:next");
-	continue;
-      }
-
-      // Ignore the 'this' argument for variable wrappers.
-      if (!(variable_wrapper_flag && i == 0)) {
-	String *param_name = makeParameterName(n, p, i, setter_flag);
-	SwigType *pt = Getattr(p, "type");
-
-	// Write the wrapper function call argument.
-	{
-	  if (gencomma) {
-	    Printf(imcall, ", ");
-	  }
-
-	  if ((tm = Getattr(p, "tmap:csin"))) {
-	    replaceClassname(tm, pt);
-	    Replaceall(tm, "$csinput", param_name);
-	    String *pre = Getattr(p, "tmap:csin:pre");
-	    if (pre) {
-	      replaceClassname(pre, pt);
-	      Replaceall(pre, "$csinput", param_name);
-	      if (Len(pre_code) > 0)
-		Printf(pre_code, "\n");
-	      Printv(pre_code, pre, NIL);
-	    }
-	    String *post = Getattr(p, "tmap:csin:post");
-	    if (post) {
-	      replaceClassname(post, pt);
-	      Replaceall(post, "$csinput", param_name);
-	      if (Len(post_code) > 0)
-		Printf(post_code, "\n");
-	      Printv(post_code, post, NIL);
-	    }
-	    String *terminator = Getattr(p, "tmap:csin:terminator");
-	    if (terminator) {
-	      replaceClassname(terminator, pt);
-	      Replaceall(terminator, "$csinput", param_name);
-	      if (Len(terminator_code) > 0)
-		Insert(terminator_code, 0, "\n");
-	      Insert(terminator_code, 0, terminator);
-	    }
-	    Printv(imcall, tm, NIL);
-	  } else {
-	    Swig_warning(WARN_D_TYPEMAP_CSIN_UNDEF, input_file, line_number,
-	      "No csin typemap defined for %s\n", SwigType_str(pt, 0));
-	  }
-	}
-
-	// Write the D proxy function parameter.
-	{
-	  String *proxy_type = NewString("");
-
-	  if ((tm = Getattr(p, "tmap:cstype"))) {
-	    replaceClassname(tm, pt);
-	    const String *inattributes = Getattr(p, "tmap:cstype:inattributes");
-	    Printf(proxy_type, "%s%s", inattributes ? inattributes : empty_string, tm);
-	  } else {
-	    Swig_warning(WARN_D_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number,
-	      "No cstype typemap defined for %s\n", SwigType_str(pt, 0));
-	  }
-
-	  if (gencomma >= 2)
-	    Printf(function_code, ", ");
-	  gencomma = 2;
-	  Printf(function_code, "%s %s", proxy_type, param_name);
-
-	  Delete(proxy_type);
-	}
-
-	Delete(param_name);
-      }
-      p = Getattr(p, "tmap:in:next");
-    }
-
-    Printf(imcall, ")");
-    Printf(function_code, ") ");
-
-    // Lookup the code used to convert the wrapper return value to the proxy
-    // function return type.
-    if ((tm = Swig_typemap_lookup("csout", n, "", 0))) {
-      excodeSubstitute(n, tm, "csout", n);
-      bool is_pre_code = Len(pre_code) > 0;
-      bool is_post_code = Len(post_code) > 0;
-      bool is_terminator_code = Len(terminator_code) > 0;
-      if (is_pre_code || is_post_code || is_terminator_code) {
-        if (is_post_code) {
-          Insert(tm, 0, "\n  try ");
-          Printv(tm, " finally {\n", post_code, "\n  }", NIL);
-        } else {
-          Insert(tm, 0, "\n  ");
-        }
-        if (is_pre_code) {
-          Insert(tm, 0, pre_code);
-          Insert(tm, 0, "\n");
-        }
-        if (is_terminator_code) {
-          Printv(tm, "\n", terminator_code, NIL);
-        }
-        Insert(tm, 0, "{");
-	Printv(tm, "}", NIL);
-      }
-      if (GetFlag(n, "feature:new"))
-	Replaceall(tm, "$owner", "true");
-      else
-	Replaceall(tm, "$owner", "false");
-      replaceClassname(tm, t);
-
-      // For director methods: generate code to selectively make a normal
-      // polymorphic call or an explicit method call. Needed to prevent infinite
-      // recursion when calling director methods.
-      Node *explicit_n = Getattr(n, "explicitcallnode");
-      if (explicit_n) {
-	String *ex_overloaded_name = getOverloadedName(explicit_n);
-	String *ex_intermediary_function_name = Swig_name_member(proxy_class_name, ex_overloaded_name);
-
-	String *ex_imcall = Copy(imcall);
-	Replaceall(ex_imcall, "$imfuncname", ex_intermediary_function_name);
-	Replaceall(imcall, "$imfuncname", intermediary_function_name);
-
-	String *excode = NewString("");
-	if (!Cmp(return_type, "void"))
-	  Printf(excode, "if (this.classinfo == %s.classinfo) %s; else %s", proxy_class_name, imcall, ex_imcall);
-	else
-	  Printf(excode, "((this.classinfo == %s.classinfo) ? %s : %s)", proxy_class_name, imcall, ex_imcall);
-
-	Clear(imcall);
-	Printv(imcall, excode, NIL);
-	Delete(ex_overloaded_name);
-	Delete(excode);
-      } else {
-	Replaceall(imcall, "$imfuncname", intermediary_function_name);
-      }
-      Replaceall(tm, "$imcall", imcall);
-    } else {
-      Swig_warning(WARN_D_TYPEMAP_CSOUT_UNDEF, input_file, line_number,
-	"No csout typemap defined for %s\n", SwigType_str(t, 0));
-    }
-
-    // The whole function body is now in stored tm (if there was a matching type
-    // map, of course), so simply append it to the code buffer. The braces are
-    // included in the typemap.
-    Printv(function_code, tm, NIL);
-
-    // Write function code buffer to the class code.
-    Printv(proxy_class_code, "\n", function_code, "\n", NIL);
-
-    Delete(pre_code);
-    Delete(post_code);
-    Delete(terminator_code);
-    Delete(function_code);
-    Delete(return_type);
-    Delete(imcall);
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::constructorHandler()
-   * --------------------------------------------------------------------------- */
-  virtual int constructorHandler(Node *n) {
-    Language::constructorHandler(n);
-
-    // Nothing more to do if we do not generate proxy classes.
-    if (!proxy_flag) {
-      return SWIG_OK;
-    }
-
-    // Wrappers not wanted for some methods where the parameters cannot be overloaded in D.
-    if (Getattr(n, "overload:ignore")) {
-      return SWIG_OK;
-    }
-
-    ParmList *l = Getattr(n, "parms");
-    String *tm;
-    String *proxy_constructor_code = NewString("");
-
-    // Holds code for the constructor helper method generated only when the csin
-    // typemap has code in the pre or post attributes.
-    String *helper_code = NewString("");
-    String *helper_args = NewString("");
-    String *pre_code = NewString("");
-    String *post_code = NewString("");
-    String *terminator_code = NewString("");
-    NewString("");
-
-    String *overloaded_name = getOverloadedName(n);
-    String *mangled_overname = Swig_name_construct(overloaded_name);
-    String *imcall = NewString("");
-
-    const String *methodmods = Getattr(n, "feature:d:methodmodifiers");
-    methodmods = methodmods ? methodmods : (is_public(n) ? public_string : protected_string);
-
-    // Typemaps were attached earlier to the node, get the return type of the
-    // call to the C++ constructor wrapper.
-    const String *wrapper_return_type = Getattr(n, "tmap:imtype");
-
-    String *imtypeout = Getattr(n, "tmap:imtype:out");
-    if (imtypeout) {
-      // The type in the imtype typemap's out attribute overrides the type in 
-      // the typemap.
-      wrapper_return_type = imtypeout;
-    }
-
-    Printf(proxy_constructor_code, "\n%s this(", methodmods);
-    Printf(helper_code, "static private %s SwigConstruct%s(",
-      wrapper_return_type, proxy_class_name);
-
-    Printv(imcall, wrap_dmodule_fq_name, ".", mangled_overname, "(", NIL);
-
-    /* Attach the non-standard typemaps to the parameter list */
-    Swig_typemap_attach_parms("in", l, NULL);
-    Swig_typemap_attach_parms("cstype", l, NULL);
-    Swig_typemap_attach_parms("csin", l, NULL);
-
-    emit_mark_varargs(l);
-
-    int gencomma = 0;
-
-    /* Output each parameter */
-    Parm *p = l;
-    for (uint i = 0; p; i++) {
-      if (checkAttribute(p, "varargs:ignore", "1")) {
-	// Skip ignored varargs.
-	p = nextSibling(p);
-	continue;
-      }
-
-      if (checkAttribute(p, "tmap:in:numinputs", "0")) {
-	// Skip ignored parameters.
-	p = Getattr(p, "tmap:in:next");
-	continue;
-      }
-
-      SwigType *pt = Getattr(p, "type");
-      String *param_type = NewString("");
-
-      /* Get the C# parameter type */
-      if ((tm = Getattr(p, "tmap:cstype"))) {
-	replaceClassname(tm, pt);
-	const String *inattributes = Getattr(p, "tmap:cstype:inattributes");
-	Printf(param_type, "%s%s", inattributes ? inattributes : empty_string, tm);
-      } else {
-	Swig_warning(WARN_D_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number,
-	  "No cstype typemap defined for %s\n", SwigType_str(pt, 0));
-      }
-
-      if (gencomma)
-	Printf(imcall, ", ");
-
-      String *arg = makeParameterName(n, p, i, false);
-      String *cshin = 0;
-
-      // Use typemaps to transform type used in C# wrapper function (in proxy class) to type used in PInvoke function (in intermediary class)
-      if ((tm = Getattr(p, "tmap:csin"))) {
-	replaceClassname(tm, pt);
-	Replaceall(tm, "$csinput", arg);
-	String *pre = Getattr(p, "tmap:csin:pre");
-	if (pre) {
-	  replaceClassname(pre, pt);
-	  Replaceall(pre, "$csinput", arg);
-	  if (Len(pre_code) > 0)
-	    Printf(pre_code, "\n");
-	  Printv(pre_code, pre, NIL);
-	}
-	String *post = Getattr(p, "tmap:csin:post");
-	if (post) {
-	  replaceClassname(post, pt);
-	  Replaceall(post, "$csinput", arg);
-	  if (Len(post_code) > 0)
-	    Printf(post_code, "\n");
-	  Printv(post_code, post, NIL);
-	}
-	String *terminator = Getattr(p, "tmap:csin:terminator");
-	if (terminator) {
-	  replaceClassname(terminator, pt);
-	  Replaceall(terminator, "$csinput", arg);
-	  if (Len(terminator_code) > 0)
-	    Insert(terminator_code, 0, "\n");
-	  Insert(terminator_code, 0, terminator);
-	}
-	cshin = Getattr(p, "tmap:csin:cshin");
-	if (cshin)
-	  Replaceall(cshin, "$csinput", arg);
-	Printv(imcall, tm, NIL);
-      } else {
-	Swig_warning(WARN_D_TYPEMAP_CSIN_UNDEF, input_file, line_number,
-	  "No csin typemap defined for %s\n", SwigType_str(pt, 0));
-      }
-
-      /* Add parameter to proxy function */
-      if (gencomma) {
-	Printf(proxy_constructor_code, ", ");
-	Printf(helper_code, ", ");
-	Printf(helper_args, ", ");
-      }
-      Printf(proxy_constructor_code, "%s %s", param_type, arg);
-      Printf(helper_code, "%s %s", param_type, arg);
-      Printf(helper_args, "%s", cshin ? cshin : arg);
-      ++gencomma;
-
-      Delete(cshin);
-      Delete(arg);
-      Delete(param_type);
-      p = Getattr(p, "tmap:in:next");
-    }
-
-    Printf(imcall, ")");
-
-    Printf(proxy_constructor_code, ")");
-    Printf(helper_code, ")");
-
-    // Insert the dconstructor typemap (replacing $directorconnect as needed).
-    Hash *attributes = NewHash();
-    String *construct_tm = Copy( typemapLookup( n, "dconstructor",
-      Getattr( n, "name" ), WARN_D_TYPEMAP_DCONSTRUCTOR_UNDEF, attributes ) );
-    if (construct_tm) {
-      const bool use_director = (parentNode(n) && Swig_directorclass(n));
-      if (!use_director) {
-	Replaceall(construct_tm, "$directorconnect", "");
-      } else {
-	String *connect_attr = Getattr(attributes, "tmap:dconstructor:directorconnect");
-
-	if (connect_attr) {
-	  Replaceall(construct_tm, "$directorconnect", connect_attr);
-	} else {
-	  Swig_warning(WARN_D_NO_DIRECTORCONNECT_ATTR, input_file, line_number,
-	    "\"directorconnect\" attribute missing in %s \"dconstructor\" typemap.\n",
-	    Getattr(n, "name"));
-	  Replaceall(construct_tm, "$directorconnect", "");
-	}
-      }
-
-      Printv(proxy_constructor_code, " ", construct_tm, NIL);
-    }
-
-    excodeSubstitute(n, proxy_constructor_code, "dconstructor", attributes);
-
-    bool is_pre_code = Len(pre_code) > 0;
-    bool is_post_code = Len(post_code) > 0;
-    bool is_terminator_code = Len(terminator_code) > 0;
-    if (is_pre_code || is_post_code || is_terminator_code) {
-      Printf(helper_code, " {\n");
-      if (is_pre_code) {
-	Printv(helper_code, pre_code, "\n", NIL);
-      }
-      if (is_post_code) {
-	Printf(helper_code, "  try {\n");
-	Printv(helper_code, "    return ", imcall, ";\n", NIL);
-	Printv(helper_code, "  } finally {\n", post_code, "\n    }", NIL);
-      } else {
-	Printv(helper_code, "  return ", imcall, ";", NIL);
-      }
-      if (is_terminator_code) {
-	Printv(helper_code, "\n", terminator_code, NIL);
-      }
-      Printf(helper_code, "\n}\n");
-      String *helper_name = NewStringf("%s.SwigConstruct%s(%s)",
-	proxy_class_name, proxy_class_name, helper_args);
-      Replaceall(proxy_constructor_code, "$imcall", helper_name);
-      Delete(helper_name);
-    } else {
-      Replaceall(proxy_constructor_code, "$imcall", imcall);
-    }
-
-    Printv(proxy_class_code, proxy_constructor_code, "\n", NIL);
-
-    Delete(helper_args);
-    Delete(pre_code);
-    Delete(post_code);
-    Delete(terminator_code);
-    Delete(construct_tm);
-    Delete(attributes);
-    Delete(overloaded_name);
-    Delete(imcall);
-
-    return SWIG_OK;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::destructorHandler()
-   * --------------------------------------------------------------------------- */
-  virtual int destructorHandler(Node *n) {
-    Language::destructorHandler(n);
-    String *symname = Getattr(n, "sym:name");
-
-    if (proxy_flag) {
-      Printv(destructor_call, wrap_dmodule_fq_name, ".", Swig_name_destroy(symname), "(m_swigCObject)", NIL);
-    }
-    return SWIG_OK;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::membervariableHandler()
-   * --------------------------------------------------------------------------- */
-  virtual int membervariableHandler(Node *n) {
-    variable_name = Getattr(n, "sym:name");
-    wrapping_member_flag = true;
-    variable_wrapper_flag = true;
-    Language::membervariableHandler(n);
-    wrapping_member_flag = false;
-    variable_wrapper_flag = false;
-
-    return SWIG_OK;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::staticmembervariableHandler()
-   * --------------------------------------------------------------------------- */
-  virtual int staticmembervariableHandler(Node *n) {
-    if ( GetFlag(n, "feature:d:const") != 1 ) {
-      Delattr(n, "value");
-    }
-
-    variable_name = Getattr(n, "sym:name");
-    wrapping_member_flag = true;
-    static_flag = true;
-    Language::staticmembervariableHandler(n);
-    wrapping_member_flag = false;
-    static_flag = false;
-
-    return SWIG_OK;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::memberconstantHandler()
-   * --------------------------------------------------------------------------- */
-  virtual int memberconstantHandler(Node *n) {
-    variable_name = Getattr(n, "sym:name");
-    wrapping_member_flag = true;
-    Language::memberconstantHandler(n);
-    wrapping_member_flag = false;
-    return SWIG_OK;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::getOverloadedName()
-   * --------------------------------------------------------------------------- */
-  String *getOverloadedName(Node *n) {
-    /* A C# HandleRef is used for all classes in the SWIG intermediary class.
-     * The intermediary class methods are thus mangled when overloaded to give
-     * a unique name. */
-    String *overloaded_name = NewStringf("%s", Getattr(n, "sym:name"));
-
-    if (Getattr(n, "sym:overloaded")) {
-      Printv(overloaded_name, Getattr(n, "sym:overname"), NIL);
-    }
-
-    return overloaded_name;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::writeWrapDModuleFunction()
-   *
-   * Writes a function declaration for the given (C) wrapper function to the
-   * wrap D module.
-   *
-   * d_name - The name the function in the D wrap module will get.
-   * wrapper_function_name - The name of the exported function in the C wrapper
-   *                         (usually d_name prefixed by »D_«).
-   * --------------------------------------------------------------------------- */
-  void writeWrapDModuleFunction( const_String_or_char_ptr d_name,
-    const_String_or_char_ptr return_type, const_String_or_char_ptr parameters,
-    const_String_or_char_ptr wrapper_function_name ) {
-
-    // TODO: Add support for static linking here.
-    Printf(wrap_dmodule_code, "extern(C) %s function%s %s;\n", return_type,
-      parameters, d_name);
-    Printv(wrapper_loader_bind_code, wrapper_loader_bind_command, NIL);
-    Replaceall(wrapper_loader_bind_code, "$function", d_name);
-    Replaceall(wrapper_loader_bind_code, "$symbol", wrapper_function_name);
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::writeProxyDModuleFunction()
-   * --------------------------------------------------------------------------- */
-  void writeProxyDModuleFunction(Node *n) {
-    SwigType *t = Getattr(n, "type");
-    ParmList *l = Getattr(n, "parms");
-    String *tm;
-    Parm *p;
-    int i;
-    String *imcall = NewString("");
-    String *return_type = NewString("");
-    String *function_code = NewString("");
-    int num_arguments = 0;
-    int num_required = 0;
-    String *overloaded_name = getOverloadedName(n);
-    String *func_name = NULL;
-    String *pre_code = NewString("");
-    String *post_code = NewString("");
-    String *terminator_code = NewString("");
-
-    // RESEARCH: What is this good for?
-    if (l) {
-      if (SwigType_type(Getattr(l, "type")) == T_VOID) {
-	l = nextSibling(l);
-      }
-    }
-
-    /* Attach the non-standard typemaps to the parameter list */
-    Swig_typemap_attach_parms("cstype", l, NULL);
-    Swig_typemap_attach_parms("csin", l, NULL);
-
-    /* Get return types */
-    if ((tm = Swig_typemap_lookup("cstype", n, "", 0))) {
-      String *cstypeout = Getattr(n, "tmap:cstype:out");	// the type in the cstype typemap's out attribute overrides the type in the typemap
-      if (cstypeout)
-	tm = cstypeout;
-      replaceClassname(tm, t);
-      Printf(return_type, "%s", tm);
-    } else {
-      Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(t, 0));
-    }
-
-    /* Change function name for global variables */
-    if (proxy_flag && global_variable_flag) {
-      // RESEARCH: Is the Copy() needed here?
-      func_name = Copy(variable_name);
-    } else {
-      func_name = Copy(Getattr(n, "sym:name"));
-    }
-
-    /* Start generating the function */
-    const String *outattributes = Getattr(n, "tmap:cstype:outattributes");
-    if (outattributes)
-      Printf(function_code, "  %s\n", outattributes);
-
-    const String *methodmods = Getattr(n, "feature:d:methodmodifiers");
-    // TODO: Check if is_public(n) could possibly make any sense here
-    // (private global functions would be useless anyway?).
-    methodmods = methodmods ? methodmods : empty_string;
-
-    Printf(function_code, "\n%s%s %s(", methodmods, return_type, func_name);
-    Printv(imcall, wrap_dmodule_fq_name, ".", overloaded_name, "(", NIL);
-
-    /* Get number of required and total arguments */
-    num_arguments = emit_num_arguments(l);
-    num_required = emit_num_required(l);
-
-    int gencomma = 0;
-
-    /* Output each parameter */
-    for (i = 0, p = l; i < num_arguments; i++) {
-
-      /* Ignored parameters */
-      while (checkAttribute(p, "tmap:in:numinputs", "0")) {
-	p = Getattr(p, "tmap:in:next");
-      }
-
-      SwigType *pt = Getattr(p, "type");
-      String *param_type = NewString("");
-
-      /* Get the C# parameter type */
-      if ((tm = Getattr(p, "tmap:cstype"))) {
-	replaceClassname(tm, pt);
-	const String *inattributes = Getattr(p, "tmap:cstype:inattributes");
-	Printf(param_type, "%s%s", inattributes ? inattributes : empty_string, tm);
-      } else {
-	Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(pt, 0));
-      }
-
-      if (gencomma)
-	Printf(imcall, ", ");
-
-      const bool generating_setter = global_variable_flag || wrapping_member_flag;
-      String *arg = makeParameterName(n, p, i, generating_setter);
-
-      // Use typemaps to transform type used in C# wrapper function (in proxy class) to type used in PInvoke function (in intermediary class)
-      if ((tm = Getattr(p, "tmap:csin"))) {
-	replaceClassname(tm, pt);
-	Replaceall(tm, "$csinput", arg);
-	String *pre = Getattr(p, "tmap:csin:pre");
-	if (pre) {
-	  replaceClassname(pre, pt);
-	  Replaceall(pre, "$csinput", arg);
-          if (Len(pre_code) > 0)
-            Printf(pre_code, "\n");
-	  Printv(pre_code, pre, NIL);
-	}
-	String *post = Getattr(p, "tmap:csin:post");
-	if (post) {
-	  replaceClassname(post, pt);
-	  Replaceall(post, "$csinput", arg);
-          if (Len(post_code) > 0)
-            Printf(post_code, "\n");
-	  Printv(post_code, post, NIL);
-	}
-        String *terminator = Getattr(p, "tmap:csin:terminator");
-        if (terminator) {
-          replaceClassname(terminator, pt);
-          Replaceall(terminator, "$csinput", arg);
-          if (Len(terminator_code) > 0)
-            Insert(terminator_code, 0, "\n");
-          Insert(terminator_code, 0, terminator);
-        }
-	Printv(imcall, tm, NIL);
-      } else {
-	Swig_warning(WARN_CSHARP_TYPEMAP_CSIN_UNDEF, input_file, line_number, "No csin typemap defined for %s\n", SwigType_str(pt, 0));
-      }
-
-      /* Add parameter to module class function */
-      if (gencomma >= 2)
-	Printf(function_code, ", ");
-      gencomma = 2;
-      Printf(function_code, "%s %s", param_type, arg);
-
-      p = Getattr(p, "tmap:in:next");
-      Delete(arg);
-      Delete(param_type);
-    }
-
-    Printf(imcall, ")");
-    Printf(function_code, ")");
-
-    // Transform return type used in PInvoke function (in intermediary class) to type used in C# wrapper function (in module class)
-    if ((tm = Swig_typemap_lookup("csout", n, "", 0))) {
-      excodeSubstitute(n, tm, "csout", n);
-      bool is_pre_code = Len(pre_code) > 0;
-      bool is_post_code = Len(post_code) > 0;
-      bool is_terminator_code = Len(terminator_code) > 0;
-      if (is_pre_code || is_post_code || is_terminator_code) {
-        if (is_post_code) {
-          Insert(tm, 0, "\n  try ");
-          Printv(tm, " finally {\n", post_code, "\n  }", NIL);
-        } else {
-          Insert(tm, 0, "\n  ");
-        }
-        if (is_pre_code) {
-          Insert(tm, 0, pre_code);
-          Insert(tm, 0, "\n");
-        }
-        if (is_terminator_code) {
-          Printv(tm, "\n", terminator_code, NIL);
-        }
-	Insert(tm, 0, " {");
-	Printf(tm, "\n}");
-      }
-      if (GetFlag(n, "feature:new"))
-	Replaceall(tm, "$owner", "true");
-      else
-	Replaceall(tm, "$owner", "false");
-      replaceClassname(tm, t);
-      Replaceall(tm, "$imcall", imcall);
-    } else {
-      Swig_warning(WARN_D_TYPEMAP_CSOUT_UNDEF, input_file, line_number,
-	"No csout typemap defined for %s\n", SwigType_str(t, 0));
-    }
-
-    // The whole function code is now in stored tm (if there was a matching
-    // type map, of course), so simply append it to the code buffer.
-    Printf(function_code, " %s\n", tm ? (const String *) tm : empty_string);
-    Printv(proxy_dmodule_code, function_code, NIL);
-
-    Delete(pre_code);
-    Delete(post_code);
-    Delete(terminator_code);
-    Delete(function_code);
-    Delete(return_type);
-    Delete(imcall);
-    Delete(func_name);
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::enumValue()
-   *
-   * This method will return a string with an enum value to use in C# generated
-   * code. If the %csconst feature is not used, the string will contain the intermediary
-   * class call to obtain the enum value. The intermediary class and PINVOKE methods to obtain
-   * the enum value will be generated. Otherwise the C/C++ enum value will be used if there
-   * is one and hopefully it will compile as C# code - e.g. 20 as in: enum E{e=20};
-   * The %dconstvalue feature overrides all other ways to generate the constant value.
-   * The caller must delete memory allocated for the returned string.
-   * --------------------------------------------------------------------------- */
-  String *enumValue(Node *n) {
-    String *symname = Getattr(n, "sym:name");
-
-    // Check for the %dconstvalue feature
-    String *value = Getattr(n, "feature:d:constvalue");
-
-    if (!value) {
-      // The %csconst feature determines how the constant value is obtained
-      int const_feature_flag = GetFlag(n, "feature:d:const");
-
-      if (const_feature_flag) {
-	// Use the C syntax to make a true C# constant and hope that it compiles as C# code
-	value = Getattr(n, "enumvalue") ? Copy(Getattr(n, "enumvalue")) : Copy(Getattr(n, "enumvalueex"));
-      } else {
-	// Get the enumvalue from a PINVOKE call
-	if (!getCurrentClass() || !cparse_cplusplus || !proxy_flag) {
-	  // Strange hack to change the name
-	  Setattr(n, "name", Getattr(n, "value"));	/* for wrapping of enums in a namespace when emit_action is used */
-	  constantWrapper(n);
-	  value = NewStringf("%s.%s()", wrap_dmodule_fq_name, Swig_name_get(symname));
-	} else {
-	  memberconstantHandler(n);
-	  value = NewStringf("%s.%s()", wrap_dmodule_fq_name, Swig_name_get(Swig_name_member(proxy_class_name, symname)));
-	}
-      }
-    }
-    return value;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::getEnumName()
-   * --------------------------------------------------------------------------- */
-  String *getEnumName(SwigType *t) {
-    Node *enum_name = NULL;
-    Node *n = enumLookup(t);
-    if (n) {
-      String *symname = Getattr(n, "sym:name");
-      if (symname) {
-	// Add in class scope when referencing enum if not a global enum
-	String *scopename_prefix = Swig_scopename_prefix(Getattr(n, "name"));
-	String *proxyname = 0;
-	if (scopename_prefix) {
-	  proxyname = getProxyName(scopename_prefix);
-	}
-	if (proxyname)
-	  enum_name = NewStringf("%s.%s", proxyname, symname);
-	else
-	  enum_name = NewStringf("%s", symname);
-	Delete(scopename_prefix);
-      }
-    }
-
-    return enum_name;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::replaceSpecialVariables()
-   * --------------------------------------------------------------------------- */
-  virtual void replaceSpecialVariables(String *method, String *tm, Parm *parm) {
-    (void)method;
-    SwigType *type = Getattr(parm, "type");
-    replaceClassname(tm, type);
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::replaceClassname()
-   *
-   * Replaces the special variable $dclassname with the proxy class name for
-   * classes/structs/unions SWIG knows about. Also substitutes the enumeration
-   * name for non-anonymous enums. Otherwise, $classname is replaced with a
-   * $descriptor(type)-like name.
-   *
-   * $*dclassname and $&classname work like with descriptors (see manual section
-   * 10.4.3), they remove a prointer from respectively add a pointer to the type.
-   *
-   * Inputs:
-   *   tm - String to perform the substitution at (will usually come from a
-   *        typemap.
-   *   pt - The type to substitute for the variables.
-   * Outputs:
-   *   tm - String with the variables substituted.
-   * Return:
-   *   substitution_performed - flag indicating if a substitution was performed
-   * --------------------------------------------------------------------------- */
-  bool replaceClassname(String *tm, SwigType *pt) {
-    bool substitution_performed = false;
-    SwigType *type = Copy(SwigType_typedef_resolve_all(pt));
-    SwigType *strippedtype = SwigType_strip_qualifiers(type);
-
-    if (Strstr(tm, "$dclassname")) {
-      SwigType *classnametype = Copy(strippedtype);
-      replaceClassnameVariable(tm, "$dclassname", classnametype);
-      substitution_performed = true;
-      Delete(classnametype);
-    }
-    if (Strstr(tm, "$*dclassname")) {
-      SwigType *classnametype = Copy(strippedtype);
-      Delete(SwigType_pop(classnametype));
-      replaceClassnameVariable(tm, "$*dclassname", classnametype);
-      substitution_performed = true;
-      Delete(classnametype);
-    }
-    if (Strstr(tm, "$&dclassname")) {
-      SwigType *classnametype = Copy(strippedtype);
-      SwigType_add_pointer(classnametype);
-      replaceClassnameVariable(tm, "$&dclassname", classnametype);
-      substitution_performed = true;
-      Delete(classnametype);
-    }
-
-    Delete(strippedtype);
-    Delete(type);
-
-    return substitution_performed;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::replaceClassnameVariable()
-   *
-   * See D::replaceClassname().
-   * --------------------------------------------------------------------------- */
-  void replaceClassnameVariable(String *tm, const char *variable, SwigType *classnametype) {
-    if (SwigType_isenum(classnametype)) {
-      String *enumname = getEnumName(classnametype);
-      if (enumname)
-	Replaceall(tm, variable, enumname);
-      else
-	Replaceall(tm, variable, NewStringf("int"));
-    } else {
-      String *classname = getProxyName(classnametype);
-      if (classname) {
-	// getProxyName() works for pointers to classes too
-	Replaceall(tm, variable, classname);
-      } else {
-	// SWIG does not know anything about the type (after resolving typedefs).
-	// Just mangle the type name string like $descriptor(type) would do.
-	String *descriptor = NewStringf("SWIGTYPE%s", SwigType_manglestr(classnametype));
-	Replaceall(tm, variable, descriptor);
-
-	// Add to hash table so that a type wrapper class can be created later.
-	Setattr(swig_types_hash, descriptor, classnametype);
-	Delete(descriptor);
-      }
-    }
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::makeParameterName()
-   *
-   * Inputs:
-   *   n - Node
-   *   p - parameter node
-   *   arg_num - parameter argument number
-   *   setter  - set this flag when wrapping variables
-   * Return:
-   *   arg - a unique parameter name
-   * --------------------------------------------------------------------------- */
-  String *makeParameterName(Node *n, Parm *p, int arg_num, bool setter) {
-
-    String *arg = 0;
-    String *pn = Getattr(p, "name");
-
-    // Use C parameter name unless it is a duplicate or an empty parameter name
-    int count = 0;
-    ParmList *plist = Getattr(n, "parms");
-    while (plist) {
-      if ((Cmp(pn, Getattr(plist, "name")) == 0))
-        count++;
-      plist = nextSibling(plist);
-    }
-    String *wrn = pn ? Swig_name_warning(p, 0, pn, 0) : 0;
-    arg = (!pn || (count > 1) || wrn) ? NewStringf("arg%d", arg_num) : Copy(pn);
-
-    if (setter && Cmp(arg, "self") != 0) {
-      // In theory, we could use the normal parameter name for setter functions.
-      // Unfortunately, it is set to "Class::VariableName" for static public
-      // members by the parser, which is not legal D syntax. Thus, we just force
-      // it to "value".
-      Delete(arg);
-      arg = NewString("value");
-    }
-
-    return arg;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::writeTypeWrapperClass()
-   * --------------------------------------------------------------------------- */
-  void writeTypeWrapperClass(String *classname, SwigType *type) {
-    Node *n = NewHash();
-    Setfile(n, input_file);
-    Setline(n, line_number);
-
-    // Import statements.
-    Printv(wrap_dmodule_imports, typemapLookup(n, "dimports", type, WARN_NONE), NIL);
-
-    // Pure D baseclass and interfaces (no C++ inheritance possible.
-    const String *pure_baseclass = typemapLookup(n, "csbase", type, WARN_NONE);
-    const String *pure_interfaces = typemapLookup(n, "dinterfaces", type, WARN_NONE);
-
-    // Emit the class.
-    Printv(proxy_dmodule_code,
-      "\n",
-      typemapLookup(n, "dclassmodifiers", type, WARN_CSHARP_TYPEMAP_CLASSMOD_UNDEF),
-      " $dclassname",	// Class name and base class
-      (*Char(pure_baseclass) || *Char(pure_interfaces)) ? " : " : "", pure_baseclass,
-      ((*Char(pure_baseclass)) && *Char(pure_interfaces)) ? ", " : "", pure_interfaces, // Interfaces
-      " {", NIL );
-
-    String* body = NewString("");
-    Printv(body, typemapLookup(n, "dbody", type, WARN_D_TYPEMAP_DBODY_UNDEF),
-      typemapLookup(n, "dcode", type, WARN_NONE), // extra user D code
-      NIL);
-    indentCode(body);
-    Printv(proxy_dmodule_code, body, "\n}\n", NIL);
-    Delete(body);
-
-    Replaceall(proxy_dmodule_code, "$dclassname", classname);
-
-    Delete(n);
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::typemapLookup()
-   *
-   * n - for input only and must contain info for Getfile(n) and Getline(n) to work
-   * tmap_method - typemap method name
-   * type - typemap type to lookup
-   * warning - warning number to issue if no typemaps found
-   * typemap_attributes - the typemap attributes are attached to this node and will
-   *   also be used for temporary storage if non null
-   * return is never NULL, unlike Swig_typemap_lookup()
-   * --------------------------------------------------------------------------- */
-  const String *typemapLookup(Node *n, const_String_or_char_ptr tmap_method, SwigType *type, int warning, Node *typemap_attributes = 0) {
-    Node *node = !typemap_attributes ? NewHash() : typemap_attributes;
-    Setattr(node, "type", type);
-    Setfile(node, Getfile(n));
-    Setline(node, Getline(n));
-    const String *tm = Swig_typemap_lookup(tmap_method, node, "", 0);
-    if (!tm) {
-      tm = empty_string;
-      if (warning != WARN_NONE)
-	Swig_warning(warning, Getfile(n), Getline(n), "No %s typemap defined for %s\n", tmap_method, SwigType_str(type, 0));
-    }
-    if (!typemap_attributes)
-      Delete(node);
-    return tm;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::canThrow()
-   *
-   * Determine whether the code in the typemap can throw a C# exception.
-   * If so, note it for later when excodeSubstitute() is called.
-   * --------------------------------------------------------------------------- */
-  void canThrow(Node *n, const String *typemap, Node *parameter) {
-    String *canthrow_attribute = NewStringf("tmap:%s:canthrow", typemap);
-    String *canthrow = Getattr(parameter, canthrow_attribute);
-    if (canthrow)
-      Setattr(n, "csharp:canthrow", "1");
-    Delete(canthrow_attribute);
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::excodeSubstitute()
-   *
-   * If a method can throw a C# exception, additional exception code is added to
-   * check for the pending exception so that it can then throw the exception. The
-   * $excode special variable is replaced by the exception code in the excode
-   * typemap attribute.
-   * --------------------------------------------------------------------------- */
-
-  void excodeSubstitute(Node *n, String *code, const String *typemap, Node *parameter) {
-    String *excode_attribute = NewStringf("tmap:%s:excode", typemap);
-    String *excode = Getattr(parameter, excode_attribute);
-    if (Getattr(n, "csharp:canthrow")) {
-      int count = Replaceall(code, "$excode", excode);
-      if (count < 1 || !excode) {
-	Swig_warning(WARN_CSHARP_EXCODE, input_file, line_number,
-		     "C# exception may not be thrown - no $excode or excode attribute in '%s' typemap.\n", typemap);
-      }
-    } else {
-      Replaceall(code, "$excode", empty_string);
-    }
-    Delete(excode_attribute);
-  }
-
-
-  /*
-   * Start of director methods
-   */
-
-  /* ---------------------------------------------------------------------------
-   * D::writeDirectorConnectProxy()
-   *
-   * Writes the helper method which registers the director callbacks by calling
-   * the director connect function from the D side to the proxy class.
-   * --------------------------------------------------------------------------- */
-  void writeDirectorConnectProxy() {
-    Printf(proxy_class_code, "\nprivate void swigDirectorConnect() {\n");
-
-    int i;
-    for (i = first_class_dmethod; i < curr_class_dmethod; ++i) {
-      UpcallData *udata = Getitem(dmethods_seq, i);
-      String *method = Getattr(udata, "method");
-      String *overloaded_name = Getattr(udata, "overname");
-      String *return_type = Getattr(udata, "return_type");
-      String *param_list = Getattr(udata, "param_list");
-      String *methid = Getattr(udata, "class_methodidx");
-      Printf(proxy_class_code, "  %s.SwigDirector_%s_Callback%s callback%s;\n", wrap_dmodule_fq_name, proxy_class_name, methid, methid);
-      Printf(proxy_class_code, "  if (swigIsMethodOverridden!(\"%s\", \"%s\", \"%s\")) {\n", method, return_type, param_list);
-      Printf(proxy_class_code, "    callback%s = &swigDirectorCallback_%s_%s;\n", methid, proxy_class_name, overloaded_name);
-      Printf(proxy_class_code, "  }\n\n");
-    }
-    Printf(proxy_class_code, "  %s.%s_director_connect(m_swigCObject, cast(void*)this", wrap_dmodule_fq_name, proxy_class_name);
-    for (i = first_class_dmethod; i < curr_class_dmethod; ++i) {
-      UpcallData *udata = Getitem(dmethods_seq, i);
-      String *methid = Getattr(udata, "class_methodidx");
-      Printf(proxy_class_code, ", callback%s", methid);
-    }
-    Printf(proxy_class_code, ");\n");
-    Printf(proxy_class_code, "}\n");
-
-    // Helper function to determine if a method has been overridden in a
-    // subclass of the wrapped class. If not, we just pass null to the
-    // director_connect_function since the method from the C++ class should
-    // be called as usual (see above).
-    // Only emit it if the proxy class has at least one method.
-    if (first_class_dmethod < curr_class_dmethod) {
-      Printf(proxy_class_code, "\n");
-      Printf(proxy_class_code, "private bool swigIsMethodOverridden(char[] methodName, char[] returnType, char[] parameterTypes)() {\n");
-      Printf(proxy_class_code, "  auto vtblMethod = mixin(\"cast(\" ~ returnType ~ \" delegate(\" ~ parameterTypes ~ \"))&\" ~ methodName);\n" );
-      Printf(proxy_class_code, "  void* baseMethod = mixin(\"SwigAddressOf!(\" ~ methodName ~ \", \" ~ returnType ~ \" function(\" ~ parameterTypes ~ \"))\");\n" );
-      Printf(proxy_class_code, "  return (cast(void*)vtblMethod.funcptr != baseMethod);\n");
-      Printf(proxy_class_code, "}\n");
-      Printf(proxy_class_code, "\n");
-      Printf(proxy_class_code, "private template SwigAddressOf(alias fn, Type) {\n");
-      Printf(proxy_class_code, "  const SwigAddressOf = cast(Type)&fn;\n");
-      Printf(proxy_class_code, "}\n");
-    }
-
-    if (Len(director_dcallbacks_code) > 0)
-      Printv(proxy_class_epilogue_code, director_dcallbacks_code, NIL);
-    if (Len(director_delegate_definitions) > 0)
-      Printv(proxy_class_code, "\n", director_delegate_definitions, NIL);
-    if (Len(director_delegate_instances) > 0)
-      Printv(proxy_class_code, "\n", director_delegate_instances, NIL);
-    if (Len(director_method_types) > 0)
-      Printv(proxy_class_code, "\n", director_method_types, NIL);
-
-    Delete(director_callback_typedefs);
-    director_callback_typedefs = NULL;
-    Delete(director_callbacks);
-    director_callbacks = NULL;
-    Delete(director_dcallbacks_code);
-    director_dcallbacks_code = NULL;
-    Delete(director_delegate_definitions);
-    director_delegate_definitions = NULL;
-    Delete(director_delegate_instances);
-    director_delegate_instances = NULL;
-    Delete(director_method_types);
-    director_method_types = NULL;
-    Delete(director_connect_parms);
-    director_connect_parms = NULL;
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::writeDirectorConnectWrapper()
-   *
-   * Writes the director connect function and the corresponding declaration to
-   * the C++ wrapper respectively the D wrapper.
-   * --------------------------------------------------------------------------- */
-  void writeDirectorConnectWrapper(Node *n) {
-    if (!Swig_directorclass(n))
-      return;
-
-    // Output the director connect method.
-    String *norm_name = SwigType_namestr(Getattr(n, "name"));
-    String *connect_name = NewStringf("%s_director_connect", proxy_class_name);
-    String *sym_name = Getattr(n, "sym:name");
-    Wrapper *code_wrap;
-
-    Printv(wrapper_loader_bind_code, wrapper_loader_bind_command, NIL);
-    Replaceall(wrapper_loader_bind_code, "$function", connect_name);
-    Replaceall(wrapper_loader_bind_code, "$symbol", Swig_name_wrapper( connect_name ));
-
-    Printf(wrap_dmodule_code, "extern(C) void function(void* cObject, void* dObject");
-
-    code_wrap = NewWrapper();
-    Printf(code_wrap->def, "SWIGEXPORT void SWIGSTDCALL D_%s(void *objarg, void *dobj", connect_name);
-
-    Printf(code_wrap->code, "  %s *obj = (%s *)objarg;\n", norm_name, norm_name);
-    Printf(code_wrap->code, "  SwigDirector_%s *director = dynamic_cast<SwigDirector_%s *>(obj);\n", sym_name, sym_name);
-
-    Printf(code_wrap->code, "  if (director) {\n");
-    Printf(code_wrap->code, "    director->swig_connect_director(dobj");
-
-    for (int i = first_class_dmethod; i < curr_class_dmethod; ++i) {
-      UpcallData *udata = Getitem(dmethods_seq, i);
-      String *methid = Getattr(udata, "class_methodidx");
-
-      Printf(code_wrap->def, ", SwigDirector_%s::SWIG_Callback%s_t callback%s", sym_name, methid, methid);
-      Printf(code_wrap->code, ", callback%s", methid);
-      Printf(wrap_dmodule_code, ", SwigDirector_%s_Callback%s callback%s", sym_name, methid, methid);
-    }
-
-    Printf(code_wrap->def, ") {\n");
-    Printf(code_wrap->code, ");\n");
-    Printf(wrap_dmodule_code, ") %s;\n", connect_name);
-    Printf(code_wrap->code, "  }\n");
-    Printf(code_wrap->code, "}\n");
-
-    Wrapper_print(code_wrap, f_wrappers);
-    DelWrapper(code_wrap);
-
-    Delete(connect_name);
   }
 
   /* ---------------------------------------------------------------------------
@@ -2806,7 +1540,7 @@ public:
    * Emit a virtual director method to pass a method call on to the
    * underlying D object.
    * --------------------------------------------------------------------------- */
-  int classDirectorMethod(Node *n, Node *parent, String *super) {
+  virtual int classDirectorMethod(Node *n, Node *parent, String *super) {
     String *empty_str = NewString("");
     String *classname = Getattr(parent, "sym:name");
     String *c_classname = Getattr(parent, "name");
@@ -2829,7 +1563,7 @@ public:
     bool pure_virtual = (!(Cmp(storage, "virtual")) && !(Cmp(value, "0")));
     int status = SWIG_OK;
     bool output_director = true;
-    String *dirclassname = directorClassName(parent);
+    String *dirclassname = getDirectorClassName(parent);
     String *qualified_name = NewStringf("%s::%s", dirclassname, name);
     SwigType *c_ret_type = NULL;
     String *dcallback_call_args = NewString("");
@@ -3284,11 +2018,11 @@ public:
   /* ---------------------------------------------------------------------------
    * D::classDirectorConstructor()
    * --------------------------------------------------------------------------- */
-  int classDirectorConstructor(Node *n) {
+  virtual int classDirectorConstructor(Node *n) {
     Node *parent = parentNode(n);
     String *decl = Getattr(n, "decl");;
     String *supername = Swig_class_name(parent);
-    String *classname = directorClassName(parent);
+    String *classname = getDirectorClassName(parent);
     String *sub = NewString("");
     Parm *p;
     ParmList *superparms = Getattr(n, "parms");
@@ -3342,7 +2076,7 @@ public:
   /* ---------------------------------------------------------------------------
    * D::classDirectorDefaultConstructor()
    * --------------------------------------------------------------------------- */
-  int classDirectorDefaultConstructor(Node *n) {
+  virtual int classDirectorDefaultConstructor(Node *n) {
     String *classname = Swig_class_name(n);
     String *classtype = SwigType_namestr(Getattr(n, "name"));
     Wrapper *w = NewWrapper();
@@ -3362,7 +2096,7 @@ public:
   /* ---------------------------------------------------------------------------
    * D::classDirectorInit()
    * --------------------------------------------------------------------------- */
-  int classDirectorInit(Node *n) {
+  virtual int classDirectorInit(Node *n) {
     Delete(director_ctor_code);
     director_ctor_code = NewString("$director_new");
 
@@ -3401,7 +2135,7 @@ public:
   /* ---------------------------------------------------------------------------
    * D::classDirectorDestructor()
    * --------------------------------------------------------------------------- */
-  int classDirectorDestructor(Node *n) {
+  virtual int classDirectorDestructor(Node *n) {
     Node *current_class = getCurrentClass();
     String *classname = Swig_class_name(current_class);
     Wrapper *w = NewWrapper();
@@ -3426,9 +2160,9 @@ public:
   /* ---------------------------------------------------------------------------
    * D::classDirectorEnd()
    * --------------------------------------------------------------------------- */
-  int classDirectorEnd(Node *n) {
+  virtual int classDirectorEnd(Node *n) {
     int i;
-    String *director_classname = directorClassName(n);
+    String *director_classname = getDirectorClassName(n);
 
     Wrapper *w = NewWrapper();
 
@@ -3486,11 +2220,1231 @@ public:
     return SWIG_OK;
   }
 
+
+  /* ---------------------------------------------------------------------------
+   * D::replaceSpecialVariables()
+   * --------------------------------------------------------------------------- */
+  virtual void replaceSpecialVariables(String *method, String *tm, Parm *parm) {
+    (void)method;
+    SwigType *type = Getattr(parm, "type");
+    replaceClassname(tm, type);
+  }
+
+protected:
   /* ---------------------------------------------------------------------------
    * D::extraDirectorProtectedCPPMethodsRequired()
    * --------------------------------------------------------------------------- */
-  bool extraDirectorProtectedCPPMethodsRequired() const {
+  virtual bool extraDirectorProtectedCPPMethodsRequired() const {
     return false;
+  }
+
+private:
+  /* ---------------------------------------------------------------------------
+   * D::writeWrapDModuleFunction()
+   *
+   * Writes a function declaration for the given (C) wrapper function to the
+   * wrap D module.
+   *
+   * d_name - The name the function in the D wrap module will get.
+   * wrapper_function_name - The name of the exported function in the C wrapper
+   *                         (usually d_name prefixed by »D_«).
+   * --------------------------------------------------------------------------- */
+  void writeWrapDModuleFunction( const_String_or_char_ptr d_name,
+    const_String_or_char_ptr return_type, const_String_or_char_ptr parameters,
+    const_String_or_char_ptr wrapper_function_name ) {
+
+    // TODO: Add support for static linking here.
+    Printf(wrap_dmodule_code, "extern(C) %s function%s %s;\n", return_type,
+      parameters, d_name);
+    Printv(wrapper_loader_bind_code, wrapper_loader_bind_command, NIL);
+    Replaceall(wrapper_loader_bind_code, "$function", d_name);
+    Replaceall(wrapper_loader_bind_code, "$symbol", wrapper_function_name);
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::writeProxyClassFunction()
+   *
+   * Creates a D proxy function for a C++ function in the wrapped class. Used
+   * for both static and non-static C++ class functions.
+   *
+   * The Node must contain two extra attributes.
+   *  - "proxyfuncname": The name of the D proxy function.
+   *  - "imfuncname": The corresponding function in the wrap D module.
+   * --------------------------------------------------------------------------- */
+  void writeProxyClassFunction(Node *n) {
+    SwigType *t = Getattr(n, "type");
+    ParmList *l = Getattr(n, "parms");
+    String *intermediary_function_name = Getattr(n, "imfuncname");
+    String *proxy_function_name = Getattr(n, "proxyfuncname");
+    String *tm;
+    Parm *p;
+    int i;
+    String *imcall = NewString("");
+    String *return_type = NewString("");
+    String *function_code = NewString("");
+    bool setter_flag = false;
+    String *pre_code = NewString("");
+    String *post_code = NewString("");
+    String *terminator_code = NewString("");
+
+    // RESEARCH: We shouldn't even get here then?
+    if (!proxy_flag)
+      return;
+
+    // Wrappers not wanted for some methods where the parameters cannot be overloaded in C#
+    if (Getattr(n, "overload:ignore"))
+      return;
+
+    // Don't generate proxy method for additional explicitcall method used in directors
+    if (GetFlag(n, "explicitcall"))
+      return;
+
+    // RESEARCH: What is this good for?
+    if (l) {
+      if (SwigType_type(Getattr(l, "type")) == T_VOID) {
+	l = nextSibling(l);
+      }
+    }
+
+    /* Attach the non-standard typemaps to the parameter list */
+    Swig_typemap_attach_parms("in", l, NULL);
+    Swig_typemap_attach_parms("cstype", l, NULL);
+    Swig_typemap_attach_parms("csin", l, NULL);
+
+    /* Get return types */
+    if ((tm = Swig_typemap_lookup("cstype", n, "", 0))) {
+      // the type in the cstype typemap's out attribute overrides the type in the typemap
+      String *cstypeout = Getattr(n, "tmap:cstype:out");
+      if (cstypeout)
+	tm = cstypeout;
+      replaceClassname(tm, t);
+      Printf(return_type, "%s", tm);
+    } else {
+      Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(t, 0));
+    }
+
+    if (wrapping_member_flag) {
+      // Check if this is a setter method for a public member.
+      setter_flag = (Cmp(Getattr(n, "sym:name"),
+	Swig_name_set(Swig_name_member(proxy_class_name, variable_name))) == 0);
+    }
+
+    // Write function modifiers.
+    {
+      String *modifiers;
+
+      const String *mods_override = Getattr(n, "feature:d:methodmodifiers");
+      if (mods_override) {
+	modifiers = Copy(mods_override);
+      } else {
+	modifiers = Copy(is_public(n) ? public_string : protected_string);
+
+	if (Getattr(n, "override")) {
+	  Printf(modifiers, " override");
+	}
+      }
+
+      if (is_smart_pointer()) {
+	// Smart pointer classes do not mirror the inheritance hierarchy of the
+	// underlying pointer type, so no override required.
+	Replaceall(modifiers, "override", "");
+      }
+
+      Chop(modifiers);
+
+      if (static_flag) {
+	Printf(modifiers, " static");
+      }
+
+      Printf(function_code, "%s ", modifiers);
+      Delete(modifiers);
+    }
+
+    // Complete the function declaration up to the parameter list.
+    Printf(function_code, "%s %s(", return_type, proxy_function_name);
+
+    // Write the wrapper function call up to the parameter list.
+    Printv(imcall, wrap_dmodule_fq_name, ".$imfuncname(", NIL);
+    if (!static_flag) {
+      Printf(imcall, "m_swigCObject");
+    }
+
+    // Write the parameter list for the proxy function declaration and the
+    // wrapper function call.
+    emit_mark_varargs(l);
+    int gencomma = !static_flag;
+    for (i = 0, p = l; p; i++) {
+      // Ignored varargs.
+      if (checkAttribute(p, "varargs:ignore", "1")) {
+	p = nextSibling(p);
+	continue;
+      }
+
+      // Ignored parameters.
+      if (checkAttribute(p, "tmap:in:numinputs", "0")) {
+	p = Getattr(p, "tmap:in:next");
+	continue;
+      }
+
+      // Ignore the 'this' argument for variable wrappers.
+      if (!(variable_wrapper_flag && i == 0)) {
+	String *param_name = makeParameterName(n, p, i, setter_flag);
+	SwigType *pt = Getattr(p, "type");
+
+	// Write the wrapper function call argument.
+	{
+	  if (gencomma) {
+	    Printf(imcall, ", ");
+	  }
+
+	  if ((tm = Getattr(p, "tmap:csin"))) {
+	    replaceClassname(tm, pt);
+	    Replaceall(tm, "$csinput", param_name);
+	    String *pre = Getattr(p, "tmap:csin:pre");
+	    if (pre) {
+	      replaceClassname(pre, pt);
+	      Replaceall(pre, "$csinput", param_name);
+	      if (Len(pre_code) > 0)
+		Printf(pre_code, "\n");
+	      Printv(pre_code, pre, NIL);
+	    }
+	    String *post = Getattr(p, "tmap:csin:post");
+	    if (post) {
+	      replaceClassname(post, pt);
+	      Replaceall(post, "$csinput", param_name);
+	      if (Len(post_code) > 0)
+		Printf(post_code, "\n");
+	      Printv(post_code, post, NIL);
+	    }
+	    String *terminator = Getattr(p, "tmap:csin:terminator");
+	    if (terminator) {
+	      replaceClassname(terminator, pt);
+	      Replaceall(terminator, "$csinput", param_name);
+	      if (Len(terminator_code) > 0)
+		Insert(terminator_code, 0, "\n");
+	      Insert(terminator_code, 0, terminator);
+	    }
+	    Printv(imcall, tm, NIL);
+	  } else {
+	    Swig_warning(WARN_D_TYPEMAP_CSIN_UNDEF, input_file, line_number,
+	      "No csin typemap defined for %s\n", SwigType_str(pt, 0));
+	  }
+	}
+
+	// Write the D proxy function parameter.
+	{
+	  String *proxy_type = NewString("");
+
+	  if ((tm = Getattr(p, "tmap:cstype"))) {
+	    replaceClassname(tm, pt);
+	    const String *inattributes = Getattr(p, "tmap:cstype:inattributes");
+	    Printf(proxy_type, "%s%s", inattributes ? inattributes : empty_string, tm);
+	  } else {
+	    Swig_warning(WARN_D_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number,
+	      "No cstype typemap defined for %s\n", SwigType_str(pt, 0));
+	  }
+
+	  if (gencomma >= 2)
+	    Printf(function_code, ", ");
+	  gencomma = 2;
+	  Printf(function_code, "%s %s", proxy_type, param_name);
+
+	  Delete(proxy_type);
+	}
+
+	Delete(param_name);
+      }
+      p = Getattr(p, "tmap:in:next");
+    }
+
+    Printf(imcall, ")");
+    Printf(function_code, ") ");
+
+    // Lookup the code used to convert the wrapper return value to the proxy
+    // function return type.
+    if ((tm = Swig_typemap_lookup("csout", n, "", 0))) {
+      substituteExcode(n, tm, "csout", n);
+      bool is_pre_code = Len(pre_code) > 0;
+      bool is_post_code = Len(post_code) > 0;
+      bool is_terminator_code = Len(terminator_code) > 0;
+      if (is_pre_code || is_post_code || is_terminator_code) {
+        if (is_post_code) {
+          Insert(tm, 0, "\n  try ");
+          Printv(tm, " finally {\n", post_code, "\n  }", NIL);
+        } else {
+          Insert(tm, 0, "\n  ");
+        }
+        if (is_pre_code) {
+          Insert(tm, 0, pre_code);
+          Insert(tm, 0, "\n");
+        }
+        if (is_terminator_code) {
+          Printv(tm, "\n", terminator_code, NIL);
+        }
+        Insert(tm, 0, "{");
+	Printv(tm, "}", NIL);
+      }
+      if (GetFlag(n, "feature:new"))
+	Replaceall(tm, "$owner", "true");
+      else
+	Replaceall(tm, "$owner", "false");
+      replaceClassname(tm, t);
+
+      // For director methods: generate code to selectively make a normal
+      // polymorphic call or an explicit method call. Needed to prevent infinite
+      // recursion when calling director methods.
+      Node *explicit_n = Getattr(n, "explicitcallnode");
+      if (explicit_n) {
+	String *ex_overloaded_name = getOverloadedName(explicit_n);
+	String *ex_intermediary_function_name = Swig_name_member(proxy_class_name, ex_overloaded_name);
+
+	String *ex_imcall = Copy(imcall);
+	Replaceall(ex_imcall, "$imfuncname", ex_intermediary_function_name);
+	Replaceall(imcall, "$imfuncname", intermediary_function_name);
+
+	String *excode = NewString("");
+	if (!Cmp(return_type, "void"))
+	  Printf(excode, "if (this.classinfo == %s.classinfo) %s; else %s", proxy_class_name, imcall, ex_imcall);
+	else
+	  Printf(excode, "((this.classinfo == %s.classinfo) ? %s : %s)", proxy_class_name, imcall, ex_imcall);
+
+	Clear(imcall);
+	Printv(imcall, excode, NIL);
+	Delete(ex_overloaded_name);
+	Delete(excode);
+      } else {
+	Replaceall(imcall, "$imfuncname", intermediary_function_name);
+      }
+      Replaceall(tm, "$imcall", imcall);
+    } else {
+      Swig_warning(WARN_D_TYPEMAP_CSOUT_UNDEF, input_file, line_number,
+	"No csout typemap defined for %s\n", SwigType_str(t, 0));
+    }
+
+    // The whole function body is now in stored tm (if there was a matching type
+    // map, of course), so simply append it to the code buffer. The braces are
+    // included in the typemap.
+    Printv(function_code, tm, NIL);
+
+    // Write function code buffer to the class code.
+    Printv(proxy_class_code, "\n", function_code, "\n", NIL);
+
+    Delete(pre_code);
+    Delete(post_code);
+    Delete(terminator_code);
+    Delete(function_code);
+    Delete(return_type);
+    Delete(imcall);
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::writeProxyDModuleFunction()
+   * --------------------------------------------------------------------------- */
+  void writeProxyDModuleFunction(Node *n) {
+    SwigType *t = Getattr(n, "type");
+    ParmList *l = Getattr(n, "parms");
+    String *tm;
+    Parm *p;
+    int i;
+    String *imcall = NewString("");
+    String *return_type = NewString("");
+    String *function_code = NewString("");
+    int num_arguments = 0;
+    int num_required = 0;
+    String *overloaded_name = getOverloadedName(n);
+    String *func_name = NULL;
+    String *pre_code = NewString("");
+    String *post_code = NewString("");
+    String *terminator_code = NewString("");
+
+    // RESEARCH: What is this good for?
+    if (l) {
+      if (SwigType_type(Getattr(l, "type")) == T_VOID) {
+	l = nextSibling(l);
+      }
+    }
+
+    /* Attach the non-standard typemaps to the parameter list */
+    Swig_typemap_attach_parms("cstype", l, NULL);
+    Swig_typemap_attach_parms("csin", l, NULL);
+
+    /* Get return types */
+    if ((tm = Swig_typemap_lookup("cstype", n, "", 0))) {
+      String *cstypeout = Getattr(n, "tmap:cstype:out");	// the type in the cstype typemap's out attribute overrides the type in the typemap
+      if (cstypeout)
+	tm = cstypeout;
+      replaceClassname(tm, t);
+      Printf(return_type, "%s", tm);
+    } else {
+      Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(t, 0));
+    }
+
+    /* Change function name for global variables */
+    if (proxy_flag && global_variable_flag) {
+      // RESEARCH: Is the Copy() needed here?
+      func_name = Copy(variable_name);
+    } else {
+      func_name = Copy(Getattr(n, "sym:name"));
+    }
+
+    /* Start generating the function */
+    const String *outattributes = Getattr(n, "tmap:cstype:outattributes");
+    if (outattributes)
+      Printf(function_code, "  %s\n", outattributes);
+
+    const String *methodmods = Getattr(n, "feature:d:methodmodifiers");
+    // TODO: Check if is_public(n) could possibly make any sense here
+    // (private global functions would be useless anyway?).
+    methodmods = methodmods ? methodmods : empty_string;
+
+    Printf(function_code, "\n%s%s %s(", methodmods, return_type, func_name);
+    Printv(imcall, wrap_dmodule_fq_name, ".", overloaded_name, "(", NIL);
+
+    /* Get number of required and total arguments */
+    num_arguments = emit_num_arguments(l);
+    num_required = emit_num_required(l);
+
+    int gencomma = 0;
+
+    /* Output each parameter */
+    for (i = 0, p = l; i < num_arguments; i++) {
+
+      /* Ignored parameters */
+      while (checkAttribute(p, "tmap:in:numinputs", "0")) {
+	p = Getattr(p, "tmap:in:next");
+      }
+
+      SwigType *pt = Getattr(p, "type");
+      String *param_type = NewString("");
+
+      /* Get the C# parameter type */
+      if ((tm = Getattr(p, "tmap:cstype"))) {
+	replaceClassname(tm, pt);
+	const String *inattributes = Getattr(p, "tmap:cstype:inattributes");
+	Printf(param_type, "%s%s", inattributes ? inattributes : empty_string, tm);
+      } else {
+	Swig_warning(WARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number, "No cstype typemap defined for %s\n", SwigType_str(pt, 0));
+      }
+
+      if (gencomma)
+	Printf(imcall, ", ");
+
+      const bool generating_setter = global_variable_flag || wrapping_member_flag;
+      String *arg = makeParameterName(n, p, i, generating_setter);
+
+      // Use typemaps to transform type used in C# wrapper function (in proxy class) to type used in PInvoke function (in intermediary class)
+      if ((tm = Getattr(p, "tmap:csin"))) {
+	replaceClassname(tm, pt);
+	Replaceall(tm, "$csinput", arg);
+	String *pre = Getattr(p, "tmap:csin:pre");
+	if (pre) {
+	  replaceClassname(pre, pt);
+	  Replaceall(pre, "$csinput", arg);
+          if (Len(pre_code) > 0)
+            Printf(pre_code, "\n");
+	  Printv(pre_code, pre, NIL);
+	}
+	String *post = Getattr(p, "tmap:csin:post");
+	if (post) {
+	  replaceClassname(post, pt);
+	  Replaceall(post, "$csinput", arg);
+          if (Len(post_code) > 0)
+            Printf(post_code, "\n");
+	  Printv(post_code, post, NIL);
+	}
+        String *terminator = Getattr(p, "tmap:csin:terminator");
+        if (terminator) {
+          replaceClassname(terminator, pt);
+          Replaceall(terminator, "$csinput", arg);
+          if (Len(terminator_code) > 0)
+            Insert(terminator_code, 0, "\n");
+          Insert(terminator_code, 0, terminator);
+        }
+	Printv(imcall, tm, NIL);
+      } else {
+	Swig_warning(WARN_CSHARP_TYPEMAP_CSIN_UNDEF, input_file, line_number, "No csin typemap defined for %s\n", SwigType_str(pt, 0));
+      }
+
+      /* Add parameter to module class function */
+      if (gencomma >= 2)
+	Printf(function_code, ", ");
+      gencomma = 2;
+      Printf(function_code, "%s %s", param_type, arg);
+
+      p = Getattr(p, "tmap:in:next");
+      Delete(arg);
+      Delete(param_type);
+    }
+
+    Printf(imcall, ")");
+    Printf(function_code, ")");
+
+    // Transform return type used in PInvoke function (in intermediary class) to type used in C# wrapper function (in module class)
+    if ((tm = Swig_typemap_lookup("csout", n, "", 0))) {
+      substituteExcode(n, tm, "csout", n);
+      bool is_pre_code = Len(pre_code) > 0;
+      bool is_post_code = Len(post_code) > 0;
+      bool is_terminator_code = Len(terminator_code) > 0;
+      if (is_pre_code || is_post_code || is_terminator_code) {
+        if (is_post_code) {
+          Insert(tm, 0, "\n  try ");
+          Printv(tm, " finally {\n", post_code, "\n  }", NIL);
+        } else {
+          Insert(tm, 0, "\n  ");
+        }
+        if (is_pre_code) {
+          Insert(tm, 0, pre_code);
+          Insert(tm, 0, "\n");
+        }
+        if (is_terminator_code) {
+          Printv(tm, "\n", terminator_code, NIL);
+        }
+	Insert(tm, 0, " {");
+	Printf(tm, "\n}");
+      }
+      if (GetFlag(n, "feature:new"))
+	Replaceall(tm, "$owner", "true");
+      else
+	Replaceall(tm, "$owner", "false");
+      replaceClassname(tm, t);
+      Replaceall(tm, "$imcall", imcall);
+    } else {
+      Swig_warning(WARN_D_TYPEMAP_CSOUT_UNDEF, input_file, line_number,
+	"No csout typemap defined for %s\n", SwigType_str(t, 0));
+    }
+
+    // The whole function code is now in stored tm (if there was a matching
+    // type map, of course), so simply append it to the code buffer.
+    Printf(function_code, " %s\n", tm ? (const String *) tm : empty_string);
+    Printv(proxy_dmodule_code, function_code, NIL);
+
+    Delete(pre_code);
+    Delete(post_code);
+    Delete(terminator_code);
+    Delete(function_code);
+    Delete(return_type);
+    Delete(imcall);
+    Delete(func_name);
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::writeProxyClassAndUpcasts()
+   * --------------------------------------------------------------------------- */
+  void writeProxyClassAndUpcasts(Node *n) {
+    SwigType *typemap_lookup_type = Getattr(n, "classtypeobj");
+
+    /*
+     * Handle inheriting from D and C++ classes.
+     */
+
+    String *c_classname = SwigType_namestr(Getattr(n, "name"));
+    String *c_baseclass = NULL;
+    String *baseclass = NULL;
+    String *c_baseclassname = NULL;
+
+    // Inheritance from pure D classes.
+    Node *attributes = NewHash();
+    const String *pure_baseclass = typemapLookup(n, "csbase", typemap_lookup_type, WARN_NONE, attributes);
+    bool purebase_replace = GetFlag(attributes, "tmap:csbase:replace") ? true : false;
+    bool purebase_notderived = GetFlag(attributes, "tmap:csbase:notderived") ? true : false;
+    Delete(attributes);
+
+    // C++ inheritance.
+    if (!purebase_replace) {
+      List *baselist = Getattr(n, "bases");
+      if (baselist) {
+        Iterator base = First(baselist);
+        while (base.item && GetFlag(base.item, "feature:ignore")) {
+          base = Next(base);
+        }
+        if (base.item) {
+          c_baseclassname = Getattr(base.item, "name");
+          baseclass = Copy(getProxyName(c_baseclassname));
+          if (baseclass)
+            c_baseclass = SwigType_namestr(Getattr(base.item, "name"));
+          base = Next(base);
+          /* Warn about multiple inheritance for additional base class(es) */
+          while (base.item) {
+            if (GetFlag(base.item, "feature:ignore")) {
+              base = Next(base);
+              continue;
+            }
+            String *proxyclassname = SwigType_str(Getattr(n, "classtypeobj"), 0);
+            String *baseclassname = SwigType_str(Getattr(base.item, "name"), 0);
+            Swig_warning(WARN_D_MULTIPLE_INHERITANCE, input_file, line_number,
+	      "Base %s of class %s ignored: multiple inheritance is not supported in D.\n", baseclassname, proxyclassname);
+            base = Next(base);
+          }
+        }
+      }
+    }
+
+    bool derived = baseclass && getProxyName(c_baseclassname);
+
+    if (derived && purebase_notderived) {
+      pure_baseclass = empty_string;
+    }
+    const String *wanted_base = baseclass ? baseclass : pure_baseclass;
+
+    if (purebase_replace) {
+      wanted_base = pure_baseclass;
+      derived = false;
+      Delete(baseclass);
+      baseclass = NULL;
+      if (purebase_notderived) {
+        Swig_error(input_file, line_number,
+	  "The csbase typemap for proxy %s must contain just one of the 'replace' or 'notderived' attributes.\n",
+	  typemap_lookup_type);
+      }
+    } else if (Len(pure_baseclass) > 0 && Len(baseclass) > 0) {
+      Swig_warning(WARN_D_MULTIPLE_INHERITANCE, input_file, line_number,
+	"Warning for %s proxy: Base class %s ignored. Multiple inheritance is not supported in D. "
+	"Perhaps you need one of the 'replace' or 'notderived' attributes in the csbase typemap?\n", typemap_lookup_type, pure_baseclass);
+    }
+
+    // Add code to do C++ casting to base class (only for classes in an inheritance hierarchy)
+    if (derived) {
+      writeClassUpcast(proxy_class_name, c_classname, c_baseclass);
+    }
+
+    /*
+     * Write any custom import statements to the proxy module header.
+     */
+    const String *imports = typemapLookup(n, "dimports", typemap_lookup_type, WARN_NONE);
+    if (Len(imports) > 0) {
+      String* imports_trimmed = Copy(imports);
+      Chop(imports_trimmed);
+      Printv(proxy_dmodule_imports, imports_trimmed, "\n", NIL);
+      Delete(imports_trimmed);
+    }
+
+    /*
+     * Write the proxy class header.
+     */
+    // Class modifiers.
+    const String *modifiers =
+      typemapLookup(n, "dclassmodifiers", typemap_lookup_type, WARN_D_TYPEMAP_CLASSMOD_UNDEF);
+
+    // User-defined interfaces.
+    const String *interfaces =
+      typemapLookup(n, derived ? "dinterfaces_derived" : "dinterfaces", typemap_lookup_type, WARN_NONE);
+
+    Printv(proxy_dmodule_code,
+      "\n",
+      modifiers,
+      " $dclassname",
+      (*Char(wanted_base) || *Char(interfaces)) ? " : " : "", wanted_base,
+      (*Char(wanted_base) && *Char(interfaces)) ? ", " : "", interfaces, " {",
+      NIL);
+
+    // wanted_base might refer to it, so we didn't delete earlier.
+    Delete(baseclass);
+
+    /*
+     * Write the proxy class body.
+     */
+    String* body = NewString("");
+
+    // Default class body.
+    const String *dbody;
+    if (derived) {
+      dbody = typemapLookup(n, "dbody_derived", typemap_lookup_type, WARN_D_TYPEMAP_DBODY_UNDEF);
+    } else {
+      dbody = typemapLookup(n, "dbody", typemap_lookup_type, WARN_D_TYPEMAP_DBODY_UNDEF);
+    }
+
+    Printv(body, dbody, NIL);
+
+    // Destructor and dispose().
+    // If the C++ destructor is accessible (public), it is wrapped by the
+    // dispose() method which is also called by the emitted D constructor. If it
+    // is not accessible, no D destructor is written and the generated dispose()
+    // method throws an exception.
+    // This enables C++ classes with protected or private destructors to be used
+    // in D as it would be used in C++ (GC finalization is a no-op then because
+    // of the empty D destructor) while preventing usage in »scope« variables.
+    // The method name for the dispose() method is specified in a typemap
+    // attribute called »methodname«.
+    const String *tm = NULL;
+
+    String *dispose_methodname;
+    String *dispose_methodmodifiers;
+    attributes = NewHash();
+    if (derived) {
+      tm = typemapLookup(n, "ddispose_derived", typemap_lookup_type, WARN_NONE, attributes);
+      dispose_methodname = Getattr(attributes, "tmap:ddispose_derived:methodname");
+      dispose_methodmodifiers = Getattr(attributes, "tmap:ddispose_derived:methodmodifiers");
+    } else {
+      tm = typemapLookup(n, "ddispose", typemap_lookup_type, WARN_NONE, attributes);
+      dispose_methodname = Getattr(attributes, "tmap:ddispose:methodname");
+      dispose_methodmodifiers = Getattr(attributes, "tmap:ddispose:methodmodifiers");
+    }
+
+    if (tm && *Char(tm)) {
+      if (!dispose_methodname) {
+	Swig_error(input_file, line_number,
+	  "No methodname attribute defined in the ddispose%s typemap for %s\n",
+	  (derived ? "_derived" : ""), proxy_class_name);
+      }
+      if (!dispose_methodmodifiers) {
+	Swig_error(input_file, line_number,
+	  "No methodmodifiers attribute defined in ddispose%s typemap for %s.\n",
+	  (derived ? "_derived" : ""), proxy_class_name);
+      }
+    }
+
+    if (tm) {
+      // Write the destructor if the C++ one is accessible.
+      if (*Char(destructor_call)) {
+	Printv(body,
+	  typemapLookup(n, "ddestructor", typemap_lookup_type, WARN_NONE), NIL);
+      }
+
+      // Write the dispose() method.
+      String *dispose_code = NewString("");
+      Printv(dispose_code, tm, NIL);
+
+      if (*Char(destructor_call)) {
+	Replaceall(dispose_code, "$imcall", destructor_call);
+      } else {
+	Replaceall(dispose_code, "$imcall", "throw new Exception(\"C++ destructor does not have public access\")");
+      }
+
+      if (*Char(dispose_code)) {
+	Printv(body, "\n", dispose_methodmodifiers,
+	  (derived ? " override" : ""), " void ", dispose_methodname, "() ",
+	  dispose_code, "\n", NIL);
+      }
+    }
+
+    if (Swig_directorclass(n)) {
+      // If directors are enabled for the current class, generate the
+      // director connect helper function which is called from the constructor
+      // and write it to the class body.
+      writeDirectorConnectProxy();
+    }
+
+    // Write all constants and enumerations first to prevent forward reference
+    // errors.
+    Printv(body, proxy_class_enums_code, NIL);
+
+    // Write the code generated in other methods to the class body.
+    Printv(body, proxy_class_code, NIL);
+
+    // Append extra user D code to the class body.
+    Printv(body,
+      typemapLookup(n, "dcode", typemap_lookup_type, WARN_NONE), "\n", NIL);
+
+    // Write the class body and the curly bracket closing the class definition
+    // to the proxy module.
+    indentCode(body);
+    Printv(proxy_dmodule_code, body, "\n}\n", NIL);
+    Delete(body);
+
+    // Write the epilogue code if there is any.
+    Printv(proxy_dmodule_code, proxy_class_epilogue_code, NIL);
+  }
+
+
+  /* ---------------------------------------------------------------------------
+   * D::writeClassUpcast()
+   * --------------------------------------------------------------------------- */
+  void writeClassUpcast(const String* d_class_name, const String* c_class_name,
+    const String* c_base_name) {
+
+    String *upcast_name = NewString("");
+    Printv(upcast_name, d_class_name, "Upcast", NIL);
+    String *upcast_wrapper_name = Swig_name_wrapper(upcast_name);
+
+    writeWrapDModuleFunction(upcast_name, "void*", "(void* objectRef)",
+      upcast_wrapper_name);
+
+    Printv(upcasts_code,
+      "SWIGEXPORT $cbaseclass * SWIGSTDCALL ", upcast_wrapper_name,
+      "($cclass *objectRef) {\n", "    return ($cbaseclass *)objectRef;\n" "}\n",
+      "\n", NIL);
+
+    Replaceall(upcasts_code, "$cclass", c_class_name);
+    Replaceall(upcasts_code, "$cbaseclass", c_base_name);
+
+    Delete(upcast_name);
+    Delete(upcast_wrapper_name);
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::writeTypeWrapperClass()
+   * --------------------------------------------------------------------------- */
+  void writeTypeWrapperClass(String *classname, SwigType *type) {
+    Node *n = NewHash();
+    Setfile(n, input_file);
+    Setline(n, line_number);
+
+    // Import statements.
+    Printv(wrap_dmodule_imports, typemapLookup(n, "dimports", type, WARN_NONE), NIL);
+
+    // Pure D baseclass and interfaces (no C++ inheritance possible.
+    const String *pure_baseclass = typemapLookup(n, "csbase", type, WARN_NONE);
+    const String *pure_interfaces = typemapLookup(n, "dinterfaces", type, WARN_NONE);
+
+    // Emit the class.
+    Printv(proxy_dmodule_code,
+      "\n",
+      typemapLookup(n, "dclassmodifiers", type, WARN_CSHARP_TYPEMAP_CLASSMOD_UNDEF),
+      " $dclassname",	// Class name and base class
+      (*Char(pure_baseclass) || *Char(pure_interfaces)) ? " : " : "", pure_baseclass,
+      ((*Char(pure_baseclass)) && *Char(pure_interfaces)) ? ", " : "", pure_interfaces, // Interfaces
+      " {", NIL );
+
+    String* body = NewString("");
+    Printv(body, typemapLookup(n, "dbody", type, WARN_D_TYPEMAP_DBODY_UNDEF),
+      typemapLookup(n, "dcode", type, WARN_NONE), // extra user D code
+      NIL);
+    indentCode(body);
+    Printv(proxy_dmodule_code, body, "\n}\n", NIL);
+    Delete(body);
+
+    Replaceall(proxy_dmodule_code, "$dclassname", classname);
+
+    Delete(n);
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::writeDirectorConnectProxy()
+   *
+   * Writes the helper method which registers the director callbacks by calling
+   * the director connect function from the D side to the proxy class.
+   * --------------------------------------------------------------------------- */
+  void writeDirectorConnectProxy() {
+    Printf(proxy_class_code, "\nprivate void swigDirectorConnect() {\n");
+
+    int i;
+    for (i = first_class_dmethod; i < curr_class_dmethod; ++i) {
+      UpcallData *udata = Getitem(dmethods_seq, i);
+      String *method = Getattr(udata, "method");
+      String *overloaded_name = Getattr(udata, "overname");
+      String *return_type = Getattr(udata, "return_type");
+      String *param_list = Getattr(udata, "param_list");
+      String *methid = Getattr(udata, "class_methodidx");
+      Printf(proxy_class_code, "  %s.SwigDirector_%s_Callback%s callback%s;\n", wrap_dmodule_fq_name, proxy_class_name, methid, methid);
+      Printf(proxy_class_code, "  if (swigIsMethodOverridden!(\"%s\", \"%s\", \"%s\")) {\n", method, return_type, param_list);
+      Printf(proxy_class_code, "    callback%s = &swigDirectorCallback_%s_%s;\n", methid, proxy_class_name, overloaded_name);
+      Printf(proxy_class_code, "  }\n\n");
+    }
+    Printf(proxy_class_code, "  %s.%s_director_connect(m_swigCObject, cast(void*)this", wrap_dmodule_fq_name, proxy_class_name);
+    for (i = first_class_dmethod; i < curr_class_dmethod; ++i) {
+      UpcallData *udata = Getitem(dmethods_seq, i);
+      String *methid = Getattr(udata, "class_methodidx");
+      Printf(proxy_class_code, ", callback%s", methid);
+    }
+    Printf(proxy_class_code, ");\n");
+    Printf(proxy_class_code, "}\n");
+
+    // Helper function to determine if a method has been overridden in a
+    // subclass of the wrapped class. If not, we just pass null to the
+    // director_connect_function since the method from the C++ class should
+    // be called as usual (see above).
+    // Only emit it if the proxy class has at least one method.
+    if (first_class_dmethod < curr_class_dmethod) {
+      Printf(proxy_class_code, "\n");
+      Printf(proxy_class_code, "private bool swigIsMethodOverridden(char[] methodName, char[] returnType, char[] parameterTypes)() {\n");
+      Printf(proxy_class_code, "  auto vtblMethod = mixin(\"cast(\" ~ returnType ~ \" delegate(\" ~ parameterTypes ~ \"))&\" ~ methodName);\n" );
+      Printf(proxy_class_code, "  void* baseMethod = mixin(\"SwigAddressOf!(\" ~ methodName ~ \", \" ~ returnType ~ \" function(\" ~ parameterTypes ~ \"))\");\n" );
+      Printf(proxy_class_code, "  return (cast(void*)vtblMethod.funcptr != baseMethod);\n");
+      Printf(proxy_class_code, "}\n");
+      Printf(proxy_class_code, "\n");
+      Printf(proxy_class_code, "private template SwigAddressOf(alias fn, Type) {\n");
+      Printf(proxy_class_code, "  const SwigAddressOf = cast(Type)&fn;\n");
+      Printf(proxy_class_code, "}\n");
+    }
+
+    if (Len(director_dcallbacks_code) > 0)
+      Printv(proxy_class_epilogue_code, director_dcallbacks_code, NIL);
+    if (Len(director_delegate_definitions) > 0)
+      Printv(proxy_class_code, "\n", director_delegate_definitions, NIL);
+    if (Len(director_delegate_instances) > 0)
+      Printv(proxy_class_code, "\n", director_delegate_instances, NIL);
+    if (Len(director_method_types) > 0)
+      Printv(proxy_class_code, "\n", director_method_types, NIL);
+
+    Delete(director_callback_typedefs);
+    director_callback_typedefs = NULL;
+    Delete(director_callbacks);
+    director_callbacks = NULL;
+    Delete(director_dcallbacks_code);
+    director_dcallbacks_code = NULL;
+    Delete(director_delegate_definitions);
+    director_delegate_definitions = NULL;
+    Delete(director_delegate_instances);
+    director_delegate_instances = NULL;
+    Delete(director_method_types);
+    director_method_types = NULL;
+    Delete(director_connect_parms);
+    director_connect_parms = NULL;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::writeDirectorConnectWrapper()
+   *
+   * Writes the director connect function and the corresponding declaration to
+   * the C++ wrapper respectively the D wrapper.
+   * --------------------------------------------------------------------------- */
+  void writeDirectorConnectWrapper(Node *n) {
+    if (!Swig_directorclass(n))
+      return;
+
+    // Output the director connect method.
+    String *norm_name = SwigType_namestr(Getattr(n, "name"));
+    String *connect_name = NewStringf("%s_director_connect", proxy_class_name);
+    String *sym_name = Getattr(n, "sym:name");
+    Wrapper *code_wrap;
+
+    Printv(wrapper_loader_bind_code, wrapper_loader_bind_command, NIL);
+    Replaceall(wrapper_loader_bind_code, "$function", connect_name);
+    Replaceall(wrapper_loader_bind_code, "$symbol", Swig_name_wrapper( connect_name ));
+
+    Printf(wrap_dmodule_code, "extern(C) void function(void* cObject, void* dObject");
+
+    code_wrap = NewWrapper();
+    Printf(code_wrap->def, "SWIGEXPORT void SWIGSTDCALL D_%s(void *objarg, void *dobj", connect_name);
+
+    Printf(code_wrap->code, "  %s *obj = (%s *)objarg;\n", norm_name, norm_name);
+    Printf(code_wrap->code, "  SwigDirector_%s *director = dynamic_cast<SwigDirector_%s *>(obj);\n", sym_name, sym_name);
+
+    Printf(code_wrap->code, "  if (director) {\n");
+    Printf(code_wrap->code, "    director->swig_connect_director(dobj");
+
+    for (int i = first_class_dmethod; i < curr_class_dmethod; ++i) {
+      UpcallData *udata = Getitem(dmethods_seq, i);
+      String *methid = Getattr(udata, "class_methodidx");
+
+      Printf(code_wrap->def, ", SwigDirector_%s::SWIG_Callback%s_t callback%s", sym_name, methid, methid);
+      Printf(code_wrap->code, ", callback%s", methid);
+      Printf(wrap_dmodule_code, ", SwigDirector_%s_Callback%s callback%s", sym_name, methid, methid);
+    }
+
+    Printf(code_wrap->def, ") {\n");
+    Printf(code_wrap->code, ");\n");
+    Printf(wrap_dmodule_code, ") %s;\n", connect_name);
+    Printf(code_wrap->code, "  }\n");
+    Printf(code_wrap->code, "}\n");
+
+    Wrapper_print(code_wrap, f_wrappers);
+    DelWrapper(code_wrap);
+
+    Delete(connect_name);
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::addUpcallMethod()
+   *
+   * Adds new director upcall signature.
+   * --------------------------------------------------------------------------- */
+  UpcallData *addUpcallMethod(String *imclass_method, String *class_method,
+    String *decl, String *overloaded_name, String *return_type, String *param_list) {
+
+    UpcallData *udata;
+    String *imclass_methodidx;
+    String *class_methodidx;
+    Hash *new_udata;
+    String *key = NewStringf("%s|%s", imclass_method, decl);
+
+    ++curr_class_dmethod;
+
+    /* Do we know about this director class already? */
+    if ((udata = Getattr(dmethods_table, key))) {
+      Delete(key);
+      return Getattr(udata, "methodoff");
+    }
+
+    imclass_methodidx = NewStringf("%d", n_dmethods);
+    class_methodidx = NewStringf("%d", n_dmethods - first_class_dmethod);
+    n_dmethods++;
+
+    new_udata = NewHash();
+    Append(dmethods_seq, new_udata);
+    Setattr(dmethods_table, key, new_udata);
+
+    Setattr(new_udata, "method", Copy(class_method));
+    Setattr(new_udata, "class_methodidx", class_methodidx);
+    Setattr(new_udata, "decl", Copy(decl));
+    Setattr(new_udata, "overname", Copy(overloaded_name));
+    Setattr(new_udata, "return_type", Copy(return_type));
+    Setattr(new_udata, "param_list", Copy(param_list));
+
+    Delete(key);
+    return new_udata;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::typemapLookup()
+   *
+   * n - for input only and must contain info for Getfile(n) and Getline(n) to work
+   * tmap_method - typemap method name
+   * type - typemap type to lookup
+   * warning - warning number to issue if no typemaps found
+   * typemap_attributes - the typemap attributes are attached to this node and will
+   *   also be used for temporary storage if non null
+   * return is never NULL, unlike Swig_typemap_lookup()
+   * --------------------------------------------------------------------------- */
+  const String *typemapLookup(Node *n, const_String_or_char_ptr tmap_method, SwigType *type, int warning, Node *typemap_attributes = 0) {
+    Node *node = !typemap_attributes ? NewHash() : typemap_attributes;
+    Setattr(node, "type", type);
+    Setfile(node, Getfile(n));
+    Setline(node, Getline(n));
+    const String *tm = Swig_typemap_lookup(tmap_method, node, "", 0);
+    if (!tm) {
+      tm = empty_string;
+      if (warning != WARN_NONE) {
+	Swig_warning(warning, Getfile(n), Getline(n),
+	  "No %s typemap defined for %s\n", tmap_method, SwigType_str(type, 0));
+      }
+    }
+    if (!typemap_attributes) {
+      Delete(node);
+    }
+    return tm;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::replaceClassname()
+   *
+   * Replaces the special variable $dclassname with the proxy class name for
+   * classes/structs/unions SWIG knows about. Also substitutes the enumeration
+   * name for non-anonymous enums. Otherwise, $classname is replaced with a
+   * $descriptor(type)-like name.
+   *
+   * $*dclassname and $&classname work like with descriptors (see manual section
+   * 10.4.3), they remove a prointer from respectively add a pointer to the type.
+   *
+   * Inputs:
+   *   tm - String to perform the substitution at (will usually come from a
+   *        typemap.
+   *   pt - The type to substitute for the variables.
+   * Outputs:
+   *   tm - String with the variables substituted.
+   * Return:
+   *   substitution_performed - flag indicating if a substitution was performed
+   * --------------------------------------------------------------------------- */
+  bool replaceClassname(String *tm, SwigType *pt) {
+    bool substitution_performed = false;
+    SwigType *type = Copy(SwigType_typedef_resolve_all(pt));
+    SwigType *strippedtype = SwigType_strip_qualifiers(type);
+
+    if (Strstr(tm, "$dclassname")) {
+      SwigType *classnametype = Copy(strippedtype);
+      replaceClassnameVariable(tm, "$dclassname", classnametype);
+      substitution_performed = true;
+      Delete(classnametype);
+    }
+    if (Strstr(tm, "$*dclassname")) {
+      SwigType *classnametype = Copy(strippedtype);
+      Delete(SwigType_pop(classnametype));
+      replaceClassnameVariable(tm, "$*dclassname", classnametype);
+      substitution_performed = true;
+      Delete(classnametype);
+    }
+    if (Strstr(tm, "$&dclassname")) {
+      SwigType *classnametype = Copy(strippedtype);
+      SwigType_add_pointer(classnametype);
+      replaceClassnameVariable(tm, "$&dclassname", classnametype);
+      substitution_performed = true;
+      Delete(classnametype);
+    }
+
+    Delete(strippedtype);
+    Delete(type);
+
+    return substitution_performed;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::replaceClassnameVariable()
+   *
+   * See D::replaceClassname().
+   * --------------------------------------------------------------------------- */
+  void replaceClassnameVariable(String *tm, const char *variable, SwigType *classnametype) {
+    if (SwigType_isenum(classnametype)) {
+      String *enumname = getEnumName(classnametype);
+      if (enumname)
+	Replaceall(tm, variable, enumname);
+      else
+	Replaceall(tm, variable, NewStringf("int"));
+    } else {
+      String *classname = getProxyName(classnametype);
+      if (classname) {
+	// getProxyName() works for pointers to classes too
+	Replaceall(tm, variable, classname);
+      } else {
+	// SWIG does not know anything about the type (after resolving typedefs).
+	// Just mangle the type name string like $descriptor(type) would do.
+	String *descriptor = NewStringf("SWIGTYPE%s", SwigType_manglestr(classnametype));
+	Replaceall(tm, variable, descriptor);
+
+	// Add to hash table so that a type wrapper class can be created later.
+	Setattr(swig_types_hash, descriptor, classnametype);
+	Delete(descriptor);
+      }
+    }
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::getOverloadedName()
+   * --------------------------------------------------------------------------- */
+  String *getOverloadedName(Node *n) {
+    // A void* parameter is used for all wrapped classes in the wrapper code.
+    // Thus, the wrapper function names for overloaded functions are postfixed
+    // with a counter string to make them unique.
+    String *overloaded_name = NewStringf("%s", Getattr(n, "sym:name"));
+
+    if (Getattr(n, "sym:overloaded")) {
+      Printv(overloaded_name, Getattr(n, "sym:overname"), NIL);
+    }
+
+    return overloaded_name;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::getEnumName()
+   * --------------------------------------------------------------------------- */
+  String *getEnumName(SwigType *t) {
+    Node *enum_name = NULL;
+    Node *n = enumLookup(t);
+    if (n) {
+      String *symname = Getattr(n, "sym:name");
+      if (symname) {
+	// Add in class scope when referencing enum if not a global enum
+	String *scopename_prefix = Swig_scopename_prefix(Getattr(n, "name"));
+	String *proxyname = 0;
+	if (scopename_prefix) {
+	  proxyname = getProxyName(scopename_prefix);
+	}
+	if (proxyname)
+	  enum_name = NewStringf("%s.%s", proxyname, symname);
+	else
+	  enum_name = NewStringf("%s", symname);
+	Delete(scopename_prefix);
+      }
+    }
+
+    return enum_name;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::getProxyName()
+   *
+   * Test to see if a type corresponds to something wrapped with a proxy class
+   * Return NULL if not otherwise the proxy class name
+   * --------------------------------------------------------------------------- */
+   String *getProxyName(SwigType *t) {
+    if (proxy_flag) {
+      Node *n = classLookup(t);
+      if (n) {
+	return Getattr(n, "sym:name");
+      }
+    }
+    return NULL;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::directorClassName()
+   * --------------------------------------------------------------------------- */
+  String *getDirectorClassName(Node *n) {
+    String *dirclassname;
+    const char *attrib = "director:classname";
+
+    if (!(dirclassname = Getattr(n, attrib))) {
+      String *classname = Getattr(n, "sym:name");
+
+      dirclassname = NewStringf("SwigDirector_%s", classname);
+      Setattr(n, attrib, dirclassname);
+    }
+
+    return dirclassname;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::makeParameterName()
+   *
+   * Inputs:
+   *   n - Node
+   *   p - parameter node
+   *   arg_num - parameter argument number
+   *   setter  - set this flag when wrapping variables
+   * Return:
+   *   arg - a unique parameter name
+   * --------------------------------------------------------------------------- */
+  static String *makeParameterName(Node *n, Parm *p, int arg_num, bool setter) {
+    String *arg = 0;
+    String *pn = Getattr(p, "name");
+
+    // Use C parameter name unless it is a duplicate or an empty parameter name
+    int count = 0;
+    ParmList *plist = Getattr(n, "parms");
+    while (plist) {
+      if ((Cmp(pn, Getattr(plist, "name")) == 0))
+        count++;
+      plist = nextSibling(plist);
+    }
+    String *wrn = pn ? Swig_name_warning(p, 0, pn, 0) : 0;
+    arg = (!pn || (count > 1) || wrn) ? NewStringf("arg%d", arg_num) : Copy(pn);
+
+    if (setter && Cmp(arg, "self") != 0) {
+      // In theory, we could use the normal parameter name for setter functions.
+      // Unfortunately, it is set to "Class::VariableName" for static public
+      // members by the parser, which is not legal D syntax. Thus, we just force
+      // it to "value".
+      Delete(arg);
+      arg = NewString("value");
+    }
+
+    return arg;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::canThrow()
+   *
+   * Determine whether the code in the typemap can throw a D exception.
+   * If so, note it for later when excodeSubstitute() is called.
+   * --------------------------------------------------------------------------- */
+  static void canThrow(Node *n, const String *typemap, Node *parameter) {
+    String *canthrow_attribute = NewStringf("tmap:%s:canthrow", typemap);
+    String *canthrow = Getattr(parameter, canthrow_attribute);
+    if (canthrow)
+      Setattr(n, "csharp:canthrow", "1");
+    Delete(canthrow_attribute);
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::excodeSubstitute()
+   *
+   * If a C++ method can throw a exception, additional code is added to the
+   * proxy method to check if an exception is pending so that it can be
+   * rethrown on the D side.
+   *
+   * This method replaces the $excode variable with the exception handling code
+   * in the excode typemap attribute if it »canthrow« an exception.
+   * --------------------------------------------------------------------------- */
+  static void substituteExcode(Node *n, String *code, const String *typemap, Node *parameter) {
+    String *excode_attribute = NewStringf("tmap:%s:excode", typemap);
+    String *excode = Getattr(parameter, excode_attribute);
+    if (Getattr(n, "csharp:canthrow")) {
+      int count = Replaceall(code, "$excode", excode);
+      if (count < 1 || !excode) {
+	Swig_warning(WARN_D_EXCODE, input_file, line_number,
+	  "D exception may not be thrown – no $excode or excode attribute in '%s' typemap.\n",
+	  typemap);
+      }
+    } else {
+      Replaceall(code, "$excode", "");
+    }
+    Delete(excode_attribute);
+  }
+
+  static Parm *NewParmFromNode(SwigType *type, const_String_or_char_ptr name, Node *n) {
+    Parm *p = NewParm(type, name);
+    Setfile(p, Getfile(n));
+    Setline(p, Getline(n));
+    return p;
   }
 
   /* ---------------------------------------------------------------------------
@@ -3498,10 +3452,19 @@ public:
    *
    * Helper function to indent a code (string) by one level.
    * --------------------------------------------------------------------------- */
-  void indentCode(String* code) const {
+  static void indentCode(String* code) {
     Replaceall(code, "\n", "\n  ");
     Replaceall(code, "  \n", "\n");
     Chop(code);
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::emitBanner()
+   * --------------------------------------------------------------------------- */
+  static void emitBanner(File *f) {
+    Printf(f, "/* ----------------------------------------------------------------------------\n");
+    Swig_banner_target_lang(f, " *");
+    Printf(f, " * ----------------------------------------------------------------------------- */\n\n");
   }
 };
 
