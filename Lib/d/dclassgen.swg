@@ -61,12 +61,11 @@
   }
 }
 
-// TODO: How much visibility is needed for swigGetCObject?
 %typemap(dbody) SWIGTYPE %{
 private void* m_swigCObject;
 protected bool m_swigOwnCObject;
 
-protected this(void* cObject, bool ownCObject) {
+public this(void* cObject, bool ownCObject) {
   m_swigCObject = cObject;
   m_swigOwnCObject = ownCObject;
 }
@@ -79,7 +78,7 @@ public static void* swigGetCObject($dclassname obj) {
 %typemap(dbody_derived) SWIGTYPE %{
 private void* m_swigCObject;
 
-protected this(void* cObject, bool ownCObject) {
+public this(void* cObject, bool ownCObject) {
   super($wrapdmodule.$dclassnameUpcast(cObject), ownCObject);
   m_swigCObject = cObject;
 }
@@ -94,7 +93,6 @@ public static void* swigGetCObject($dclassname obj) {
  * Type wrapper classes.
  */
 
-// TODO: How much visibility is needed for the two-arguments constructor?
 %typemap(dbody) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] %{
 private void* m_swigCObject;
 
@@ -115,7 +113,7 @@ public static void* swigGetCObject($dclassname obj) {
 /*
  * Member function pointer wrapper classes (see <dmemberfunctionpointers.swg>).
  */
-// TODO: How much visibility is needed for swigGetCMemberPtr?
+
 %typemap(dbody) SWIGTYPE (CLASS::*) %{
 private char* m_swigCMemberPtr;
 

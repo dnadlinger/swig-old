@@ -20,7 +20,7 @@
 
 // We need the \0-terminated string conversion functions.
 // Could be easily extended to support Phobos as well.
-%pragma(d) proxydmoduleimports = "static import tango.stdc.stringz;";
+%pragma(d) globalproxyimports = "static import tango.stdc.stringz;";
 
 
 /*

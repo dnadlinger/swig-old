@@ -25,8 +25,7 @@
 
 // MACRO for use within the std::vector class body
 %define SWIG_STD_VECTOR_MINIMUM_INTERNAL(CONST_REFERENCE_TYPE, CTYPE...)
-%pragma(d) proxydmoduleimports="import tango.core.Exception;"
-
+%typemap(dimports) std::vector<CTYPE > "static import tango.core.Exception;"
 %typemap(dcode) std::vector<CTYPE > %{
   public this($typemap(cstype, CTYPE)[] values) {
     this();
@@ -41,7 +40,7 @@
 
   public $typemap(cstype, CTYPE) opIndexAssign($typemap(cstype, CTYPE) value, size_t index) {
     if (index >= size()) {
-      throw new NoSuchElementException("Tried to assign to element out of vector bounds.");
+      throw new tango.core.Exception.NoSuchElementException("Tried to assign to element out of vector bounds.");
     }
     setElement(index, value);
     return value;
@@ -49,7 +48,7 @@
 
   public $typemap(cstype, CTYPE) opIndex(size_t index) {
     if (index >= size()) {
-      throw new NoSuchElementException("Tried to read from element out of vector bounds.");
+      throw new tango.core.Exception.NoSuchElementException("Tried to read from element out of vector bounds.");
     }
     return getElement(index);
   }
@@ -98,7 +97,7 @@
 
   public void capacity(size_t value) {
     if (value < size()) {
-      throw new IllegalArgumentException( "Tried to make the capacity of a vector smaller than its size." );
+      throw new tango.core.Exception.IllegalArgumentException( "Tried to make the capacity of a vector smaller than its size." );
     }
 
     reserve(value);
