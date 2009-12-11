@@ -31,6 +31,11 @@
 #define javaout              dout
 #define javainterfaces       dinterfaces
 #define javabase             dbase
+
+%typemap(dimports) RemoteMpe %{
+import IRemoteSyncIO;
+import IRemoteAsyncIO;
+%}
 #endif
 
 // Modify multiple inherited base classes into inheriting interfaces

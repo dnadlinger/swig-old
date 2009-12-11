@@ -15,7 +15,7 @@ public:
 
 #ifdef SWIGD
 // Workaround for the D module which uses the literal value in the generated wrapper code.
-%dconstvalue("RGBTraits.NumComponents") Manta::ColorSpace<Manta::RGBTraits>::NumComponents;
+%dconstvalue("3") Manta::ColorSpace<Manta::RGBTraits>::NumComponents;
 #endif
 
 %inline {
