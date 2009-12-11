@@ -22,9 +22,9 @@ class TargetLanguageBase { public void targetLanguageBaseMethod() {} };
 class TargetLanguageBase2 { public void targetLanguageBase2Method() {} };
 %}
 
-%pragma(d) proxydmoduleimports=%{
-class TargetLanguageBase { public void targetLanguageBaseMethod() {} };
-class TargetLanguageBase2 { public void targetLanguageBase2Method() {} };
+%pragma(d) globalproxyimports=%{
+private class TargetLanguageBase { public void targetLanguageBaseMethod() {} };
+private class TargetLanguageBase2 { public void targetLanguageBase2Method() {} };
 %}
 
 %typemap(csbase) SWIGTYPE "TargetLanguageBase"
