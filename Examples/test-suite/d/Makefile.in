@@ -17,6 +17,8 @@ include $(srcdir)/../common.mk
 INTERFACEDIR = ../../
 TARGETSUFFIX = _wrap
 
+SWIGOPT+=-splitproxy
+
 # Rules for the different types of tests
 %.cpptest:
 	$(setup)
@@ -29,7 +31,9 @@ TARGETSUFFIX = _wrap
 	+$(run_testcase)
 
 %.multicpptest:
-	echo "skipping multi-module testcase $* under D: multi-module wrapping is not yet supported"
+	$(setup)
+	+(cd $* && $(swig_and_compile_multi_cpp))
+	+$(run_testcase)
 
 # Makes a directory for the testcase if it does not exist
 setup = \
