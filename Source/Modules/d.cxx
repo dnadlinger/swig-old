@@ -1078,7 +1078,7 @@ public:
       Printv(proxy_constructor_code, " ", construct_tm, NIL);
     }
 
-    substituteExcode(n, proxy_constructor_code, "dconstructor", attributes);
+    replaceExcode(n, proxy_constructor_code, "dconstructor", attributes);
 
     bool is_pre_code = Len(pre_code) > 0;
     bool is_post_code = Len(post_code) > 0;
@@ -2628,7 +2628,7 @@ private:
     // Lookup the code used to convert the wrapper return value to the proxy
     // function return type.
     if ((tm = Swig_typemap_lookup("csout", n, "", 0))) {
-      substituteExcode(n, tm, "csout", n);
+      replaceExcode(n, tm, "csout", n);
       bool is_pre_code = Len(pre_code) > 0;
       bool is_post_code = Len(post_code) > 0;
       bool is_terminator_code = Len(terminator_code) > 0;
@@ -2853,7 +2853,7 @@ private:
     // Lookup the code used to convert the wrapper return value to the proxy
     // function return type.
     if ((tm = Swig_typemap_lookup("csout", n, "", 0))) {
-      substituteExcode(n, tm, "csout", n);
+      replaceExcode(n, tm, "csout", n);
       bool is_pre_code = Len(pre_code) > 0;
       bool is_post_code = Len(post_code) > 0;
       bool is_terminator_code = Len(terminator_code) > 0;
@@ -3373,6 +3373,30 @@ private:
   }
 
   /* ---------------------------------------------------------------------------
+   * D::inProxyModule()
+   *
+   * Determines if the specified proxy class is decleared in the currently
+   * processed proxy D module.
+   *
+   * This function is used to determine if fully qualified type names have to be
+   * used (package, module and type name). This is never the case if the split
+   * proxy mode is not used, all proxy types are written to the same module then.
+   * --------------------------------------------------------------------------- */
+  bool inProxyModule(const String *type_name) {
+    if (!split_proxy_dmodule) {
+      // If we are not in split proxy module mode, proxy code is always written
+      // to the same module.
+      return true;
+    }
+
+    if (!Len(proxy_class_name)) {
+      return false;
+    }
+
+    return (Strcmp(proxy_class_name, type_name) == 0);
+  }
+
+  /* ---------------------------------------------------------------------------
    * D::addUpcallMethod()
    *
    * Adds new director upcall signature.
@@ -3610,30 +3634,6 @@ private:
   }
 
   /* ---------------------------------------------------------------------------
-   * D::inProxyModule()
-   *
-   * Determines if the specified proxy class is decleared in the currently
-   * processed proxy D module.
-   *
-   * This function is used to determine if fully qualified type names have to be
-   * used (package, module and type name). This is never the case if the split
-   * proxy mode is not used, all proxy types are written to the same module then.
-   * --------------------------------------------------------------------------- */
-  bool inProxyModule(const String *type_name) {
-    if (!split_proxy_dmodule) {
-      // If we are not in split proxy module mode, proxy code is always written
-      // to the same module.
-      return true;
-    }
-
-    if (!Len(proxy_class_name)) {
-      return false;
-    }
-
-    return (Strcmp(proxy_class_name, type_name) == 0);
-  }
-
-  /* ---------------------------------------------------------------------------
    * D::replaceModuleVariables()
    *
    * Replaces the $wrapdmodule and $module variables with their values in the
@@ -3642,6 +3642,32 @@ private:
   void replaceModuleVariables(String *target) {
     Replaceall(target, "$wrapdmodule", wrap_dmodule_fq_name);
     Replaceall(target, "$module", proxy_dmodule_name);
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::replaceExcode()
+   *
+   * If a C++ method can throw a exception, additional code is added to the
+   * proxy method to check if an exception is pending so that it can be
+   * rethrown on the D side.
+   *
+   * This method replaces the $excode variable with the exception handling code
+   * in the excode typemap attribute if it »canthrow« an exception.
+   * --------------------------------------------------------------------------- */
+  void replaceExcode(Node *n, String *code, const String *typemap, Node *parameter) {
+    String *excode_attribute = NewStringf("tmap:%s:excode", typemap);
+    String *excode = Getattr(parameter, excode_attribute);
+    if (Getattr(n, "csharp:canthrow")) {
+      int count = Replaceall(code, "$excode", excode);
+      if (count < 1 || !excode) {
+	Swig_warning(WARN_D_EXCODE, input_file, line_number,
+	  "D exception may not be thrown – no $excode or excode attribute in '%s' typemap.\n",
+	  typemap);
+      }
+    } else {
+      Replaceall(code, "$excode", "");
+    }
+    Delete(excode_attribute);
   }
 
   /* ---------------------------------------------------------------------------
@@ -3704,7 +3730,7 @@ private:
    * Return:
    *   arg - a unique parameter name
    * --------------------------------------------------------------------------- */
-  static String *makeParameterName(Node *n, Parm *p, int arg_num, bool setter) {
+  String *makeParameterName(Node *n, Parm *p, int arg_num, bool setter) {
     String *arg = 0;
     String *pn = Getattr(p, "name");
 
@@ -3737,7 +3763,7 @@ private:
    * Determine whether the code in the typemap can throw a D exception.
    * If so, note it for later when excodeSubstitute() is called.
    * --------------------------------------------------------------------------- */
-  static void canThrow(Node *n, const String *typemap, Node *parameter) {
+  void canThrow(Node *n, const String *typemap, Node *parameter) {
     String *canthrow_attribute = NewStringf("tmap:%s:canthrow", typemap);
     String *canthrow = Getattr(parameter, canthrow_attribute);
     if (canthrow)
@@ -3746,32 +3772,9 @@ private:
   }
 
   /* ---------------------------------------------------------------------------
-   * D::excodeSubstitute()
-   *
-   * If a C++ method can throw a exception, additional code is added to the
-   * proxy method to check if an exception is pending so that it can be
-   * rethrown on the D side.
-   *
-   * This method replaces the $excode variable with the exception handling code
-   * in the excode typemap attribute if it »canthrow« an exception.
+   * D::NewParmFromNode()
    * --------------------------------------------------------------------------- */
-  static void substituteExcode(Node *n, String *code, const String *typemap, Node *parameter) {
-    String *excode_attribute = NewStringf("tmap:%s:excode", typemap);
-    String *excode = Getattr(parameter, excode_attribute);
-    if (Getattr(n, "csharp:canthrow")) {
-      int count = Replaceall(code, "$excode", excode);
-      if (count < 1 || !excode) {
-	Swig_warning(WARN_D_EXCODE, input_file, line_number,
-	  "D exception may not be thrown – no $excode or excode attribute in '%s' typemap.\n",
-	  typemap);
-      }
-    } else {
-      Replaceall(code, "$excode", "");
-    }
-    Delete(excode_attribute);
-  }
-
-  static Parm *NewParmFromNode(SwigType *type, const_String_or_char_ptr name, Node *n) {
+  Parm *NewParmFromNode(SwigType *type, const_String_or_char_ptr name, Node *n) {
     Parm *p = NewParm(type, name);
     Setfile(p, Getfile(n));
     Setline(p, Getline(n));
@@ -3783,7 +3786,7 @@ private:
    *
    * Helper function to indent a code (string) by one level.
    * --------------------------------------------------------------------------- */
-  static void indentCode(String* code) {
+  void indentCode(String* code) {
     Replaceall(code, "\n", "\n  ");
     Replaceall(code, "  \n", "\n");
     Chop(code);
@@ -3792,7 +3795,7 @@ private:
   /* ---------------------------------------------------------------------------
    * D::emitBanner()
    * --------------------------------------------------------------------------- */
-  static void emitBanner(File *f) {
+  void emitBanner(File *f) {
     Printf(f, "/* ----------------------------------------------------------------------------\n");
     Swig_banner_target_lang(f, " *");
     Printf(f, " * ----------------------------------------------------------------------------- */\n\n");
