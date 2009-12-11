@@ -3365,11 +3365,41 @@ private:
       return;
     }
 
+    String *import = NewStringf("static import %s%s;\n", package, dmodule_name);
     if (is_wrapping_class()) {
-      Printf(proxy_class_imports, "static import %s%s;\n", package, dmodule_name);
+      addImportStatement(proxy_class_imports, import);
     } else {
-      Printf(proxy_dmodule_imports, "static import %s%s;\n", package, dmodule_name);
+      addImportStatement(proxy_dmodule_imports, import);
     }
+    Delete(import);
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::addImportStatement()
+   *
+   * Adds the given import statement to the given list of import statements if
+   * there is no statement importing that module present yet.
+   * --------------------------------------------------------------------------- */
+  void addImportStatement(String *target, const String *import) {
+    char *position = Strstr(target, import);
+    if (position) {
+      // If the import statement has been found in the target string, we have to
+      // check if the previous import was static, which would lead to problems
+      // if this import is not.
+      // Thus, we check if the seven characters in front of the occurence are
+      // »static «. If the import string passed is also static, the checks fail
+      // even if the found statement is also static because the last seven characters would be part of the previous import
+      // statement then.
+
+      if (position - Char(target) < 7) {
+	return;
+      }
+      if (strncmp(position - 7, "static ", 7)) {
+	return;
+      }
+    }
+
+    Printv(target, import, NIL);
   }
 
   /* ---------------------------------------------------------------------------
