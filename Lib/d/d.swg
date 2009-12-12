@@ -129,6 +129,9 @@
 // Typemaps containing D code used when generating D proxy classes.
 %include <dclassgen.swg>
 
+// Mapping of C++ operator overloading methods to D.
+%include <doperators.swg>
+
 // Helper code string and exception handling.
 %include <dhead.swg>
 
