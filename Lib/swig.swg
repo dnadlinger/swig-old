@@ -95,7 +95,7 @@
    to set/get variable methods. You don't need to use the
    %allowexception directive when using %exceptionvar.
 */
-#ifdef SWIGCSHARP
+#if defined(SWIGCSHARP) || defined(SWIGD)
 #define %exceptionvar      %feature("exceptvar", canthrow=1)
 #else
 #define %exceptionvar      %feature("exceptvar")
