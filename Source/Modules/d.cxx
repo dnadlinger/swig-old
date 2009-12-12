@@ -676,7 +676,7 @@ public:
     // Emit the enum declaration.
     if (typemap_lookup_type) {
       const String *enummodifiers = typemapLookup(n, "dclassmodifiers", typemap_lookup_type, WARN_D_TYPEMAP_CLASSMOD_UNDEF);
-      Printv(enum_code, enummodifiers, " ", symname, " {\n", NIL);
+      Printv(enum_code, "\n", enummodifiers, " ", symname, " {\n", NIL);
     } else {
       // Handle anonymous enums.
       Printv(enum_code, "\nenum {\n", NIL);
