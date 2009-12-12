@@ -320,64 +320,27 @@
 		double,             const double &
   "$csinput"
 
-%typemap(csout, excode=SWIGEXCODE) bool,               const bool &               {
+
+%typemap(csout, excode=SWIGEXCODE) bool, const bool & {
   bool ret = $imcall ? true : false;$excode
   return ret;
 }
-%typemap(csout, excode=SWIGEXCODE) char,               const char &               {
-  char ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) signed char,        const signed char &        {
-  byte ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) unsigned char,      const unsigned char &      {
-  ubyte ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) short,              const short &              {
-  short ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) unsigned short,     const unsigned short &     {
-  ushort ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) int,                const int &                {
-  int ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) unsigned int,       const unsigned int &       {
-  uint ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) long,               const long &               {
-  int ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) unsigned long,      const unsigned long &      {
-  uint ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) size_t,             const size_t &             {
-  size_t ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) long long,          const long long &          {
-  long ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) unsigned long long, const unsigned long long & {
-  ulong ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) float,              const float &              {
-  float ret = $imcall;$excode
-  return ret;
-}
-%typemap(csout, excode=SWIGEXCODE) double,             const double &             {
-  double ret = $imcall;$excode
+
+%typemap(csout, excode=SWIGEXCODE) char,               const char &,
+                                   signed char,        const signed char &,
+                                   unsigned char,      const unsigned char &,
+                                   short,              const short &,
+                                   unsigned short,     const unsigned short &,
+                                   int,                const int &,
+                                   unsigned int,       const unsigned int &,
+                                   long,               const long &,
+                                   unsigned long,      const unsigned long &,
+                                   size_t,             const size_t &,
+                                   long long,          const long long &,
+                                   unsigned long long, const unsigned long long &,
+                                   float,              const float &,
+                                   double,             const double & {
+  auto ret = $imcall;$excode
   return ret;
 }
 
