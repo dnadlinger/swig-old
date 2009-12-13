@@ -24,10 +24,10 @@
 %include <std_common.i>
 
 // MACRO for use within the std::vector class body
-%define SWIG_STD_VECTOR_MINIMUM_INTERNAL(CONST_REFERENCE_TYPE, CTYPE...)
-%typemap(dimports) std::vector<CTYPE > "static import tango.core.Exception;"
-%typemap(dcode) std::vector<CTYPE > %{
-  public this($typemap(cstype, CTYPE)[] values) {
+%define SWIG_STD_VECTOR_MINIMUM_INTERNAL(CONST_REFERENCE_TYPE, CWTYPE...)
+%typemap(dimports) std::vector<CWTYPE > "static import tango.core.Exception;"
+%typemap(dcode) std::vector<CWTYPE > %{
+  public this($typemap(dptype, CWTYPE)[] values) {
     this();
     append(values);
   }
@@ -38,7 +38,7 @@
   alias size length;
   alias opSlice slice;
 
-  public $typemap(cstype, CTYPE) opIndexAssign($typemap(cstype, CTYPE) value, size_t index) {
+  public $typemap(dptype, CWTYPE) opIndexAssign($typemap(dptype, CWTYPE) value, size_t index) {
     if (index >= size()) {
       throw new tango.core.Exception.NoSuchElementException("Tried to assign to element out of vector bounds.");
     }
@@ -46,28 +46,28 @@
     return value;
   }
 
-  public $typemap(cstype, CTYPE) opIndex(size_t index) {
+  public $typemap(dptype, CWTYPE) opIndex(size_t index) {
     if (index >= size()) {
       throw new tango.core.Exception.NoSuchElementException("Tried to read from element out of vector bounds.");
     }
     return getElement(index);
   }
 
-  public void append($typemap(cstype, CTYPE)[] value...) {
+  public void append($typemap(dptype, CWTYPE)[] value...) {
     foreach (v; value) {
       add(v);
     }
   }
 
-  public $typemap(cstype, CTYPE)[] opSlice() {
-    $typemap(cstype, CTYPE)[] array = new $typemap(cstype, CTYPE)[size()];
+  public $typemap(dptype, CWTYPE)[] opSlice() {
+    $typemap(dptype, CWTYPE)[] array = new $typemap(dptype, CWTYPE)[size()];
     foreach (i, ref value; array) {
       value = getElement(i);
     }
     return array;
   }
 
-  public int opApply(int delegate(ref $typemap(cstype, CTYPE) value) dg) {
+  public int opApply(int delegate(ref $typemap(dptype, CWTYPE) value) dg) {
     int result;
 
     size_t currentSize = size();
@@ -79,7 +79,7 @@
     return result;
   }
 
-  public int opApply(int delegate(ref size_t index, ref $typemap(cstype, CTYPE) value) dg) {
+  public int opApply(int delegate(ref size_t index, ref $typemap(dptype, CWTYPE) value) dg) {
     int result;
 
     size_t currentSize = size();
@@ -106,7 +106,7 @@
 
   public:
     typedef size_t size_type;
-    typedef CTYPE value_type;
+    typedef CWTYPE value_type;
     typedef CONST_REFERENCE_TYPE const_reference;
     void clear();
     void push_back(const value_type& x);
@@ -117,8 +117,8 @@
     vector(const vector &other);
     %extend {
       vector(size_type capacity) throw (std::length_error) {
-        std::vector<CTYPE >* pv = 0;
-	pv = new std::vector<CTYPE >();
+        std::vector<CWTYPE >* pv = 0;
+	pv = new std::vector<CWTYPE >();
 
 	// Might throw std::length_error.
 	pv->reserve(capacity);
@@ -135,7 +135,7 @@
           throw std::out_of_range("Tried to remove last element from empty vector.");
         }
 
-        std::vector<CTYPE >::const_reference value = $self->back();
+        std::vector<CWTYPE >::const_reference value = $self->back();
         $self->pop_back();
         return value;
       }
@@ -145,8 +145,8 @@
           throw std::out_of_range("Tried to remove element with invalid index.");
         }
 
-        std::vector<CTYPE >::iterator it = $self->begin() + index;
-        std::vector<CTYPE >::const_reference value = *it;
+        std::vector<CWTYPE >::iterator it = $self->begin() + index;
+        std::vector<CWTYPE >::const_reference value = *it;
         $self->erase(it);
         return value;
       }
@@ -175,34 +175,34 @@
     }
 %enddef
 
-%define SWIG_STD_VECTOR_MINIMUM(CTYPE...)
-SWIG_STD_VECTOR_MINIMUM_INTERNAL(const value_type&, CTYPE)
+%define SWIG_STD_VECTOR_MINIMUM(CWTYPE...)
+SWIG_STD_VECTOR_MINIMUM_INTERNAL(const value_type&, CWTYPE)
 %enddef
 
 // Extra methods added to the collection class if operator== is defined for the class being wrapped
 // The class will then implement IList<>, which adds extra functionality
-%define SWIG_STD_VECTOR_EXTRA_OP_EQUALS_EQUALS(CTYPE...)
+%define SWIG_STD_VECTOR_EXTRA_OP_EQUALS_EQUALS(CWTYPE...)
     %extend {
     }
 %enddef
 
 // Macros for std::vector class specializations/enhancements
-%define SWIG_STD_VECTOR_ENHANCED(CTYPE...)
+%define SWIG_STD_VECTOR_ENHANCED(CWTYPE...)
 namespace std {
-  template<> class vector<CTYPE > {
-    SWIG_STD_VECTOR_MINIMUM_INTERNAL(const value_type&, CTYPE)
-    SWIG_STD_VECTOR_EXTRA_OP_EQUALS_EQUALS(CTYPE)
+  template<> class vector<CWTYPE > {
+    SWIG_STD_VECTOR_MINIMUM_INTERNAL(const value_type&, CWTYPE)
+    SWIG_STD_VECTOR_EXTRA_OP_EQUALS_EQUALS(CWTYPE)
   };
 }
 %enddef
 
 // Legacy macros
-%define SWIG_STD_VECTOR_SPECIALIZE(CSTYPE, CTYPE...)
+%define SWIG_STD_VECTOR_SPECIALIZE(DPTYPE, CWTYPE...)
 #warning SWIG_STD_VECTOR_SPECIALIZE macro deprecated, please see d/std_vector.i and switch to SWIG_STD_VECTOR_ENHANCED
-SWIG_STD_VECTOR_ENHANCED(CTYPE)
+SWIG_STD_VECTOR_ENHANCED(CWTYPE)
 %enddef
 
-%define SWIG_STD_VECTOR_SPECIALIZE_MINIMUM(CSTYPE, CTYPE...)
+%define SWIG_STD_VECTOR_SPECIALIZE_MINIMUM(DPTYPE, CWTYPE...)
 #warning SWIG_STD_VECTOR_SPECIALIZE_MINIMUM macro deprecated, it is no longer required
 %enddef
 

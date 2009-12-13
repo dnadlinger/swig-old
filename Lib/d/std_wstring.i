@@ -25,11 +25,11 @@ namespace std {
 class wstring;
 
 // wstring
-%typemap(ctype, out="void *") wstring "wchar_t *"
-%typemap(imtype, inattributes="[MarshalAs(UnmanagedType.LPWStr)]") wstring "string"
-%typemap(cstype) wstring "string"
-%typemap(csdirectorin) wstring "$iminput"
-%typemap(csdirectorout) wstring "$cscall"
+%typemap(cwtype, out="void *") wstring "wchar_t *"
+%typemap(dwtype, inattributes="[MarshalAs(UnmanagedType.LPWStr)]") wstring "string"
+%typemap(dptype) wstring "string"
+%typemap(ddirectorin) wstring "$winput"
+%typemap(ddirectorout) wstring "$dpcall"
 
 %typemap(in, canthrow=1) wstring
 %{ if (!$input) {
@@ -48,9 +48,9 @@ class wstring;
 
 %typemap(directorin) wstring %{ $input = SWIG_d_wstring_callback($1.c_str()); %}
 
-%typemap(csin) wstring "$csinput"
-%typemap(csout, excode=SWIGEXCODE) wstring {
-    string ret = $imcall;$excode
+%typemap(din) wstring "$dinput"
+%typemap(dout, excode=SWIGEXCODE) wstring {
+    string ret = $wcall;$excode
     return ret;
   }
 
@@ -62,12 +62,12 @@ class wstring;
    return $null; %}
 
 // const wstring &
-%typemap(ctype, out="void *") const wstring & "wchar_t *"
-%typemap(imtype, inattributes="[MarshalAs(UnmanagedType.LPWStr)]") const wstring & "string"
-%typemap(cstype) const wstring & "string"
+%typemap(cwtype, out="void *") const wstring & "wchar_t *"
+%typemap(dwtype, inattributes="[MarshalAs(UnmanagedType.LPWStr)]") const wstring & "string"
+%typemap(dptype) const wstring & "string"
 
-%typemap(csdirectorin) const wstring & "$iminput"
-%typemap(csdirectorout) const wstring & "$cscall"
+%typemap(ddirectorin) const wstring & "$winput"
+%typemap(ddirectorout) const wstring & "$dpcall"
 
 %typemap(in, canthrow=1) const wstring &
 %{ if (!$input) {
@@ -78,9 +78,9 @@ class wstring;
    $1 = &$1_str; %}
 %typemap(out) const wstring & %{ $result = SWIG_d_wstring_callback($1->c_str()); %}
 
-%typemap(csin) const wstring & "$csinput"
-%typemap(csout, excode=SWIGEXCODE) const wstring & {
-    string ret = $imcall;$excode
+%typemap(din) const wstring & "$dinput"
+%typemap(dout, excode=SWIGEXCODE) const wstring & {
+    string ret = $wcall;$excode
     return ret;
   }
 
@@ -98,11 +98,11 @@ class wstring;
 
 %typemap(csvarin, excode=SWIGEXCODE2) const wstring & %{
     set {
-      $imcall;$excode
+      $wcall;$excode
     } %}
 %typemap(csvarout, excode=SWIGEXCODE2) const wstring & %{
     get {
-      string ret = $imcall;$excode
+      string ret = $wcall;$excode
       return ret;
     } %}
 

@@ -7,57 +7,57 @@
  * Typemaps for primitive types.
  * ----------------------------------------------------------------------------- */
 
-%typemap(ctype) bool,               const bool &               "unsigned int"
-%typemap(ctype) char,               const char &               "char"
-%typemap(ctype) signed char,        const signed char &        "signed char"
-%typemap(ctype) unsigned char,      const unsigned char &      "unsigned char"
-%typemap(ctype) short,              const short &              "short"
-%typemap(ctype) unsigned short,     const unsigned short &     "unsigned short"
-%typemap(ctype) int,                const int &                "int"
-%typemap(ctype) unsigned int,       const unsigned int &       "unsigned int"
-%typemap(ctype) long,               const long &               "long"
-%typemap(ctype) unsigned long,      const unsigned long &      "unsigned long"
-%typemap(ctype) size_t,             const size_t &             "size_t"
-%typemap(ctype) long long,          const long long &          "long long"
-%typemap(ctype) unsigned long long, const unsigned long long & "unsigned long long"
-%typemap(ctype) float,              const float &              "float"
-%typemap(ctype) double,             const double &             "double"
-%typemap(ctype) long double,        const long double &        "long double"
-%typemap(ctype) void                                           "void"
+%typemap(cwtype) bool,               const bool &               "unsigned int"
+%typemap(cwtype) char,               const char &               "char"
+%typemap(cwtype) signed char,        const signed char &        "signed char"
+%typemap(cwtype) unsigned char,      const unsigned char &      "unsigned char"
+%typemap(cwtype) short,              const short &              "short"
+%typemap(cwtype) unsigned short,     const unsigned short &     "unsigned short"
+%typemap(cwtype) int,                const int &                "int"
+%typemap(cwtype) unsigned int,       const unsigned int &       "unsigned int"
+%typemap(cwtype) long,               const long &               "long"
+%typemap(cwtype) unsigned long,      const unsigned long &      "unsigned long"
+%typemap(cwtype) size_t,             const size_t &             "size_t"
+%typemap(cwtype) long long,          const long long &          "long long"
+%typemap(cwtype) unsigned long long, const unsigned long long & "unsigned long long"
+%typemap(cwtype) float,              const float &              "float"
+%typemap(cwtype) double,             const double &             "double"
+%typemap(cwtype) long double,        const long double &        "long double"
+%typemap(cwtype) void                                           "void"
 
-%typemap(imtype) bool,               const bool &                   "uint"
-%typemap(imtype) char,               const char &                   "char"
-%typemap(imtype) signed char,        const signed char &            "byte"
-%typemap(imtype) unsigned char,      const unsigned char &          "ubyte"
-%typemap(imtype) short,              const short &                  "short"
-%typemap(imtype) unsigned short,     const unsigned short &         "ushort"
-%typemap(imtype) int,                const int &                    "int"
-%typemap(imtype) unsigned int,       const unsigned int &           "uint"
-%typemap(imtype) long,               const long &                   "int"
-%typemap(imtype) unsigned long,      const unsigned long &          "uint"
-%typemap(imtype) size_t,             const size_t &                 "size_t"
-%typemap(imtype) long long,          const long long &              "long"
-%typemap(imtype) unsigned long long, const unsigned long long &     "ulong"
-%typemap(imtype) float,              const float &                  "float"
-%typemap(imtype) double,             const double &                 "double"
-%typemap(imtype) void                                               "void"
+%typemap(dwtype) bool,               const bool &                   "uint"
+%typemap(dwtype) char,               const char &                   "char"
+%typemap(dwtype) signed char,        const signed char &            "byte"
+%typemap(dwtype) unsigned char,      const unsigned char &          "ubyte"
+%typemap(dwtype) short,              const short &                  "short"
+%typemap(dwtype) unsigned short,     const unsigned short &         "ushort"
+%typemap(dwtype) int,                const int &                    "int"
+%typemap(dwtype) unsigned int,       const unsigned int &           "uint"
+%typemap(dwtype) long,               const long &                   "int"
+%typemap(dwtype) unsigned long,      const unsigned long &          "uint"
+%typemap(dwtype) size_t,             const size_t &                 "size_t"
+%typemap(dwtype) long long,          const long long &              "long"
+%typemap(dwtype) unsigned long long, const unsigned long long &     "ulong"
+%typemap(dwtype) float,              const float &                  "float"
+%typemap(dwtype) double,             const double &                 "double"
+%typemap(dwtype) void                                               "void"
 
-%typemap(cstype) bool,               const bool &                   "bool"
-%typemap(cstype) char,               const char &                   "char"
-%typemap(cstype) signed char,        const signed char &            "byte"
-%typemap(cstype) unsigned char,      const unsigned char &          "ubyte"
-%typemap(cstype) short,              const short &                  "short"
-%typemap(cstype) unsigned short,     const unsigned short &         "ushort"
-%typemap(cstype) int,                const int &                    "int"
-%typemap(cstype) unsigned int,       const unsigned int &           "uint"
-%typemap(cstype) long,               const long &                   "int"
-%typemap(cstype) unsigned long,      const unsigned long &          "uint"
-%typemap(cstype) size_t,             const size_t &                 "size_t"
-%typemap(cstype) long long,          const long long &              "long"
-%typemap(cstype) unsigned long long, const unsigned long long &     "ulong"
-%typemap(cstype) float,              const float &                  "float"
-%typemap(cstype) double,             const double &                 "double"
-%typemap(cstype) void                                               "void"
+%typemap(dptype) bool,               const bool &                   "bool"
+%typemap(dptype) char,               const char &                   "char"
+%typemap(dptype) signed char,        const signed char &            "byte"
+%typemap(dptype) unsigned char,      const unsigned char &          "ubyte"
+%typemap(dptype) short,              const short &                  "short"
+%typemap(dptype) unsigned short,     const unsigned short &         "ushort"
+%typemap(dptype) int,                const int &                    "int"
+%typemap(dptype) unsigned int,       const unsigned int &           "uint"
+%typemap(dptype) long,               const long &                   "int"
+%typemap(dptype) unsigned long,      const unsigned long &          "uint"
+%typemap(dptype) size_t,             const size_t &                 "size_t"
+%typemap(dptype) long long,          const long long &              "long"
+%typemap(dptype) unsigned long long, const unsigned long long &     "ulong"
+%typemap(dptype) float,              const float &                  "float"
+%typemap(dptype) double,             const double &                 "double"
+%typemap(dptype) void                                               "void"
 
 
 /*
@@ -142,8 +142,26 @@
   "$result = $input ? true : false;"
 
 
-%typemap(csdirectorin) bool "($iminput ? true : false)"
-%typemap(csdirectorin) char,
+%typemap(ddirectorin) bool "($winput ? true : false)"
+%typemap(ddirectorin) char,
+                      signed char,
+                      unsigned char,
+                      short,
+                      unsigned short,
+                      int,
+                      unsigned int,
+                      long,
+                      unsigned long,
+                      size_t,
+                      long long,
+                      unsigned long long,
+                      float,
+                      double
+  "$winput"
+
+
+%typemap(ddirectorout) bool,
+                       char,
                        signed char,
                        unsigned char,
                        short,
@@ -157,25 +175,7 @@
                        unsigned long long,
                        float,
                        double
-  "$iminput"
-
-
-%typemap(csdirectorout) bool,
-                        char,
-                        signed char,
-                        unsigned char,
-                        short,
-                        unsigned short,
-                        int,
-                        unsigned int,
-                        long,
-                        unsigned long,
-                        size_t,
-                        long long,
-                        unsigned long long,
-                        float,
-                        double
-  "$cscall"
+  "$dpcall"
 
 
 /*
@@ -225,7 +225,8 @@
 %typemap(out) const unsigned long &      %{ $result = (unsigned long)*$1; %}
 
 
-%typemap(directorout,warning=SWIGWARN_TYPEMAP_THREAD_UNSAFE_MSG) const char &,
+%typemap(directorout,warning=SWIGWARN_TYPEMAP_THREAD_UNSAFE_MSG)
+             const char &,
              const signed char &,
              const unsigned char &,
              const short &,
@@ -265,8 +266,25 @@
   "$input = $1_name;"
 
 
-%typemap(csdirectorin) const bool & "$iminput"
-%typemap(csdirectorin) const char & ($*1_ltype temp),
+%typemap(ddirectorin) const bool & "$winput"
+%typemap(ddirectorin) const char & ($*1_ltype temp),
+                      const signed char & ($*1_ltype temp),
+                      const unsigned char & ($*1_ltype temp),
+                      const short & ($*1_ltype temp),
+                      const unsigned short & ($*1_ltype temp),
+                      const int & ($*1_ltype temp),
+                      const unsigned int & ($*1_ltype temp),
+                      const long & ($*1_ltype temp),
+                      const unsigned long & ($*1_ltype temp),
+                      const size_t & ($*1_ltype temp),
+                      const long long & ($*1_ltype temp),
+                      const float & ($*1_ltype temp),
+                      const double & ($*1_ltype temp)
+  "$winput"
+
+
+%typemap(ddirectorout) const bool & "$dpcall"
+%typemap(ddirectorout) const char & ($*1_ltype temp),
                        const signed char & ($*1_ltype temp),
                        const unsigned char & ($*1_ltype temp),
                        const short & ($*1_ltype temp),
@@ -279,68 +297,51 @@
                        const long long & ($*1_ltype temp),
                        const float & ($*1_ltype temp),
                        const double & ($*1_ltype temp)
-  "$iminput"
-
-
-%typemap(csdirectorout) const bool & "$cscall"
-%typemap(csdirectorout) const char & ($*1_ltype temp),
-                        const signed char & ($*1_ltype temp),
-                        const unsigned char & ($*1_ltype temp),
-                        const short & ($*1_ltype temp),
-                        const unsigned short & ($*1_ltype temp),
-                        const int & ($*1_ltype temp),
-                        const unsigned int & ($*1_ltype temp),
-                        const long & ($*1_ltype temp),
-                        const unsigned long & ($*1_ltype temp),
-                        const size_t & ($*1_ltype temp),
-                        const long long & ($*1_ltype temp),
-                        const float & ($*1_ltype temp),
-                        const double & ($*1_ltype temp)
-  "$cscall"
+  "$dpcall"
 
 
 /*
  * Conversion generation typemaps for both values and references.
  */
 
-%typemap(csin)  bool,               const bool &,
-		char,               const char &,
-		signed char,        const signed char &,
-		unsigned char,      const unsigned char &,
-		short,              const short &,
-		unsigned short,     const unsigned short &,
-		int,                const int &,
-		unsigned int,       const unsigned int &,
-		long,               const long &,
-		unsigned long,      const unsigned long &,
-		size_t,             const size_t &,
-		long long,          const long long &,
-		unsigned long long, const unsigned long long &,
-		float,              const float &,
-		double,             const double &
-  "$csinput"
+%typemap(din) bool,               const bool &,
+              char,               const char &,
+              signed char,        const signed char &,
+              unsigned char,      const unsigned char &,
+              short,              const short &,
+              unsigned short,     const unsigned short &,
+              int,                const int &,
+              unsigned int,       const unsigned int &,
+              long,               const long &,
+              unsigned long,      const unsigned long &,
+              size_t,             const size_t &,
+              long long,          const long long &,
+              unsigned long long, const unsigned long long &,
+              float,              const float &,
+              double,             const double &
+  "$dinput"
 
 
-%typemap(csout, excode=SWIGEXCODE) bool, const bool & {
-  bool ret = $imcall ? true : false;$excode
+%typemap(dout, excode=SWIGEXCODE) bool, const bool & {
+  bool ret = $wcall ? true : false;$excode
   return ret;
 }
 
-%typemap(csout, excode=SWIGEXCODE) char,               const char &,
-                                   signed char,        const signed char &,
-                                   unsigned char,      const unsigned char &,
-                                   short,              const short &,
-                                   unsigned short,     const unsigned short &,
-                                   int,                const int &,
-                                   unsigned int,       const unsigned int &,
-                                   long,               const long &,
-                                   unsigned long,      const unsigned long &,
-                                   size_t,             const size_t &,
-                                   long long,          const long long &,
-                                   unsigned long long, const unsigned long long &,
-                                   float,              const float &,
-                                   double,             const double & {
-  auto ret = $imcall;$excode
+%typemap(dout, excode=SWIGEXCODE) char,               const char &,
+                                  signed char,        const signed char &,
+                                  unsigned char,      const unsigned char &,
+                                  short,              const short &,
+                                  unsigned short,     const unsigned short &,
+                                  int,                const int &,
+                                  unsigned int,       const unsigned int &,
+                                  long,               const long &,
+                                  unsigned long,      const unsigned long &,
+                                  size_t,             const size_t &,
+                                  long long,          const long long &,
+                                  unsigned long long, const unsigned long long &,
+                                  float,              const float &,
+                                  double,             const double & {
+  auto ret = $wcall;$excode
   return ret;
 }
 

@@ -7,9 +7,9 @@
  * Typemaps for wrapping pointers to/arrays of C chars as D strings.
  * ----------------------------------------------------------------------------- */
 
-%typemap(ctype)  char *, char *&, char[ANY], char[]   "char *"
-%typemap(imtype) char *, char *&, char[ANY], char[]   "char*"
-%typemap(cstype) char *, char *&, char[ANY], char[]   "char[]"
+%typemap(cwtype)  char *, char *&, char[ANY], char[]   "char *"
+%typemap(dwtype) char *, char *&, char[ANY], char[]   "char*"
+%typemap(dptype) char *, char *&, char[ANY], char[]   "char[]"
 
 %typecheck(SWIG_TYPECHECK_STRING)
     char *,
@@ -31,8 +31,8 @@
 %typemap(out) char * %{ $result = SWIG_d_string_callback((const char *)$1); %}
 %typemap(directorout, warning=SWIGWARN_TYPEMAP_DIRECTOROUT_PTR_MSG) char * %{ $result = ($1_ltype)$input; %}
 %typemap(directorin) char * %{ $input = SWIG_d_string_callback((const char *)$1); %}
-%typemap(csdirectorin) char * "tango.stdc.stringz.fromStringz($iminput)"
-%typemap(csdirectorout) char * "tango.stdc.stringz.toStringz($cscall)"
+%typemap(ddirectorin) char * "tango.stdc.stringz.fromStringz($winput)"
+%typemap(ddirectorout) char * "tango.stdc.stringz.toStringz($dpcall)"
 
 
 /*
@@ -56,11 +56,11 @@
 %typemap(directorout) char[ANY], char[] %{ $result = ($1_ltype)$input; %}
 %typemap(directorin) char[ANY], char[] %{ $input = SWIG_d_string_callback((const char *)$1); %}
 
-%typemap(csdirectorin) char[ANY], char[] "$iminput"
-%typemap(csdirectorout) char[ANY], char[] "$cscall"
+%typemap(ddirectorin) char[ANY], char[] "$winput"
+%typemap(ddirectorout) char[ANY], char[] "$dpcall"
 
-%typemap(csin) char *, char *&, char[ANY], char[] "tango.stdc.stringz.toStringz($csinput)"
-%typemap(csout, excode=SWIGEXCODE) char *, char *&, char[ANY], char[] {
-  char[] ret = tango.stdc.stringz.fromStringz($imcall);$excode
+%typemap(din) char *, char *&, char[ANY], char[] "tango.stdc.stringz.toStringz($dinput)"
+%typemap(dout, excode=SWIGEXCODE) char *, char *&, char[ANY], char[] {
+  char[] ret = tango.stdc.stringz.fromStringz($wcall);$excode
   return ret;
 }

@@ -54,22 +54,22 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterWStringCallback_$proxydmodule(SWIG_DWStr
 
 
 // wchar_t
-%typemap(ctype) wchar_t "wchar_t"
-%typemap(imtype) wchar_t "char"
-%typemap(cstype) wchar_t "char"
+%typemap(cwtype) wchar_t "wchar_t"
+%typemap(dwtype) wchar_t "char"
+%typemap(dptype) wchar_t "char"
 
-%typemap(csin) wchar_t "$csinput"
-%typemap(csout, excode=SWIGEXCODE) wchar_t {
-    char ret = $imcall;$excode
+%typemap(din) wchar_t "$dinput"
+%typemap(dout, excode=SWIGEXCODE) wchar_t {
+    char ret = $wcall;$excode
     return ret;
   }
 %typemap(csvarin, excode=SWIGEXCODE2) wchar_t %{
     set {
-      $imcall;$excode
+      $wcall;$excode
     } %}
 %typemap(csvarout, excode=SWIGEXCODE2) wchar_t %{
     get {
-      char ret = $imcall;$excode
+      char ret = $wcall;$excode
       return ret;
     } %}
 
@@ -79,22 +79,22 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterWStringCallback_$proxydmodule(SWIG_DWStr
 %typemap(typecheck) wchar_t = char;
 
 // wchar_t *
-%typemap(ctype) wchar_t * "wchar_t *"
-%typemap(imtype, inattributes="[MarshalAs(UnmanagedType.LPWStr)]", out="IntPtr" ) wchar_t * "string"
-%typemap(cstype) wchar_t * "string"
+%typemap(cwtype) wchar_t * "wchar_t *"
+%typemap(dwtype, inattributes="[MarshalAs(UnmanagedType.LPWStr)]", out="IntPtr" ) wchar_t * "string"
+%typemap(dptype) wchar_t * "string"
 
-%typemap(csin) wchar_t * "$csinput"
-%typemap(csout, excode=SWIGEXCODE) wchar_t * {
-    string ret = System.Runtime.InteropServices.Marshal.PtrToStringUni($imcall);$excode
+%typemap(din) wchar_t * "$dinput"
+%typemap(dout, excode=SWIGEXCODE) wchar_t * {
+    string ret = System.Runtime.InteropServices.Marshal.PtrToStringUni($wcall);$excode
     return ret;
   }
 %typemap(csvarin, excode=SWIGEXCODE2) wchar_t * %{
     set {
-      $imcall;$excode
+      $wcall;$excode
     } %}
 %typemap(csvarout, excode=SWIGEXCODE2) wchar_t * %{
     get {
-      string ret = $imcall;$excode
+      string ret = $wcall;$excode
       return ret;
     } %}
 

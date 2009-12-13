@@ -12,9 +12,9 @@
  * Typemaps for enumeration types.
  */
 
-%typemap(ctype) enum SWIGTYPE "int"
-%typemap(imtype) enum SWIGTYPE "int"
-%typemap(cstype) enum SWIGTYPE "$dclassname"
+%typemap(cwtype) enum SWIGTYPE "int"
+%typemap(dwtype) enum SWIGTYPE "int"
+%typemap(dptype) enum SWIGTYPE "$dclassname"
 
 %typecheck(SWIG_TYPECHECK_POINTER) enum SWIGTYPE ""
 
@@ -23,12 +23,12 @@
 
 %typemap(directorout) enum SWIGTYPE %{ $result = ($1_ltype)$input; %}
 %typemap(directorin) enum SWIGTYPE "$input = $1;"
-%typemap(csdirectorin) enum SWIGTYPE "cast($dclassname)$iminput"
-%typemap(csdirectorout) enum SWIGTYPE "cast(int)$cscall"
+%typemap(ddirectorin) enum SWIGTYPE "cast($dclassname)$winput"
+%typemap(ddirectorout) enum SWIGTYPE "cast(int)$dpcall"
 
-%typemap(csin) enum SWIGTYPE "cast(int)$csinput"
-%typemap(csout, excode=SWIGEXCODE) enum SWIGTYPE {
-  $dclassname ret = cast($dclassname)$imcall;$excode
+%typemap(din) enum SWIGTYPE "cast(int)$dinput"
+%typemap(dout, excode=SWIGEXCODE) enum SWIGTYPE {
+  $dclassname ret = cast($dclassname)$wcall;$excode
   return ret;
 }
 
@@ -37,9 +37,9 @@
  * Typemaps for (const) references to enumeration types.
  */
 
-%typemap(ctype) const enum SWIGTYPE & "int"
-%typemap(imtype) const enum SWIGTYPE & "int"
-%typemap(cstype) const enum SWIGTYPE & "$*dclassname"
+%typemap(cwtype) const enum SWIGTYPE & "int"
+%typemap(dwtype) const enum SWIGTYPE & "int"
+%typemap(dptype) const enum SWIGTYPE & "$*dclassname"
 
 %typecheck(SWIG_TYPECHECK_POINTER) const enum SWIGTYPE & ""
 
@@ -53,11 +53,11 @@
 %{ static $*1_ltype temp = ($*1_ltype)$input;
    $result = &temp; %}
 
-%typemap(csdirectorin) const enum SWIGTYPE & "cast($*dclassname)$iminput"
-%typemap(csdirectorout) const enum SWIGTYPE & "cast(int)$cscall"
+%typemap(ddirectorin) const enum SWIGTYPE & "cast($*dclassname)$winput"
+%typemap(ddirectorout) const enum SWIGTYPE & "cast(int)$dpcall"
 
-%typemap(csin) const enum SWIGTYPE & "cast(int)$csinput"
-%typemap(csout, excode=SWIGEXCODE) const enum SWIGTYPE & {
-  $*dclassname ret = cast($*dclassname)$imcall;$excode
+%typemap(din) const enum SWIGTYPE & "cast(int)$dinput"
+%typemap(dout, excode=SWIGEXCODE) const enum SWIGTYPE & {
+  $*dclassname ret = cast($*dclassname)$wcall;$excode
   return ret;
 }

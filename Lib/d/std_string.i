@@ -23,9 +23,9 @@ namespace std {
 class string;
 
 // string
-%typemap(ctype) string, const string & "char *"
-%typemap(imtype) string, const string & "char*"
-%typemap(cstype) string, const string & "char[]"
+%typemap(cwtype) string, const string & "char *"
+%typemap(dwtype) string, const string & "char*"
+%typemap(dptype) string, const string & "char[]"
 
 %typemap(in, canthrow=1) string, const string &
 %{ if (!$input) {
@@ -44,9 +44,9 @@ class string;
 %typemap(out) string %{ $result = SWIG_d_string_callback($1.c_str()); %}
 %typemap(out) const string & %{ $result = SWIG_d_string_callback($1->c_str()); %}
 
-%typemap(csin) string, const string & "tango.stdc.stringz.toStringz($csinput)"
-%typemap(csout, excode=SWIGEXCODE) string, const string & {
-  char[] ret = tango.stdc.stringz.fromStringz($imcall);$excode
+%typemap(din) string, const string & "tango.stdc.stringz.toStringz($dinput)"
+%typemap(dout, excode=SWIGEXCODE) string, const string & {
+  char[] ret = tango.stdc.stringz.fromStringz($wcall);$excode
   return ret;
 }
 
@@ -69,8 +69,8 @@ class string;
   $1_str = $input;
   $result = &$1_str; %}
 
-%typemap(csdirectorin) string, const string & "tango.stdc.stringz.fromStringz($iminput)"
-%typemap(csdirectorout) string, const string & "tango.stdc.stringz.toStringz($cscall)"
+%typemap(ddirectorin) string, const string & "tango.stdc.stringz.fromStringz($winput)"
+%typemap(ddirectorout) string, const string & "tango.stdc.stringz.toStringz($dpcall)"
 
 %typemap(throws, canthrow=1) string, const string &
 %{ SWIG_DSetPendingException(SWIG_DException, $1.c_str());

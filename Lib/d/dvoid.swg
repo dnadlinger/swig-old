@@ -8,10 +8,10 @@
  * ----------------------------------------------------------------------------- */
 
 %typemap(out, null="") void ""
-%typemap(csdirectorin) void "$iminput"
-%typemap(csdirectorout) void "$cscall"
+%typemap(ddirectorin) void "$winput"
+%typemap(ddirectorout) void "$dpcall"
 %typemap(directorin) void ""
 
-%typemap(csout, excode=SWIGEXCODE) void {
-  $imcall;$excode
+%typemap(dout, excode=SWIGEXCODE) void {
+  $wcall;$excode
 }

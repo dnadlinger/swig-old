@@ -27,11 +27,11 @@ namespace Foo {
     %typemap(javaout) Str1 * = char *;
 #endif
 #ifdef SWIGD
-    %typemap(ctype) Str1 * = char *;
-    %typemap(imtype) Str1 * = char *;
-    %typemap(cstype) Str1 * = char *;
-    %typemap(csin) Str1 * = char *;
-    %typemap(csout) Str1 * = char *;
+    %typemap(cwtype) Str1 * = char *;
+    %typemap(dwtype) Str1 * = char *;
+    %typemap(dptype) Str1 * = char *;
+    %typemap(din) Str1 * = char *;
+    %typemap(dout) Str1 * = char *;
 #endif
     %typemap(in) Str1 * = char *;
 #if !(defined(SWIGCSHARP) || defined(SWIGLUA) || defined(SWIGPHP) || defined(SWIGMZSCHEME) || defined(SWIGOCAML) || defined(SWIGD))

@@ -58,12 +58,12 @@ In C# you could then use it like this:
 */
 
 %define INPUT_TYPEMAP(TYPE, CTYPE, CSTYPE)
-%typemap(ctype) TYPE *INPUT, TYPE &INPUT "CTYPE"
-%typemap(imtype) TYPE *INPUT, TYPE &INPUT "CSTYPE"
-%typemap(cstype) TYPE *INPUT, TYPE &INPUT "CSTYPE"
-%typemap(csin) TYPE *INPUT, TYPE &INPUT "$csinput"
-%typemap(csdirectorin) TYPE *INPUT, TYPE &INPUT "$iminput"
-%typemap(csdirectorout) TYPE *INPUT, TYPE &INPUT "$cscall"
+%typemap(cwtype) TYPE *INPUT, TYPE &INPUT "CTYPE"
+%typemap(dwtype) TYPE *INPUT, TYPE &INPUT "CSTYPE"
+%typemap(dptype) TYPE *INPUT, TYPE &INPUT "CSTYPE"
+%typemap(din) TYPE *INPUT, TYPE &INPUT "$dinput"
+%typemap(ddirectorin) TYPE *INPUT, TYPE &INPUT "$winput"
+%typemap(ddirectorout) TYPE *INPUT, TYPE &INPUT "$dpcall"
 
 %typemap(in) TYPE *INPUT, TYPE &INPUT
 %{ $1 = ($1_ltype)&$input; %}
@@ -150,12 +150,12 @@ value returned in the second output parameter. In C# you would use it like this:
 */
 
 %define OUTPUT_TYPEMAP(TYPE, CTYPE, CSTYPE, TYPECHECKPRECEDENCE)
-%typemap(ctype) TYPE *OUTPUT, TYPE &OUTPUT "CTYPE *"
-%typemap(imtype) TYPE *OUTPUT, TYPE &OUTPUT "out CSTYPE"
-%typemap(cstype) TYPE *OUTPUT, TYPE &OUTPUT "out CSTYPE"
-%typemap(csin) TYPE *OUTPUT, TYPE &OUTPUT "$csinput"
-%typemap(csdirectorin) TYPE *OUTPUT, TYPE &OUTPUT "$iminput"
-%typemap(csdirectorout) TYPE *OUTPUT, TYPE &OUTPUT "$cscall"
+%typemap(cwtype) TYPE *OUTPUT, TYPE &OUTPUT "CTYPE *"
+%typemap(dwtype) TYPE *OUTPUT, TYPE &OUTPUT "out CSTYPE"
+%typemap(dptype) TYPE *OUTPUT, TYPE &OUTPUT "out CSTYPE"
+%typemap(din) TYPE *OUTPUT, TYPE &OUTPUT "$dinput"
+%typemap(ddirectorin) TYPE *OUTPUT, TYPE &OUTPUT "$winput"
+%typemap(ddirectorout) TYPE *OUTPUT, TYPE &OUTPUT "$dpcall"
 
 
 %typemap(in) TYPE *OUTPUT, TYPE &OUTPUT
@@ -253,12 +253,12 @@ of the function return value.
 */
 
 %define INOUT_TYPEMAP(TYPE, CTYPE, CSTYPE, TYPECHECKPRECEDENCE)
-%typemap(ctype) TYPE *INOUT, TYPE &INOUT "CTYPE *"
-%typemap(imtype) TYPE *INOUT, TYPE &INOUT "ref CSTYPE"
-%typemap(cstype) TYPE *INOUT, TYPE &INOUT "ref CSTYPE"
-%typemap(csin) TYPE *INOUT, TYPE &INOUT "$csinput"
-%typemap(csdirectorin) TYPE *INOUT, TYPE &INOUT "$iminput"
-%typemap(csdirectorout) TYPE *INOUT, TYPE &INOUT "$cscall"
+%typemap(cwtype) TYPE *INOUT, TYPE &INOUT "CTYPE *"
+%typemap(dwtype) TYPE *INOUT, TYPE &INOUT "ref CSTYPE"
+%typemap(dptype) TYPE *INOUT, TYPE &INOUT "ref CSTYPE"
+%typemap(din) TYPE *INOUT, TYPE &INOUT "$dinput"
+%typemap(ddirectorin) TYPE *INOUT, TYPE &INOUT "$winput"
+%typemap(ddirectorout) TYPE *INOUT, TYPE &INOUT "$dpcall"
 
 %typemap(in) TYPE *INOUT, TYPE &INOUT
 %{ $1 = ($1_ltype)$input; %}

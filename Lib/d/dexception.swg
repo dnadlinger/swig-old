@@ -7,7 +7,7 @@
  * Typemaps used for propagating C++ exceptions to D.
  * ----------------------------------------------------------------------------- */
 
-// Code which is inserted into the csout typemaps and class constructors via
+// Code which is inserted into the dout typemaps and class constructors via
 // excode if exceptions can be thrown.
 %define SWIGEXCODE "\n  if ($wrapdmodule.SwigPendingException.isPending) throw $wrapdmodule.SwigPendingException.retrieve();" %enddef
 

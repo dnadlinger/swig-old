@@ -168,7 +168,7 @@ namespace Space {
   public static NewName factory(char[] s) {
   //below should expand to:
   //return new NewName( new Name(s) );
-    return new $typemap(cstype, Space::RenameMe)( new $typemap(cstype, Name)(s) );
+    return new $typemap(dptype, Space::RenameMe)( new $typemap(dptype, Name)(s) );
   }
 %}
 #endif

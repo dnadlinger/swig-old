@@ -28,9 +28,9 @@
 #define javabody             dbody
 #define javafinalize         ddestructor
 #define javadestruct         ddispose
-#define javaout              csout
+#define javaout              dout
 #define javainterfaces       dinterfaces
-#define javabase             csbase
+#define javabase             dbase
 #endif
 
 // Modify multiple inherited base classes into inheriting interfaces

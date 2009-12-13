@@ -82,61 +82,61 @@
 %}
 
 
-%typemap (ctype)  SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >,
+%typemap (cwtype)  SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >,
                   SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > &,
                   SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *,
                   SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& "void *"
-%typemap (imtype) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >,
+%typemap (dwtype) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >,
                   SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > &,
                   SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *,
                   SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& "void*"
-%typemap (cstype) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >,
+%typemap (dptype) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >,
                   SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > &,
                   SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *,
                   SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& "PROXYCLASS"
 
-%typemap(csin) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >,
+%typemap(din) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >,
                SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > &,
                SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *,
-               SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& "PROXYCLASS.swigGetCObject($csinput)"
+               SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& "PROXYCLASS.swigGetCObject($dinput)"
 
-%typemap(csout, excode=SWIGEXCODE) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > {
-  void* cPtr = $imcall;
+%typemap(dout, excode=SWIGEXCODE) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > {
+  void* cPtr = $wcall;
   PROXYCLASS ret = (cPtr is null) ? null : new PROXYCLASS(cPtr, true);$excode
   return ret;
 }
-%typemap(csout, excode=SWIGEXCODE) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > & {
-  void* cPtr = $imcall;
+%typemap(dout, excode=SWIGEXCODE) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > & {
+  void* cPtr = $wcall;
   PROXYCLASS ret = (cPtr is null) ? null : new PROXYCLASS(cPtr, true);$excode
   return ret;
 }
-%typemap(csout, excode=SWIGEXCODE) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > * {
-  void* cPtr = $imcall;
+%typemap(dout, excode=SWIGEXCODE) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > * {
+  void* cPtr = $wcall;
   PROXYCLASS ret = (cPtr is null) ? null : new PROXYCLASS(cPtr, true);$excode
   return ret;
 }
-%typemap(csout, excode=SWIGEXCODE) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& {
-  void* cPtr = $imcall;
+%typemap(dout, excode=SWIGEXCODE) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& {
+  void* cPtr = $wcall;
   PROXYCLASS ret = (cPtr is null) ? null : new PROXYCLASS(cPtr, true);$excode
   return ret;
 }
 
 
-%typemap(csout, excode=SWIGEXCODE) CONST TYPE {
-  PROXYCLASS ret = new PROXYCLASS($imcall, true);$excode
+%typemap(dout, excode=SWIGEXCODE) CONST TYPE {
+  PROXYCLASS ret = new PROXYCLASS($wcall, true);$excode
   return ret;
 }
-%typemap(csout, excode=SWIGEXCODE) CONST TYPE & {
-  PROXYCLASS ret = new PROXYCLASS($imcall, true);$excode
+%typemap(dout, excode=SWIGEXCODE) CONST TYPE & {
+  PROXYCLASS ret = new PROXYCLASS($wcall, true);$excode
   return ret;
 }
-%typemap(csout, excode=SWIGEXCODE) CONST TYPE * {
-  void* cPtr = $imcall;
+%typemap(dout, excode=SWIGEXCODE) CONST TYPE * {
+  void* cPtr = $wcall;
   PROXYCLASS ret = (cPtr is null) ? null : new PROXYCLASS(cPtr, true);$excode
   return ret;
 }
-%typemap(csout, excode=SWIGEXCODE) CONST TYPE *& {
-  void* cPtr = $imcall;
+%typemap(dout, excode=SWIGEXCODE) CONST TYPE *& {
+  void* cPtr = $wcall;
   PROXYCLASS ret = (cPtr is null) ? null : new PROXYCLASS(cPtr, true);$excode
   return ret;
 }
@@ -179,7 +179,7 @@
       if ( m_swigCObject !is null ) {
         if ( m_swigOwnCObject ) {
           m_swigOwnCObject = false;
-          $imcall;
+          $wcall;
         }
         m_swigCObject = null;
       }
@@ -191,7 +191,7 @@
       if ( m_swigCObject !is null ) {
         if ( m_swigOwnCObject ) {
           m_swigOwnCObject = false;
-          $imcall;
+          $wcall;
         }
         m_swigCObject = null;
       }
@@ -199,8 +199,8 @@
     }
   }
 
-%typemap(imtype) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > swigSharedPtrUpcast "void*"
-%typemap(csin) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > swigSharedPtrUpcast "PROXYCLASS.swigGetCObject($csinput)"
+%typemap(dwtype) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > swigSharedPtrUpcast "void*"
+%typemap(din) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > swigSharedPtrUpcast "PROXYCLASS.swigGetCObject($dinput)"
 
 
 %template() SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >;

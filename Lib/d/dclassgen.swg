@@ -7,7 +7,7 @@
  * Typemaps containing D code used when generating D proxy classes.
  * ----------------------------------------------------------------------------- */
 
-%typemap(csbase)              SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
+%typemap(dbase)              SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
 %typemap(dclassmodifiers)     SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) "class"
 %typemap(dcode)               SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
 %typemap(dimports)            SWIGTYPE, SWIGTYPE *, SWIGTYPE &, SWIGTYPE [], SWIGTYPE (CLASS::*) ""
@@ -24,7 +24,7 @@
  */
 
 %typemap(dconstructor, excode=SWIGEXCODE,directorconnect="\n  swigDirectorConnect();") SWIGTYPE {
-  this($imcall, true);$excode$directorconnect
+  this($wcall, true);$excode$directorconnect
 }
 
 %typemap(ddestructor) SWIGTYPE %{
@@ -41,7 +41,7 @@
     if (m_swigCObject !is null) {
       if (m_swigOwnCObject) {
         m_swigOwnCObject = false;
-        $imcall;
+        $wcall;
       }
       m_swigCObject = null;
     }
@@ -53,7 +53,7 @@
     if (m_swigCObject !is null) {
       if (m_swigOwnCObject) {
         m_swigOwnCObject = false;
-        $imcall;
+        $wcall;
       }
       m_swigCObject = null;
     }

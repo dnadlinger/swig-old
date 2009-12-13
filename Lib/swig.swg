@@ -77,7 +77,7 @@
 #define %clearoldnodefault  %feature("oldnodefault","")
 
 /* the %exception directive */
-#ifdef SWIGCSHARP
+#if defined(SWIGCSHARP) || defined(SWIGD)
 #define %exception      %feature("except", canthrow=1)
 #else
 #define %exception      %feature("except")
