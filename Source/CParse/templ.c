@@ -262,7 +262,7 @@ int Swig_cparse_template_expand(Node *n, String *rname, ParmList *tparms, Symtab
   /* Look for partial specialization matching */
   if (Getattr(n, "partialargs")) {
     Parm *p, *tp;
-    ParmList *ptargs = SwigType_function_parms(Getattr(n, "partialargs"));
+    ParmList *ptargs = SwigType_function_parms(Getattr(n, "partialargs"), n);
     p = ptargs;
     tp = tparms;
     while (p && tp) {
@@ -457,11 +457,11 @@ static EMatch does_parm_match(SwigType *type, SwigType *partial_parm_type, const
        check for match to partial specialization type, for example, all of the following could match the type in the %template:
        template <typename T> struct XX {};
        template <typename T> struct XX<T &> {};         // r.$1
-       template <typename T> struct XX<T const &> {};   // r.q(const).$1
-       template <typename T> struct XX<T * const &> {}; // r.q(const).p.$1
+       template <typename T> struct XX<T const&> {};    // r.q(const).$1
+       template <typename T> struct XX<T *const&> {};   // r.q(const).p.$1
        %template(XXX) XX<int *const&>;                  // r.q(const).p.int
 
-       where type="r.q(const).p.int" will match either of tt="r.$1", tt="r.q(const)" tt="r.q(const).p"
+       where type="r.q(const).p.int" will match either of tt="r.", tt="r.q(const)" tt="r.q(const).p"
     */
     Replaceid(tt, partial_parm_type_base, ""); /* remove the $1, $2 etc, eg tt="p.$1" => "p." */
     len = Len(tt);
@@ -494,7 +494,7 @@ static EMatch does_parm_match(SwigType *type, SwigType *partial_parm_type, const
 
 static Node *template_locate(String *name, Parm *tparms, Symtab *tscope) {
   Node *n = 0;
-  String *tname = 0, *rname = 0;
+  String *tname = 0;
   Node *templ;
   Symtab *primary_scope = 0;
   List *possiblepartials = 0;
@@ -512,7 +512,8 @@ static Node *template_locate(String *name, Parm *tparms, Symtab *tscope) {
   if (template_debug) {
     tname = Copy(name);
     SwigType_add_template(tname, tparms);
-    Printf(stdout, "\n%s:%d: template_debug: Searching for match to: '%s'\n", cparse_file, cparse_line, tname);
+    Printf(stdout, "\n");
+    Swig_diagnostic(cparse_file, cparse_line, "template_debug: Searching for match to: '%s'\n", tname);
     Delete(tname);
     tname = 0;
   }
@@ -590,34 +591,6 @@ static Node *template_locate(String *name, Parm *tparms, Symtab *tscope) {
      * (3) Template template arguments
      * only (1) is really supported for partial specializations
      */
-
-    /* Generate reduced template name (stripped of extraneous pointers, etc.) */
-    rname = NewStringf("%s<(", name);
-    p = parms;
-    while (p) {
-      String *t;
-      t = Getattr(p, "type");
-      if (!t)
-	t = Getattr(p, "value");
-      if (t) {
-	String *tyr = Swig_symbol_typedef_reduce(t, tscope);
-	String *ty = SwigType_strip_qualifiers(tyr);
-	String *tb = SwigType_base(ty);
-	String *td = SwigType_default(ty);
-	Replaceid(td, "enum SWIGTYPE", tb);
-	Replaceid(td, "SWIGTYPE", tb);
-	Append(rname, td);
-	Delete(tb);
-	Delete(td);
-	Delete(ty);
-	Delete(tyr);
-      }
-      p = nextSibling(p);
-      if (p) {
-	Append(rname, ",");
-      }
-    }
-    Append(rname, ")>");
 
     /* Rank each template parameter against the desired template parameters then build a matrix of best matches */
     possiblepartials = NewList();
@@ -819,7 +792,6 @@ static Node *template_locate(String *name, Parm *tparms, Symtab *tscope) {
   }
 success:
   Delete(tname);
-  Delete(rname);
   Delete(possiblepartials);
   if ((template_debug) && (n)) {
     /*

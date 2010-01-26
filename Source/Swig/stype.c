@@ -550,7 +550,10 @@ String *SwigType_str(SwigType *s, const_String_or_char_ptr id) {
   int nelements, i;
 
   if (id) {
-    result = NewString(id);
+    /* stringify the id expanding templates, for example when the id is a fully qualified templated class name */
+    String *id_str = NewString(id); /* unfortunate copy due to current const limitations */
+    result = SwigType_str(id_str, 0);
+    Delete(id_str);
   } else {
     result = NewStringEmpty();
   }
@@ -1089,6 +1092,25 @@ void SwigType_typename_replace(SwigType *t, String *pat, String *rep) {
   Append(t, nt);
   Delete(nt);
   Delete(elem);
+}
+
+/* -----------------------------------------------------------------------------
+ * SwigType_remove_global_scope_prefix()
+ *
+ * Removes the unary scope operator (::) prefix indicating global scope in all 
+ * components of the type
+ * ----------------------------------------------------------------------------- */
+
+SwigType *SwigType_remove_global_scope_prefix(const SwigType *t) {
+  SwigType *result;
+  const char *type = Char(t);
+  if (strncmp(type, "::", 2) == 0)
+    type += 2;
+  result = NewString(type);
+  Replaceall(result, ".::", ".");
+  Replaceall(result, "(::", "(");
+  Replaceall(result, "enum ::", "enum ");
+  return result;
 }
 
 /* -----------------------------------------------------------------------------

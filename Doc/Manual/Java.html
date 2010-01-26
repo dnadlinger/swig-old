@@ -676,7 +676,9 @@ This is often combined with the <tt>-outdir</tt> to specify a package directory 
 swig -java -package com.bloggs.swig -outdir com/bloggs/swig example.i
 </pre></div>
 
+<p>
 SWIG won't create the directory, so make sure it exists beforehand.
+</p>
 
 <H3><a name="functions"></a>21.3.2 Functions</H3>
 
@@ -1772,7 +1774,7 @@ If declarations such as these appear, you will get a warning message like this:
 
 <div class="code">
 <pre>
-example.i:12: Warning(515): Overloaded method spam(unsigned short) ignored.
+example.i:12: Warning 515: Overloaded method spam(unsigned short) ignored.
 Method spam(int) at example.i:11 used.
 </pre>
 </div>
