@@ -1904,7 +1904,7 @@ public:
       }
 
       /* Create the intermediate class wrapper */
-      Parm *tp = NewParmFromNode(returntype, empty_str, n);
+      Parm *tp = NewParm(returntype, empty_str, n);
 
       tm = Swig_typemap_lookup("dwtype", tp, "", 0);
       if (tm) {
@@ -1921,7 +1921,7 @@ public:
 	  "No dwtype typemap defined for %s\n", SwigType_str(returntype, 0));
       }
 
-      Parm *retpm = NewParmFromNode(returntype, empty_str, n);
+      Parm *retpm = NewParm(returntype, empty_str, n);
 
       if ((c_ret_type = Swig_typemap_lookup("cwtype", retpm, "", 0))) {
 	if (!is_void && !ignored_method) {
@@ -2009,7 +2009,7 @@ public:
 	  c_param_type = cwtypeout;
         }
 
-	Parm *tp = NewParmFromNode(c_param_type, empty_str, n);
+	Parm *tp = NewParm(c_param_type, empty_str, n);
 	String *desc_tm = NULL;
 
 	/* Add to local variables */
@@ -2168,7 +2168,7 @@ public:
     String *upcall = NewStringf("(cast(%s)dObject).%s(%s)", classname, symname, imcall_args);
 
     if (!is_void) {
-      Parm *tp = NewParmFromNode(returntype, empty_str, n);
+      Parm *tp = NewParm(returntype, empty_str, n);
 
       if ((tm = Swig_typemap_lookup("ddirectorout", tp, "", 0))) {
         // This will end up in the same module as the current proxy class, so
@@ -2197,7 +2197,7 @@ public:
       if (!is_void) {
 	String *jresult_str = NewString("jresult");
 	String *result_str = NewString("c_result");
-	Parm *tp = NewParmFromNode(returntype, result_str, n);
+	Parm *tp = NewParm(returntype, result_str, n);
 
 	/* Copy jresult into c_result... */
 	if ((tm = Swig_typemap_lookup("directorout", tp, result_str, w))) {
@@ -3886,16 +3886,6 @@ private:
     if (canthrow)
       Setattr(n, "d:canthrow", "1");
     Delete(canthrow_attribute);
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::NewParmFromNode()
-   * --------------------------------------------------------------------------- */
-  Parm *NewParmFromNode(SwigType *type, const_String_or_char_ptr name, Node *n) {
-    Parm *p = NewParm(type, name);
-    Setfile(p, Getfile(n));
-    Setline(p, Getline(n));
-    return p;
   }
 
   /* ---------------------------------------------------------------------------
