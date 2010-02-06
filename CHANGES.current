@@ -1,6 +1,24 @@
 Version 1.3.41 (in progress)
 ============================
 
+2010-02-06: wsfulton
+            Fix #2918902 - language specific files not being generated in correct directory on
+            Windows when using forward slashes for -o, for example:
+              swig -python -c++ -o subdirectory/theinterface_wrap.cpp subdirectory/theinterface.i
+
+2010-02-05: wsfulton
+            Fix #2894405 - assertion when using -xmlout.
+
+2010-01-28: wsfulton
+            Fix typemap matching bug when a templated type has a typemap both specialized and not
+            specialized. For example:
+
+              template<typename T> struct XX { ... };
+              %typemap(in) const XX & "..."
+              %typemap(in) const XX< int > & "..."
+
+            resulted in the 2nd typemap being applied for all T in XX< T >.
+
 2010-01-22: wsfulton
             Fix #2933129 - typemaps not being found when the unary scope operator (::) is used to denote
             global scope, the typemap is now used in situations like this:
