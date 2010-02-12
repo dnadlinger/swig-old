@@ -65,6 +65,7 @@ static const char *usage1 = (const char *) "\
      -debug-symtabs  - Display symbol tables information\n\
      -debug-symbols  - Display target language symbols in the symbol tables\n\
      -debug-csymbols - Display C symbols in the symbol tables\n\
+     -debug-lsymbols - Display target language layer symbols\n\
      -debug-tags     - Display information about the tags found in the interface\n\
      -debug-template - Display information for debugging templates\n\
      -debug-top <n>  - Display entire parse tree at stages 1-4, <n> is a csv list of stages\n\
@@ -170,6 +171,7 @@ static int tm_debug = 0;
 static int dump_symtabs = 0;
 static int dump_symbols = 0;
 static int dump_csymbols = 0;
+static int dump_lang_symbols = 0;
 static int dump_tags = 0;
 static int dump_module = 0;
 static int dump_top = 0;
@@ -564,8 +566,8 @@ void SWIG_getoptions(int argc, char *argv[]) {
 	Swig_mark_arg(i);
       } else if (strcmp(argv[i], "-swiglib") == 0) {
 	if (SwigLibWin)
-	  printf("%s\n", Char(SwigLibWin));
-	printf("%s\n", SwigLib);
+	  Printf(stdout, "%s\n", SwigLibWin);
+	Printf(stdout, "%s\n", SwigLib);
 	SWIG_exit(EXIT_SUCCESS);
       } else if (strcmp(argv[i], "-o") == 0) {
 	Swig_mark_arg(i);
@@ -740,6 +742,9 @@ void SWIG_getoptions(int argc, char *argv[]) {
       } else if (strcmp(argv[i], "-debug-csymbols") == 0) {
 	dump_csymbols = 1;
 	Swig_mark_arg(i);
+      } else if (strcmp(argv[i], "-debug-lsymbols") == 0) {
+	dump_lang_symbols = 1;
+	Swig_mark_arg(i);
       } else if ((strcmp(argv[i], "-debug-tags") == 0) || (strcmp(argv[i], "-dump_tags") == 0)) {
 	dump_tags = 1;
 	Swig_mark_arg(i);
@@ -903,6 +908,9 @@ int SWIG_main(int argc, char *argv[], Language *l) {
 
   SWIG_getoptions(argc, argv);
 
+  if (dump_lang_symbols)
+    lang->setSymbolsDumpNeeded();
+
   // Define the __cplusplus symbol
   if (CPlusPlus)
     Preprocessor_define((DOH *) "__cplusplus __cplusplus", 0);
@@ -941,8 +949,8 @@ int SWIG_main(int argc, char *argv[], Language *l) {
   Swig_add_directory((String *) SwigLib);
 
   if (Verbose) {
-    printf("LangSubDir: %s\n", Char(LangSubDir));
-    printf("Search paths:\n");
+    Printf(stdout, "Language subdirectory: %s\n", LangSubDir);
+    Printf(stdout, "Search paths:\n");
     List *sp = Swig_search_path();
     Iterator s;
     for (s = First(sp); s.item; s = Next(s)) {
@@ -966,7 +974,7 @@ int SWIG_main(int argc, char *argv[], Language *l) {
       outfile = outfile_name;
 
     if (Verbose)
-      printf("Handling checkout...\n");
+      Printf(stdout, "Handling checkout...\n");
 
     s = Swig_include(input_file);
     if (!s) {
@@ -992,7 +1000,7 @@ int SWIG_main(int argc, char *argv[], Language *l) {
   } else {
     // Run the preprocessor
     if (Verbose)
-      printf("Preprocessing...\n");
+      Printf(stdout, "Preprocessing...\n");
 
     {
       int i;
@@ -1022,9 +1030,9 @@ int SWIG_main(int argc, char *argv[], Language *l) {
 	if (lang_config) {
 	  Printf(fs, "\n%%include <%s>\n", lang_config);
 	}
-	Printf(fs, "%%include(maininput=\"%s\") \"%s\"\n", Swig_filename_escape(input_file), Swig_last_file());
+	Printf(fs, "%%include(maininput=\"%s\") \"%s\"\n", Swig_filename_escape(input_file), Swig_filename_escape(Swig_last_file()));
 	for (i = 0; i < Len(libfiles); i++) {
-	  Printf(fs, "\n%%include \"%s\"\n", Getitem(libfiles, i));
+	  Printf(fs, "\n%%include \"%s\"\n", Swig_filename_escape(Getitem(libfiles, i)));
 	}
 	Seek(fs, 0, SEEK_SET);
 	cpps = Preprocessor_parse(fs);
@@ -1077,9 +1085,13 @@ int SWIG_main(int argc, char *argv[], Language *l) {
 	  }
 	  List *files = Preprocessor_depend();
 	  for (int i = 0; i < Len(files); i++) {
-	    if ((depend != 2) || ((depend == 2) && (Strncmp(Getitem(files, i), SwigLib, Len(SwigLib)) != 0))) {
-	      Printf(f_dependencies_file, "\\\n %s ", Getitem(files, i));
-	    }
+            int use_file = 1;
+            if (depend == 2) {
+              if ((Strncmp(Getitem(files, i), SwigLib, Len(SwigLib)) == 0) || (SwigLibWin && (Strncmp(Getitem(files, i), SwigLibWin, Len(SwigLibWin)) == 0)))
+                use_file = 0;
+            }
+            if (use_file)
+	      Printf(f_dependencies_file, "\\\n  %s ", Getitem(files, i));
 	  }
 	  Printf(f_dependencies_file, "\n");
 	  if (f_dependencies_file != stdout)
@@ -1222,6 +1234,9 @@ int SWIG_main(int argc, char *argv[], Language *l) {
 	  Swig_browser(top, 0);
 	}
       }
+    }
+    if (dump_lang_symbols) {
+      lang->dumpSymbols();
     }
     if (dump_top & STAGE4) {
       Printf(stdout, "debug-top stage 4\n");
