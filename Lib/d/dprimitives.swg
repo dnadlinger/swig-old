@@ -23,7 +23,6 @@
 %typemap(cwtype) float,              const float &              "float"
 %typemap(cwtype) double,             const double &             "double"
 %typemap(cwtype) long double,        const long double &        "long double"
-%typemap(cwtype) void                                           "void"
 
 %typemap(dwtype) bool,               const bool &                   "uint"
 %typemap(dwtype) char,               const char &                   "char"
@@ -40,7 +39,6 @@
 %typemap(dwtype) unsigned long long, const unsigned long long &     "ulong"
 %typemap(dwtype) float,              const float &                  "float"
 %typemap(dwtype) double,             const double &                 "double"
-%typemap(dwtype) void                                               "void"
 
 %typemap(dptype) bool,               const bool &                   "bool"
 %typemap(dptype) char,               const char &                   "char"
@@ -57,7 +55,6 @@
 %typemap(dptype) unsigned long long, const unsigned long long &     "ulong"
 %typemap(dptype) float,              const float &                  "float"
 %typemap(dptype) double,             const double &                 "double"
-%typemap(dptype) void                                               "void"
 
 
 /*
