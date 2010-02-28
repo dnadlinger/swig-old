@@ -1,13 +1,13 @@
 %include <shared_ptr.i>
 
-%define SWIG_SHARED_PTR_TYPEMAPS(PROXYCLASS, CONST, TYPE...)
+%define SWIG_SHARED_PTR_TYPEMAPS(_PROXYCLASS_NOT_USED, CONST, TYPE...)
 
 %naturalvar TYPE;
 %naturalvar SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >;
 
 // destructor mods
 %feature("unref") TYPE
-//"if (debug_shared) { cout << \"deleting use_count: \" << (*smartarg1).use_count() << \" [\" << (boost::get_deleter<SWIG_null_deleter>(*smartarg1) ? std::string(\"CANNOT BE DETERMINED SAFELY\") : ( (*smartarg1).get() ? (*smartarg1)->getValue() : std::string(\"NULL PTR\") )) << \"]\" << endl << flush; }\n"
+//"if (debug_shared) { cout << \"deleting use_count: \" << (*smartarg1).use_count() << \" [\" << (boost::get_deleter<SWIG_null_deleter>(*smartarg1) ? std::string(\"CANNOT BE DETERMINED SAFELY\") : ((*smartarg1).get() ? (*smartarg1)->getValue() : std::string(\"NULL PTR\"))) << \"]\" << endl << flush; }\n"
                                "(void)arg1; delete smartarg1;"
 
 
@@ -93,114 +93,111 @@
 %typemap (dptype) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >,
                   SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > &,
                   SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *,
-                  SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& "PROXYCLASS"
+                  SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& "$typemap(dptype, TYPE)"
 
 %typemap(din) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >,
                SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > &,
                SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *,
-               SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& "PROXYCLASS.swigGetCObject($dinput)"
+               SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& "$typemap(dptype, TYPE).swigGetCObject($dinput)"
 
 %typemap(dout, excode=SWIGEXCODE) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > {
   void* cPtr = $wcall;
-  PROXYCLASS ret = (cPtr is null) ? null : new PROXYCLASS(cPtr, true);$excode
+  auto ret = (cPtr is null) ? null : new $typemap(dptype, TYPE)(cPtr, true);$excode
   return ret;
 }
 %typemap(dout, excode=SWIGEXCODE) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > & {
   void* cPtr = $wcall;
-  PROXYCLASS ret = (cPtr is null) ? null : new PROXYCLASS(cPtr, true);$excode
+  auto ret = (cPtr is null) ? null : new $typemap(dptype, TYPE)(cPtr, true);$excode
   return ret;
 }
 %typemap(dout, excode=SWIGEXCODE) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > * {
   void* cPtr = $wcall;
-  PROXYCLASS ret = (cPtr is null) ? null : new PROXYCLASS(cPtr, true);$excode
+  auto ret = (cPtr is null) ? null : new $typemap(dptype, TYPE)(cPtr, true);$excode
   return ret;
 }
 %typemap(dout, excode=SWIGEXCODE) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& {
   void* cPtr = $wcall;
-  PROXYCLASS ret = (cPtr is null) ? null : new PROXYCLASS(cPtr, true);$excode
+  auto ret = (cPtr is null) ? null : new $typemap(dptype, TYPE)(cPtr, true);$excode
   return ret;
 }
 
 
 %typemap(dout, excode=SWIGEXCODE) CONST TYPE {
-  PROXYCLASS ret = new PROXYCLASS($wcall, true);$excode
+  auto ret = new $typemap(dptype, TYPE)($wcall, true);$excode
   return ret;
 }
 %typemap(dout, excode=SWIGEXCODE) CONST TYPE & {
-  PROXYCLASS ret = new PROXYCLASS($wcall, true);$excode
+  auto ret = new $typemap(dptype, TYPE)($wcall, true);$excode
   return ret;
 }
 %typemap(dout, excode=SWIGEXCODE) CONST TYPE * {
   void* cPtr = $wcall;
-  PROXYCLASS ret = (cPtr is null) ? null : new PROXYCLASS(cPtr, true);$excode
+  auto ret = (cPtr is null) ? null : new $typemap(dptype, TYPE)(cPtr, true);$excode
   return ret;
 }
 %typemap(dout, excode=SWIGEXCODE) CONST TYPE *& {
   void* cPtr = $wcall;
-  PROXYCLASS ret = (cPtr is null) ? null : new PROXYCLASS(cPtr, true);$excode
+  auto ret = (cPtr is null) ? null : new $typemap(dptype, TYPE)(cPtr, true);$excode
   return ret;
 }
 
 
-// Proxy base classes (not derived from another class).
-// TODO: How much visibility is needed for swigGetCObject?
-%typemap(dbody) TYPE %{
-  private void* m_swigCObject;
-  private bool m_swigOwnCObject;
+%typemap(dbody) SWIGTYPE %{
+private void* m_swigCObject;
+private bool m_swigOwnCObject;
 
-  protected this( void* cObject, bool ownCObject ) {
-    m_swigCObject = cObject;
-    m_swigOwnCObject = ownCObject;
-  }
+public this(void* cObject, bool ownCObject) {
+  m_swigCObject = cObject;
+  m_swigOwnCObject = ownCObject;
+}
 
-  public static void* swigGetCObject( $dclassname obj ) {
-    return ( obj is null ) ? null : obj.m_swigCObject;
-  }
+public static void* swigGetCObject($dclassname obj) {
+  return (obj is null) ? null : obj.m_swigCObject;
+}
 %}
 
-// Derived proxy classes.
-%typemap(dbody_derived) TYPE %{
-  private void* m_swigCObject;
-  private bool m_swigOwnCObject;
+%typemap(dbody_derived) SWIGTYPE %{
+private void* m_swigCObject;
+private bool m_swigOwnCObject;
 
-  protected this( void* cObject, bool ownCObject ) {
-    super( $wrapdmodule.$dclassname_SWIGSharedPtrUpcast( cObject ), ownCObject );
-    m_swigCObject = cObject;
-    m_swigOwnCObject = ownCObject;
-  }
+public this(void* cObject, bool ownCObject) {
+  super($wrapdmodule.$dclassname_SWIGSharedPtrUpcast(cObject), ownCObject);
+  m_swigCObject = cObject;
+  m_swigOwnCObject = ownCObject;
+}
 
-  public static void* swigGetCObject( $dclassname obj ) {
-    return ( obj is null ) ? null : obj.m_swigCObject;
-  }
+public static void* swigGetCObject($dclassname obj) {
+  return (obj is null) ? null : obj.m_swigCObject;
+}
 %}
 
 %typemap(ddispose, methodname="dispose", methodmodifiers="public") TYPE {
-    synchronized( this ) {
-      if ( m_swigCObject !is null ) {
-        if ( m_swigOwnCObject ) {
-          m_swigOwnCObject = false;
-          $wcall;
-        }
-        m_swigCObject = null;
+  synchronized(this) {
+    if (m_swigCObject !is null) {
+      if (m_swigOwnCObject) {
+        m_swigOwnCObject = false;
+        $wcall;
       }
+      m_swigCObject = null;
     }
   }
+}
 
 %typemap(ddispose_derived, methodname="dispose", methodmodifiers="public") TYPE {
-    synchronized( this ) {
-      if ( m_swigCObject !is null ) {
-        if ( m_swigOwnCObject ) {
-          m_swigOwnCObject = false;
-          $wcall;
-        }
-        m_swigCObject = null;
+  synchronized(this) {
+    if (m_swigCObject !is null) {
+      if (m_swigOwnCObject) {
+        m_swigOwnCObject = false;
+        $wcall;
       }
-      super.dispose();
+      m_swigCObject = null;
     }
+    super.dispose();
   }
+}
 
 %typemap(dwtype) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > swigSharedPtrUpcast "void*"
-%typemap(din) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > swigSharedPtrUpcast "PROXYCLASS.swigGetCObject($dinput)"
+%typemap(din) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > swigSharedPtrUpcast "$typemap(dptype, TYPE).swigGetCObject($dinput)"
 
 
 %template() SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >;
