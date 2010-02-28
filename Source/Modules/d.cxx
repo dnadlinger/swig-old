@@ -3875,6 +3875,12 @@ private:
       arg = NewString("value");
     }
 
+    if (split_proxy_dmodule && Strncmp(arg, package, Len(arg)) == 0) {
+      // If we are in split proxy mode and the argument is named like the target
+      // package, we append an underscore to its name to avoid clashes.
+      Append(arg, "_");
+    }
+
     return arg;
   }
 
