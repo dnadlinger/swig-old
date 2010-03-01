@@ -7,7 +7,7 @@
  * D-specifiv directives.
  * ----------------------------------------------------------------------------- */
 
-#define %dconst(flag)               %feature("d:const","flag")
+#define %dnativeconst               %feature("d:nativeconst")
 #define %dconstvalue(value)         %feature("d:constvalue",value)
 #define %dmethodmodifiers           %feature("d:methodmodifiers")
 #define %dnothrowexception          %feature("except")

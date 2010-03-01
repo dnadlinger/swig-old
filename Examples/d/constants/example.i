@@ -2,7 +2,7 @@
 %module example
 
 /* Force the generated D code to use the C constant values rather than retrieving them at runtime. */
-%dconst(1);
+%dnativeconst;
 
 /* A few preprocessor macros */
 
