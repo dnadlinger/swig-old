@@ -833,7 +833,6 @@ public:
       return SWIG_NOWRAP;
 
     Swig_require("enumvalueDeclaration", n, "*name", "?value", NIL);
-    String *symname = Getattr(n, "sym:name");
     String *value = Getattr(n, "value");
     String *name = Getattr(n, "name");
     Node *parent = parentNode(n);
@@ -848,13 +847,33 @@ public:
     // Note that this is used in enumValue() amongst other places
     Setattr(n, "value", tmpValue);
 
+    String *proxy_name = Getattr(n, "sym:name");
+
+    // If the %dstripprefix feature is set, strip the prefix from the value name.
+    String *stripprefix = GetFlagAttr(parent, "feature:d:stripprefix");
+    if (stripprefix) {
+      String *prefix;
+      if (Strcmp(stripprefix, "1") == 0) {
+	// Default to »EnumName_« if no argument was given to %dstripprefix.
+	prefix = Copy(Getattr(parent, "sym:name"));
+	Append(prefix, "_");
+      } else {
+	prefix = Copy(stripprefix);
+      }
+
+      if (Strncmp(proxy_name, prefix, Len(prefix)) == 0) {
+	Delslice(proxy_name, 0, Len(prefix));
+      }
+
+      Delete(prefix);
+    }
+
+    // Emit the enum item.
     {
-      // Wrap (non-anonymous) C/C++ enum with a proper D enum.
-      // Emit the enum item.
       if (!GetFlag(n, "firstenumitem"))
 	Printf(proxy_enum_code, ",\n");
 
-      Printf(proxy_enum_code, "  %s", symname);
+      Printf(proxy_enum_code, "  %s", proxy_name);
 
       // Check for the %dconstvalue feature
       String *value = Getattr(n, "feature:d:constvalue");
