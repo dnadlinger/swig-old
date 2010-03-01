@@ -1,6 +1,6 @@
 module catches_runme;
 
-import catches;
+import catches.catches;
 
 void main() {
   test({ test_catches(1); }, "C++ int exception thrown, value: 1");
@@ -28,6 +28,6 @@ void test(void delegate() command, char[] expectedMessage) {
 
   if (didntThrow) {
     throw new Exception("Failed to propagate C++ exception. Expected '" ~
-	expectedMessage ~ "', but no exception was thrown.");
+      expectedMessage ~ "', but no exception was thrown.");
   }
 }

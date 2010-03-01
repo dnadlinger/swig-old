@@ -1,6 +1,6 @@
 module preproc_constants_c_runme;
 
-import preproc_constants_c;
+import preproc_constants_c.preproc_constants_c;
 
 // Same as preproc_constants.i testcase, but bool types are int instead.
 void main() {

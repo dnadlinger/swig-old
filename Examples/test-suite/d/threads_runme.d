@@ -3,7 +3,7 @@ module threads_runme;
 import tango.core.Thread;
 import tango.io.Console;
 import Integer = tango.text.convert.Integer;
-import threads;
+import threads.Kerfuffle;
 
 // Spawn 8 threads.
 const uint NUM_THREADS = 8;

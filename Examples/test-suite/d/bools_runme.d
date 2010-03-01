@@ -1,7 +1,7 @@
 /// This is the bool runtime testcase. It checks that the C++ bool type works.
 module bools_runme;
 
-import bools;
+import bools.bools;
 
 void main() {
   bool t = true;

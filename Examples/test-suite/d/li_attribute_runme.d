@@ -1,6 +1,12 @@
 module li_attribute_runme;
 
-import li_attribute;
+import li_attribute.A;
+import li_attribute.B;
+import li_attribute.MyClass;
+import li_attribute.MyClassVal;
+import li_attribute.MyStringyClass;
+import li_attribute.MyFoo;
+import li_attribute.Param_i;
 
 void main() {
   auto aa = new A(1,2,3);

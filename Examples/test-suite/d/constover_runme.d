@@ -1,30 +1,31 @@
 module constover_runme;
 
-import constover;
+import constover.constover;
+import constover.Foo;
 
 void main() {
-  char[] p = constover.test("test");
-  if ( p != "test" )
-    throw new Exception( "test failed!" );
+  char[] p = test("test");
+  if (p != "test")
+    throw new Exception("test failed!");
 
-  p = constover.test_pconst("test");
-  if ( p != "test_pconst" )
-    throw new Exception( "test_pconst failed!" );
+  p = test_pconst("test");
+  if (p != "test_pconst")
+    throw new Exception("test_pconst failed!");
 
   auto f = new Foo();
   p = f.test("test");
-  if ( p != "test" )
-    throw new Exception( "member-test failed!" );
+  if (p != "test")
+    throw new Exception("member-test failed!");
 
   p = f.test_pconst("test");
-  if ( p != "test_pconst" )
-    throw new Exception( "member-test_pconst failed!" );
+  if (p != "test_pconst")
+    throw new Exception("member-test_pconst failed!");
 
   p = f.test_constm("test");
-  if ( p != "test_constmethod" )
-    throw new Exception( "member-test_constm failed!" );
+  if (p != "test_constmethod")
+    throw new Exception("member-test_constm failed!");
 
   p = f.test_pconstm("test");
-  if ( p != "test_pconstmethod" )
-    throw new Exception( "member-test_pconstm failed!" );
+  if (p != "test_pconstmethod")
+    throw new Exception("member-test_pconstm failed!");
 }

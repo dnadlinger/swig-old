@@ -1,6 +1,7 @@
 module varargs_runme;
 
-import varargs;
+import varargs.varargs;
+import varargs.Foo;
 
 void main() {
   if (test("Hello") != "Hello") {

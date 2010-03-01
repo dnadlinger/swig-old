@@ -1,6 +1,23 @@
 module enum_thorough_runme;
 
-import enum_thorough;
+import enum_thorough.enum_thorough;
+import enum_thorough.AnonStruct;
+import enum_thorough.colour;
+import enum_thorough.FirStruct;
+import enum_thorough.HairStruct;
+import enum_thorough.IgnoreTest;
+import enum_thorough.Instances;
+import enum_thorough.namedanon;
+import enum_thorough.namedanonspace;
+import enum_thorough.newname;
+import enum_thorough.NewNameStruct;
+import enum_thorough.repeat;
+import enum_thorough.SpeedClass;
+import enum_thorough.TClassInt;
+import enum_thorough.TemplateClassInt;
+import enum_thorough.TreesClass;
+import enum_thorough.twonames;
+import enum_thorough.TwoNamesStruct;
 
 void main() {
   {

@@ -1,6 +1,7 @@
 module director_ignore_runme;
 
-import director_ignore;
+import director_ignore.DIgnores;
+import director_ignore.DAbstractIgnores;
 
 void main() {
   // Just check the classes can be instantiated and other methods work as expected

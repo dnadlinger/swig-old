@@ -1,7 +1,12 @@
 module director_classic_runme;
 
 import tango.io.Stdout;
-import director_classic;
+import director_classic.Caller;
+import director_classic.Person;
+import director_classic.Child;
+import director_classic.GrandChild;
+import director_classic.OrphanPerson;
+import director_classic.OrphanChild;
 
 const bool TRACE = false;
 

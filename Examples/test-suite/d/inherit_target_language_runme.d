@@ -1,6 +1,13 @@
 module inherit_target_language_runme;
 
-import inherit_target_language;
+import inherit_target_language.BaseX;
+import inherit_target_language.Derived1;
+import inherit_target_language.Derived2;
+import inherit_target_language.DerivedX;
+import inherit_target_language.MultipleDerived1;
+import inherit_target_language.MultipleDerived2;
+import inherit_target_language.MultipleDerived3;
+import inherit_target_language.MultipleDerived4;
 
 void main() {
   (new Derived1()).targetLanguageBaseMethod();

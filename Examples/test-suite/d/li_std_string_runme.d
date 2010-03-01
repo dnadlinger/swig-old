@@ -1,7 +1,10 @@
 module li_std_string_runme;
 
 import tango.core.Exception;
-import li_std_string;
+import li_std_string.li_std_string;
+import li_std_string.Structure;
+import li_std_string.SWIGTYPE_p_std__string;
+
 
 void main() {
   // Checking expected use of %typemap(in) std::string {}
@@ -74,7 +77,7 @@ void main() {
     throw new Exception("ConstGlobalString test");
 
   // Member variables.
-  Structure myStructure = new Structure();
+  auto myStructure = new Structure();
   if (myStructure.MemberString2 != "member string 2")
     throw new Exception("MemberString2 test 1");
   myStructure.MemberString2 = s;

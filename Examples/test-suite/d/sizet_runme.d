@@ -1,6 +1,6 @@
 module sizet_runme;
 
-import sizet;
+import sizet.sizet;
 
 void main() {
   size_t s = 2000;

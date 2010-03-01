@@ -1,6 +1,7 @@
 module allprotected_runme;
 
-import allprotected;
+import allprotected.Klass;
+import allprotected.ProtectedBase;
 
 void main() {
   auto mpb = new MyProtectedBase("MyProtectedBase");

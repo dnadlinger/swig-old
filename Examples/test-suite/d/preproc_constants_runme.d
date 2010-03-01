@@ -1,8 +1,7 @@
 module preproc_constants_runme;
 
-import preproc_constants;
+import preproc_constants.preproc_constants;
 
-// Same as preproc_constants.i testcase, but bool types are int instead.
 void main() {
   static assert(is(int == typeof(CONST_INT1())));
   static assert(is(int == typeof(CONST_INT2())));

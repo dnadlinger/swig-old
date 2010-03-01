@@ -1,6 +1,6 @@
 module sneaky1_runme;
 
-import sneaky1;
+import sneaky1.sneaky1;
 
 void main() {
   if (add(30, 2) != 32) {

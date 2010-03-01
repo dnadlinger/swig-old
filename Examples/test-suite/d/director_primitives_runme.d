@@ -1,20 +1,26 @@
 /**
-  This test program shows a D class DDerived inheriting from Base. Three types of classes are created
-  and the virtual methods called to demonstrate:
-  1) Wide variety of primitive types
-  2) Calling methods with zero, one or more parameters
-  3) Director methods that are not overridden in D
-  4) Director classes that are not overridden at all in D, i.e. non-director
-     behaviour is as expected for director classes
-  5) Inheritance hierarchy using director methods
-  6) Return types working as well as parameters
-
-  The Caller class is a tester class, which calls the virtual functions from C++.
-*/
+ * This test program shows a D class DDerived inheriting from Base.
+ *
+ * Three types of classes are created and the virtual methods called to
+ * demonstrate:
+ *  - Wide variety of primitive types
+ *  - Calling methods with zero, one or more parameters
+ *  - Director methods that are not overridden in D
+ *  - Director classes that are not overridden at all in D, i.e. non-director
+ *    behaviour is as expected for director classes
+ *  - Inheritance hierarchy using director methods
+ *  - Return types working as well as parameters
+ *
+ * The Caller class is a tester class which calls the virtual functions from C++.
+ */
 module director_primitives_runme;
 
 import tango.io.Stdout;
-import director_primitives;
+import director_primitives.director_primitives;
+import director_primitives.Base;
+import director_primitives.Caller;
+import director_primitives.Derived;
+import director_primitives.HShadowMode;
 
 void main() {
   PrintDebug = false;

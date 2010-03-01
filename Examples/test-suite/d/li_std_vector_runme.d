@@ -3,7 +3,16 @@ module li_std_vector_runme;
 import tango.core.Exception;
 import tango.io.Stdout;
 import Integer = tango.text.convert.Integer;
-import li_std_vector;
+import li_std_vector.li_std_vector;
+import li_std_vector.DoubleVector;
+import li_std_vector.IntVector;
+import li_std_vector.IntPtrVector;
+import li_std_vector.IntConstPtrVector;
+import li_std_vector.RealVector;
+import li_std_vector.Struct;
+import li_std_vector.StructVector;
+import li_std_vector.StructPtrVector;
+import li_std_vector.StructConstPtrVector;
 
 const size_t SIZE = 20;
 

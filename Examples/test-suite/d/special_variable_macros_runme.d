@@ -1,6 +1,9 @@
 module special_variable_macros_runme;
 
-import special_variable_macros;
+import special_variable_macros.special_variable_macros;
+import special_variable_macros.Name;
+import special_variable_macros.NewName;
+import special_variable_macros.PairIntBool;
 
 void main() {
   auto name = new Name();
@@ -29,7 +32,7 @@ void main() {
     throw new Exception("test failed");
   }
 
-  NewName newName = NewName.factory("factoryname");
+  auto newName = NewName.factory("factoryname");
   if (newName.getStoredName().getName() != "factoryname") {
     throw new Exception("test failed");
   }

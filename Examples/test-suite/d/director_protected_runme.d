@@ -1,6 +1,7 @@
 module director_protected_runme;
 
-import director_protected;
+import director_protected.Foo;
+import director_protected.Bar;
 
 void main() {
   Bar b = new Bar();

@@ -1,7 +1,9 @@
 module member_pointer_runme;
 
 import Float = tango.text.convert.Float;
-import member_pointer;
+import member_pointer.member_pointer;
+import member_pointer.Square;
+import member_pointer.SWIGTYPE_m_Shape__f_void__double;
 
 void main() {
   auto s = new Square(10);

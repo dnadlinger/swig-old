@@ -1,52 +1,59 @@
 module default_args_runme;
 
-import default_args;
+import default_args.default_args;
+import default_args.ConstMethods;
+import default_args.EnumClass;
+import default_args.Except;
+import default_args.Foo;
+import default_args.Klass;
+import default_args.Statics;
+import default_args.Tricky;
 
 void main() {
-  if (default_args.anonymous() != 7771)
+  if (anonymous() != 7771)
     throw new Exception("anonymous (1) failed");
-  if (default_args.anonymous(1234) != 1234)
+  if (anonymous(1234) != 1234)
     throw new Exception("anonymous (2) failed");
 
-  if (default_args.booltest() != true)
+  if (booltest() != true)
     throw new Exception("booltest (1) failed");
-  if (default_args.booltest(true) != true)
+  if (booltest(true) != true)
     throw new Exception("booltest (2) failed");
-  if (default_args.booltest(false) != false)
+  if (booltest(false) != false)
     throw new Exception("booltest (3) failed");
 
   auto ec = new EnumClass();
   if (ec.blah() != true)
     throw new Exception("EnumClass failed");
 
-  if (default_args.casts1() != null)
+  if (casts1() != null)
     throw new Exception("casts1 failed");
 
-  if (default_args.casts2() != "Hello")
+  if (casts2() != "Hello")
     throw new Exception("casts2 failed");
 
-  if (default_args.casts1("Ciao") != "Ciao")
+  if (casts1("Ciao") != "Ciao")
     throw new Exception("casts1 not default failed");
 
-  if (default_args.chartest1() != 'x')
+  if (chartest1() != 'x')
     throw new Exception("chartest1 failed");
 
-  if (default_args.chartest2() != '\0')
+  if (chartest2() != '\0')
     throw new Exception("chartest2 failed");
 
-  if (default_args.chartest1('y') != 'y')
+  if (chartest1('y') != 'y')
     throw new Exception("chartest1 not default failed");
 
-  if (default_args.chartest1('y') != 'y')
+  if (chartest1('y') != 'y')
     throw new Exception("chartest1 not default failed");
 
-  if (default_args.reftest1() != 42)
+  if (reftest1() != 42)
     throw new Exception("reftest1 failed");
 
-  if (default_args.reftest1(400) != 400)
+  if (reftest1(400) != 400)
     throw new Exception("reftest1 not default failed");
 
-  if (default_args.reftest2() != "hello")
+  if (reftest2() != "hello")
     throw new Exception("reftest2 failed");
 
   // rename
@@ -58,48 +65,16 @@ void main() {
   foo.renamed1arg();
 
   // exception specifications
-  // FIXME: The exceptions on test failure are caught too!
-  try {
-    default_args.exceptionspec();
-    throw new Exception("exceptionspec 1 failed");
-  } catch (Exception) {
-  }
-  try {
-    default_args.exceptionspec(-1);
-    throw new Exception("exceptionspec 2 failed");
-  } catch (Exception) {
-  }
-  try {
-    default_args.exceptionspec(100);
-    throw new Exception("exceptionspec 3 failed");
-  } catch (Exception) {
-  }
+  testException( { exceptionspec(); }, "exceptionspec 1" );
+  testException( { exceptionspec(-1); }, "exceptionspec 2" );
+  testException( { exceptionspec(100); }, "exceptionspec 3" );
+
   auto ex = new Except(false);
-  try {
-    ex.exspec();
-    throw new Exception("exspec 1 failed");
-  } catch (Exception) {
-  }
-  try {
-    ex.exspec(-1);
-    throw new Exception("exspec 2 failed");
-  } catch (Exception) {
-  }
-  try {
-    ex.exspec(100);
-    throw new Exception("exspec 3 failed");
-  } catch (Exception) {
-  }
-  try {
-    ex = new Except(true);
-    throw new Exception("Except constructor 1 failed");
-  } catch (Exception) {
-  }
-  try {
-    ex = new Except(true, -2);
-    throw new Exception("Except constructor 2 failed");
-  } catch (Exception) {
-  }
+  testException( { ex.exspec(); }, "exspec 1" );
+  testException( { ex.exspec(-1); }, "exspec 2" );
+  testException( { ex.exspec(100); }, "exspec 3" );
+  testException( { ex = new Except(true); }, "Except constructor 1" );
+  testException( { ex = new Except(true, -2); }, "Except constructor 2" );
 
   // Default parameters in static class methods
   if (Statics.staticmethod() != 10+20+30)
@@ -122,13 +97,13 @@ void main() {
   if (tricky.contrived() != 'X')
     throw new Exception("contrived failed");
 
-  if (default_args.constructorcall().val != -1)
+  if (constructorcall().val != -1)
     throw new Exception("constructorcall test 1 failed");
 
-  if (default_args.constructorcall(new Klass(2222)).val != 2222)
+  if (constructorcall(new Klass(2222)).val != 2222)
     throw new Exception("constructorcall test 2 failed");
 
-  if (default_args.constructorcall(new Klass()).val != -1)
+  if (constructorcall(new Klass()).val != -1)
     throw new Exception("constructorcall test 3 failed");
 
   // const methods
@@ -137,4 +112,16 @@ void main() {
     throw new Exception("coo test 1 failed");
   if (cm.coo(1.0) != 20)
     throw new Exception("coo test 2 failed");
+}
+
+void testException(void delegate() command, char[] testName) {
+  bool didntThrow;
+  try {
+    command();
+    didntThrow = true;
+  } catch (Exception e) {}
+
+  if (didntThrow) {
+    throw new Exception(testName ~ " failed");
+  }
 }

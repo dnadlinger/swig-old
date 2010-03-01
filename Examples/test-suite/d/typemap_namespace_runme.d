@@ -1,6 +1,6 @@
 module typemap_namespace_runme;
 
-import typemap_namespace;
+import typemap_namespace.typemap_namespace;
 
 void main() {
   if (test1("hello") != "hello") {
@@ -11,4 +11,3 @@ void main() {
     throw new Exception("test2 failed");
   }
 }
-

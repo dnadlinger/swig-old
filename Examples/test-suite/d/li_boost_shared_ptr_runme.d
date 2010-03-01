@@ -5,7 +5,12 @@ import tango.core.Exception;
 import tango.core.Memory;
 import tango.core.Thread;
 import tango.text.convert.Integer;
-import li_boost_shared_ptr;
+import li_boost_shared_ptr.li_boost_shared_ptr;
+import li_boost_shared_ptr.Klass;
+import li_boost_shared_ptr.KlassDerived;
+import li_boost_shared_ptr.Klass3rdDerived;
+import li_boost_shared_ptr.MemberVariables;
+import li_boost_shared_ptr.PairIntDouble;
 
 // Debugging flag
 const bool TRACE = false;

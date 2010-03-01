@@ -1,6 +1,6 @@
 module throw_exception_runme;
 
-import throw_exception;
+import throw_exception.Foo;
 
 void main() {
   test!("test_int");

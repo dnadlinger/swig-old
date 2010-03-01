@@ -1,7 +1,8 @@
 %module minherit2
 
-// A multiple inheritance example, mainly for Java and C#.
-// The example shows how it is possible to turn C++ abstract base classes into Java/C# interface.
+// A multiple inheritance example, mainly for Java, C# and D.
+// The example shows how it is possible to turn C++ abstract base classes into
+// Java/C#/D interfaces.
 // In the future, all this trouble might be more automated.
 
 %warnfilter(SWIGWARN_JAVA_MULTIPLE_INHERITANCE,
@@ -33,8 +34,8 @@
 #define javabase             dbase
 
 %typemap(dimports) RemoteMpe %{
-import IRemoteSyncIO;
-import IRemoteAsyncIO;
+$import_type(IRemoteSyncIO)
+$import_type(IRemoteAsyncIO)
 %}
 #endif
 

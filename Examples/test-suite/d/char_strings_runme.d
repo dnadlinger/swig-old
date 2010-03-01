@@ -1,7 +1,7 @@
 module char_strings_runme;
 
 import tango.text.convert.Integer;
-import char_strings;
+import char_strings.char_strings;
 
 const char[] CPLUSPLUS_MSG = "A message from the deep dark world of C++, where anything is possible.";
 const char[] OTHERLAND_MSG = "Little message from the safe world.";
@@ -12,130 +12,130 @@ void main() {
 
   // get functions
   for (i=0; i<count; i++) {
-    char[] str = char_strings.GetCharHeapString();
+    char[] str = GetCharHeapString();
     if (str != CPLUSPLUS_MSG)
       throw new Exception("Test char get 1 failed, iteration " ~ toString(i));
-    char_strings.DeleteCharHeapString();
+    DeleteCharHeapString();
   }
 
   for (i=0; i<count; i++) {
-    char[] str = char_strings.GetConstCharProgramCodeString();
+    char[] str = GetConstCharProgramCodeString();
     if (str != CPLUSPLUS_MSG)
       throw new Exception("Test char get 2 failed, iteration " ~ toString(i));
-    char_strings.DeleteCharHeapString();
+    DeleteCharHeapString();
   }
 
   for (i=0; i<count; i++) {
-    char[] str = char_strings.GetCharStaticString();
+    char[] str = GetCharStaticString();
     if (str != CPLUSPLUS_MSG)
       throw new Exception("Test char get 3 failed, iteration " ~ toString(i));
   }
 
   for (i=0; i<count; i++) {
-    char[] str = char_strings.GetCharStaticStringFixed();
+    char[] str = GetCharStaticStringFixed();
     if (str != CPLUSPLUS_MSG)
       throw new Exception("Test char get 4 failed, iteration " ~ toString(i));
   }
 
   for (i=0; i<count; i++) {
-    char[] str = char_strings.GetConstCharStaticStringFixed();
+    char[] str = GetConstCharStaticStringFixed();
     if (str != CPLUSPLUS_MSG)
       throw new Exception("Test char get 5 failed, iteration " ~ toString(i));
   }
 
   // set functions
   for (i=0; i<count; i++) {
-    if (!char_strings.SetCharHeapString(OTHERLAND_MSG ~ toString(i), i))
+    if (!SetCharHeapString(OTHERLAND_MSG ~ toString(i), i))
       throw new Exception("Test char set 1 failed, iteration " ~ toString(i));
   }
 
   for (i=0; i<count; i++) {
-    if (!char_strings.SetCharStaticString(OTHERLAND_MSG ~ toString(i), i))
+    if (!SetCharStaticString(OTHERLAND_MSG ~ toString(i), i))
       throw new Exception("Test char set 2 failed, iteration " ~ toString(i));
   }
 
   for (i=0; i<count; i++) {
-    if (!char_strings.SetCharArrayStaticString(OTHERLAND_MSG ~ toString(i), i))
+    if (!SetCharArrayStaticString(OTHERLAND_MSG ~ toString(i), i))
       throw new Exception("Test char set 3 failed, iteration " ~ toString(i));
   }
 
   for (i=0; i<count; i++) {
-    if (!char_strings.SetConstCharHeapString(OTHERLAND_MSG ~ toString(i), i))
+    if (!SetConstCharHeapString(OTHERLAND_MSG ~ toString(i), i))
       throw new Exception("Test char set 4 failed, iteration " ~ toString(i));
   }
 
   for (i=0; i<count; i++) {
-    if (!char_strings.SetConstCharStaticString(OTHERLAND_MSG ~ toString(i), i))
+    if (!SetConstCharStaticString(OTHERLAND_MSG ~ toString(i), i))
       throw new Exception("Test char set 5 failed, iteration " ~ toString(i));
   }
 
   for (i=0; i<count; i++) {
-    if (!char_strings.SetConstCharArrayStaticString(OTHERLAND_MSG ~ toString(i), i))
+    if (!SetConstCharArrayStaticString(OTHERLAND_MSG ~ toString(i), i))
       throw new Exception("Test char set 6 failed, iteration " ~ toString(i));
   }
 
   // get set function
   for (i=0; i<count*10; i++) {
     char[] ping = OTHERLAND_MSG ~ toString(i);
-    char[] pong = char_strings.CharPingPong(ping);
+    char[] pong = CharPingPong(ping);
     if (ping != pong)
       throw new Exception("Test PingPong 1 failed.\nExpected:" ~ ping ~ "\nReceived:" ~ pong);
   }
 
   // variables
   for (i=0; i<count; i++) {
-    char_strings.global_char = OTHERLAND_MSG ~ toString(i);
-    if (char_strings.global_char != OTHERLAND_MSG ~ toString(i))
+    global_char = OTHERLAND_MSG ~ toString(i);
+    if (global_char != OTHERLAND_MSG ~ toString(i))
       throw new Exception("Test variables 1 failed, iteration " ~ toString(i));
   }
 
   for (i=0; i<count; i++) {
-    char_strings.global_char_array1 = OTHERLAND_MSG ~ toString(i);
-    if (char_strings.global_char_array1 != OTHERLAND_MSG ~ toString(i))
+    global_char_array1 = OTHERLAND_MSG ~ toString(i);
+    if (global_char_array1 != OTHERLAND_MSG ~ toString(i))
       throw new Exception("Test variables 2 failed, iteration " ~ toString(i));
   }
 
   for (i=0; i<count; i++) {
-    char_strings.global_char_array2 = OTHERLAND_MSG ~ toString(i);
-    if (char_strings.global_char_array2 != OTHERLAND_MSG ~ toString(i))
+    global_char_array2 = OTHERLAND_MSG ~ toString(i);
+    if (global_char_array2 != OTHERLAND_MSG ~ toString(i))
       throw new Exception("Test variables 3 failed, iteration " ~ toString(i));
   }
 
   for (i=0; i<count; i++) {
-    if (char_strings.global_const_char != CPLUSPLUS_MSG)
+    if (global_const_char != CPLUSPLUS_MSG)
       throw new Exception("Test variables 4 failed, iteration " ~ toString(i));
   }
 
   for (i=0; i<count; i++) {
-    if (char_strings.global_const_char_array1 != CPLUSPLUS_MSG)
+    if (global_const_char_array1 != CPLUSPLUS_MSG)
       throw new Exception("Test variables 5 failed, iteration " ~ toString(i));
   }
 
   for (i=0; i<count; i++) {
-    if (char_strings.global_const_char_array2 != CPLUSPLUS_MSG)
+    if (global_const_char_array2 != CPLUSPLUS_MSG)
       throw new Exception("Test variables 6 failed, iteration " ~ toString(i));
   }
 
   // char *& tests
   for (i=0; i<count; i++) {
-    char[] str = char_strings.GetCharPointerRef();
+    char[] str = GetCharPointerRef();
     if (str != CPLUSPLUS_MSG)
       throw new Exception("Test char pointer ref get failed, iteration " ~ toString(i));
   }
 
   for (i=0; i<count; i++) {
-    if (!char_strings.SetCharPointerRef(OTHERLAND_MSG ~ toString(i), i))
+    if (!SetCharPointerRef(OTHERLAND_MSG ~ toString(i), i))
       throw new Exception("Test char pointer ref set failed, iteration " ~ toString(i));
   }
 
   for (i=0; i<count; i++) {
-    char[] str = char_strings.GetConstCharPointerRef();
+    char[] str = GetConstCharPointerRef();
     if (str != CPLUSPLUS_MSG)
       throw new Exception("Test const char pointer ref get failed, iteration " ~ toString(i));
   }
 
   for (i=0; i<count; i++) {
-    if (!char_strings.SetConstCharPointerRef(OTHERLAND_MSG ~ toString(i), i))
+    if (!SetConstCharPointerRef(OTHERLAND_MSG ~ toString(i), i))
       throw new Exception("Test const char pointer ref set failed, iteration " ~ toString(i));
   }
 }

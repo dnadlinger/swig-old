@@ -1,6 +1,7 @@
 module overload_template_runme;
 
-import overload_template;
+import overload_template.overload_template;
+import overload_template.Klass;
 
 void main() {
   int f = foo();
@@ -98,7 +99,7 @@ void main() {
   if (overload(1, "hello") != 30)
     throw new Exception ("overload(int t, const char *)");
 
-  Klass k = new Klass();
+  auto k = new Klass();
   if (overload(k) != 10)
     throw new Exception ("overload(Klass t)");
 

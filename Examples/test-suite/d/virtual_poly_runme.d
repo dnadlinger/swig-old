@@ -1,6 +1,8 @@
 module virtual_poly_runme;
 
-import virtual_poly;
+import virtual_poly.NDouble;
+import virtual_poly.NInt;
+import virtual_poly.NNumber;
 
 void main() {
   // D supports covariant (polymorphic) return types, so this should work like

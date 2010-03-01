@@ -17,7 +17,7 @@ include $(srcdir)/../common.mk
 INTERFACEDIR = ../../
 TARGETSUFFIX = _wrap
 
-SWIGOPT+=-splitproxy
+SWIGOPT+=-splitproxy -package $*
 
 # Rules for the different types of tests
 %.cpptest:
@@ -50,17 +50,16 @@ setup = \
 # a file is found which has _runme.d appended after the testcase name.
 run_testcase = \
 	if [ -f $(srcdir)/$(TESTPREFIX)$*$(TESTSUFFIX) ]; then \
-	  cp $(srcdir)/$(TESTPREFIX)$*$(TESTSUFFIX) $* && \
 	  cd $* && \
 	  $(MAKE) -f $(top_builddir)/$(EXAMPLES)/Makefile \
 	  DFLAGS='-of$*_runme' \
-	  DSRCS='*.d' d_compile && \
+	  DSRCS='../$(TESTPREFIX)$*$(TESTSUFFIX) $*/*.d' d_compile && \
 	  env LD_LIBRARY_PATH=".:$$LD_LIBRARY_PATH" $(RUNTOOL) ./$*_runme; \
 	else \
 	  cd $* && \
 	  $(MAKE) -f $(top_builddir)/$(EXAMPLES)/Makefile \
 	  DFLAGS='-c' \
-	  DSRCS='*.d' d_compile && cd .. ; \
+	  DSRCS='$*/*.d' d_compile && cd .. ; \
 	fi
 
 # Clean: remove testcase directories
@@ -68,6 +67,3 @@ run_testcase = \
 	@if [ -d $* ]; then \
 	  rm -rf $*; \
 	fi
-
-clean:
-	@rm -f *.exe *.exe.mdb

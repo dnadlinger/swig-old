@@ -2,7 +2,7 @@
 module long_long_runme;
 
 import Integer = tango.text.convert.Integer;
-import long_long;
+import long_long.long_long;
 
 void main() {
   check_ll(0L);

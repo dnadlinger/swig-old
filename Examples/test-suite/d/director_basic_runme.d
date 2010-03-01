@@ -1,6 +1,9 @@
 module director_basic_runme;
 
-import director_basic;
+import director_basic.A1;
+import director_basic.Bar;
+import director_basic.Foo;
+import director_basic.MyClass;
 
 void main() {
   auto a = new director_basic_MyFoo();

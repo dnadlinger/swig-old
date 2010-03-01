@@ -2,7 +2,7 @@ module li_std_except_runme;
 
 import tango.core.Exception;
 import tango.io.Console;
-import li_std_except;
+import li_std_except.Test;
 
 void main() {
   with (new Test()) {

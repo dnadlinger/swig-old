@@ -1,6 +1,7 @@
 module default_constructor_runme;
 
-import default_constructor;
+import default_constructor.FFF;
+import default_constructor.G;
 
 void main() {
   // Protected destructor test.

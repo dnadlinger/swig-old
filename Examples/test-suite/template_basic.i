@@ -1,9 +1,5 @@
-/* File : example.i */
-#ifndef SWIGD
-%module "template"
-#else
-%module "template_"
-#endif
+/* File: template_basic.i */
+%module "template_basic"
 
 %warnfilter(SWIGWARN_RUBY_WRONG_NAME) vector<int>;         /* Ruby, wrong class name */
 %warnfilter(SWIGWARN_RUBY_WRONG_NAME) vector<double>;      /* Ruby, wrong class name */
@@ -35,7 +31,7 @@ template<class T> class vector {
   void set(int index, T &val) {
     v[index] = val;
   }
-  // This really doesn't do anything except test const handling 
+  // This really doesn't do anything except test const handling
   void testconst(const T x) { }
 };
 

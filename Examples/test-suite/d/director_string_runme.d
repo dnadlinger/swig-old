@@ -1,18 +1,18 @@
 module director_string_runme;
 
 import Integer = tango.text.convert.Integer;
-import director_string;
+import director_string.A;
 
 void main() {
   char[] s;
 
-  director_string_A c = new director_string_A("hi");
+  auto c = new director_string_A("hi");
   for (int i=0; i<3; ++i) {
     s = c.call_get(i);
     if (s != Integer.toString(i)) throw new Exception("director_string_A.get(" ~ Integer.toString(i) ~ ") failed. Got:" ~ s);
   }
 
-  director_string_B b = new director_string_B("hello");
+  auto b = new director_string_B("hello");
 
   s = b.call_get_first();
   if (s != "director_string_B.get_first") throw new Exception("call_get_first() failed");
