@@ -702,11 +702,13 @@ public:
 	if (Strcmp(code, "wrapdmodulecode") == 0) {
 	  Printf(wrap_dmodule_code, "%s\n", strvalue);
 	} else if (Strcmp(code, "wrapdmoduleimports") == 0) {
+	  replaceImportTypeMacros(strvalue);
 	  Chop(strvalue);
 	  Printf(wrap_dmodule_imports, "%s\n", strvalue);
 	} else if (Strcmp(code, "proxydmodulecode") == 0) {
 	  Printf(proxy_dmodule_code, "%s\n", strvalue);
 	} else if (Strcmp(code, "globalproxyimports") == 0) {
+	  replaceImportTypeMacros(strvalue);
 	  Chop(strvalue);
 	  Printf(global_proxy_imports, "%s\n", strvalue);
 	} else if (Strcmp(code, "wrapperloadercode") == 0) {
@@ -776,6 +778,7 @@ public:
     if (Len(imports) > 0) {
       imports_trimmed = Copy(imports);
       Chop(imports_trimmed);
+      replaceImportTypeMacros(imports_trimmed);
       Printv(imports_trimmed, "\n", NIL);
     } else {
       imports_trimmed = NewString("");
@@ -3111,6 +3114,7 @@ private:
     if (Len(imports) > 0) {
       String* imports_trimmed = Copy(imports);
       Chop(imports_trimmed);
+      replaceImportTypeMacros(imports_trimmed);
       Printv(proxy_class_imports, imports_trimmed, "\n", NIL);
       Delete(imports_trimmed);
     }
@@ -3307,6 +3311,7 @@ private:
     if (Len(imports) > 0) {
       String *imports_trimmed = Copy(imports);
       Chop(imports_trimmed);
+      replaceImportTypeMacros(imports_trimmed);
       Printv(imports_target, imports_trimmed, "\n", NIL);
       Delete(imports_trimmed);
     }
@@ -3469,11 +3474,8 @@ private:
    * (read: typemap-) specified import statements are handeled seperately.
    * --------------------------------------------------------------------------- */
   void requireDType(const String *dmodule_name) {
-    if (inProxyModule(dmodule_name)) {
-      return;
-    }
-
-    String *import = NewStringf("static import %s%s;\n", package, dmodule_name);
+    String *import = createImportStatement(dmodule_name);
+    Append(import, "\n");
     if (is_wrapping_class()) {
       addImportStatement(proxy_class_imports, import);
     } else {
@@ -3496,8 +3498,8 @@ private:
       // if this import is not.
       // Thus, we check if the seven characters in front of the occurence are
       // »static «. If the import string passed is also static, the checks fail
-      // even if the found statement is also static because the last seven characters would be part of the previous import
-      // statement then.
+      // even if the found statement is also static because the last seven
+      // characters would be part of the previous import statement then.
 
       if (position - Char(target) < 7) {
 	return;
@@ -3508,6 +3510,25 @@ private:
     }
 
     Printv(target, import, NIL);
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::createImportStatement()
+   *
+   * Creates a string containing an import statement for the given module if it
+   * is needed in the currently generated proxy D module (i.e. if it is not the
+   * current module itself).
+   * --------------------------------------------------------------------------- */
+  String *createImportStatement(const String *dmodule_name, bool static_import = true) {
+    if (inProxyModule(dmodule_name)) {
+      return NewStringf("");
+    } else {
+      if (static_import) {
+	return NewStringf("static import %s%s;", package, dmodule_name);
+      } else {
+	return NewStringf("import %s%s;", package, dmodule_name);
+      }
+    }
   }
 
   /* ---------------------------------------------------------------------------
@@ -3806,6 +3827,59 @@ private:
       Replaceall(code, "$excode", "");
     }
     Delete(excode_attribute);
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::replaceImportTypeMacros()
+   *
+   * Replaces the $import_type(SomeDClass) macro with an import statement if it
+   * is required to get SomeDClass in scope for the currently generated proxy
+   * D module.
+   * --------------------------------------------------------------------------- */
+  void replaceImportTypeMacros(String *target) {
+    // Code from replace_embedded_typemap.
+    char *start = 0;
+    while ((start = Strstr(target, "$import_type("))) {
+      char *end = 0;
+      char *param_start = 0;
+      char *param_end = 0;
+      int level = 0;
+      char *c = start;
+      while (*c) {
+	if (*c == '(') {
+	  if (level == 0) {
+	    param_start = c + 1;
+	  }
+	  level++;
+	}
+	if (*c == ')') {
+	  level--;
+	  if (level == 0) {
+	    param_end = c;
+	    end = c + 1;
+	    break;
+	  }
+	}
+	c++;
+      }
+
+      if (end) {
+	String *current_macro = NewStringWithSize(start, (end - start));
+	String *current_param = NewStringWithSize(param_start, (param_end - param_start));
+
+	String *import = createImportStatement(current_param, false);
+	Replace(target, current_macro, import, DOH_REPLACE_ANY);
+	Delete(import);
+
+	Delete(current_param);
+	Delete(current_macro);
+      } else {
+	String *current_macro = NewStringWithSize(start, (c - start));
+	Swig_error(Getfile(target), Getline(target), "Syntax error in: %s\n", current_macro);
+	Replace(target, current_macro, "<error in $import_type macro>", DOH_REPLACE_ANY);
+	Delete(current_macro);
+      }
+    }
   }
 
   /* ---------------------------------------------------------------------------
