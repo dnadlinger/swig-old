@@ -17,7 +17,7 @@ public:
 
   // Public method to stop the SWIG proxy base class from thinking it owns the underlying C++ memory.
   void disownMemory() {
-    __swig_ownCObject = false;
+    m_swigOwnCObject = false;
   }
 }
 
