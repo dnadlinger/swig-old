@@ -1080,7 +1080,7 @@ public:
 	Printf(imcall, ", ");
 
       String *arg = makeParameterName(n, p, i, false);
-      String *cshin = 0;
+      String *parmtype = 0;
 
       // Get the D code to convert the parameter value to the type used in the
       // wrapper D module.
@@ -1111,9 +1111,9 @@ public:
 	    Insert(terminator_code, 0, "\n");
 	  Insert(terminator_code, 0, terminator);
 	}
-	cshin = Getattr(p, "tmap:din:cshin");
-	if (cshin)
-	  Replaceall(cshin, "$dinput", arg);
+	parmtype = Getattr(p, "tmap:din:parmtype");
+	if (parmtype)
+	  Replaceall(parmtype, "$dinput", arg);
 	Printv(imcall, tm, NIL);
       } else {
 	Swig_warning(WARN_D_TYPEMAP_DIN_UNDEF, input_file, line_number,
@@ -1128,10 +1128,10 @@ public:
       }
       Printf(proxy_constructor_code, "%s %s", param_type, arg);
       Printf(helper_code, "%s %s", param_type, arg);
-      Printf(helper_args, "%s", cshin ? cshin : arg);
+      Printf(helper_args, "%s", parmtype ? parmtype : arg);
       ++gencomma;
 
-      Delete(cshin);
+      Delete(parmtype);
       Delete(arg);
       Delete(param_type);
       p = Getattr(p, "tmap:in:next");
