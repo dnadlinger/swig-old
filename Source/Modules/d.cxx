@@ -880,10 +880,28 @@ public:
 
     if (generate_proxies) {
       String *overloaded_name = getOverloadedName(n);
-      String *intermediary_function_name = Swig_name_member(proxy_class_name, overloaded_name);
-      Setattr(n, "proxyfuncname", Getattr(n, "sym:name"));
+      String *intermediary_function_name =
+        Swig_name_member(proxy_class_name, overloaded_name);
       Setattr(n, "imfuncname", intermediary_function_name);
+
+      String *proxy_func_name = Copy(Getattr(n, "sym:name"));
+      if (split_proxy_dmodule &&
+        Len(Getattr(n, "parms")) == 0 &&
+        Strncmp(proxy_func_name, package, Len(proxy_func_name)) == 0) {
+        // If we are in split proxy mode and the function is named like the
+        // target package, we append an underscore to its name to avoid clashes
+        // (due to the D compiler being unable to resolve the ambiguity between
+        // the package reference and the argument-less function call).
+        Swig_warning(WARN_D_NAME_COLLISION, input_file, line_number,
+          "Renaming %s::%s to %s_ because it would collide with the package name\n",
+          proxy_class_name, proxy_func_name, proxy_func_name);
+        Append(proxy_func_name, "_");
+      }
+      Setattr(n, "proxyfuncname", proxy_func_name);
+
       writeProxyClassFunction(n);
+
+      Delete(proxy_func_name);
       Delete(overloaded_name);
     }
     return SWIG_OK;
@@ -893,13 +911,13 @@ public:
    * D::staticmemberfunctionHandler()
    * --------------------------------------------------------------------------- */
   virtual int staticmemberfunctionHandler(Node *n) {
-
     static_flag = true;
     Language::staticmemberfunctionHandler(n);
 
     if (generate_proxies) {
       String *overloaded_name = getOverloadedName(n);
-      String *intermediary_function_name = Swig_name_member(proxy_class_name, overloaded_name);
+      String *intermediary_function_name =
+        Swig_name_member(proxy_class_name, overloaded_name);
       Setattr(n, "proxyfuncname", Getattr(n, "sym:name"));
       Setattr(n, "imfuncname", intermediary_function_name);
       writeProxyClassFunction(n);
@@ -1051,7 +1069,7 @@ public:
 	const String *inattributes = Getattr(p, "tmap:dptype:inattributes");
 	Printf(param_type, "%s%s", inattributes ? inattributes : empty_string, tm);
       } else {
-	Swig_warning(WARN_D_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number,
+	Swig_warning(WARN_D_TYPEMAP_DPTYPE_UNDEF, input_file, line_number,
 	  "No dptype typemap defined for %s\n", SwigType_str(pt, 0));
       }
 
@@ -1095,7 +1113,7 @@ public:
 	  Replaceall(cshin, "$dinput", arg);
 	Printv(imcall, tm, NIL);
       } else {
-	Swig_warning(WARN_D_TYPEMAP_CSIN_UNDEF, input_file, line_number,
+	Swig_warning(WARN_D_TYPEMAP_DIN_UNDEF, input_file, line_number,
 	  "No din typemap defined for %s\n", SwigType_str(pt, 0));
       }
 
@@ -1335,7 +1353,7 @@ public:
       replaceClassname(tm, t);
       Printf(return_type, "%s", tm);
     } else {
-      Swig_warning(WARN_D_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number,
+      Swig_warning(WARN_D_TYPEMAP_DPTYPE_UNDEF, input_file, line_number,
         "No dptype typemap defined for %s\n", SwigType_str(t, 0));
     }
 
@@ -1436,7 +1454,7 @@ public:
       }
       Printf(c_return_type, "%s", tm);
     } else {
-      Swig_warning(WARN_D_TYPEMAP_CTYPE_UNDEF, input_file, line_number,
+      Swig_warning(WARN_D_TYPEMAP_CWTYPE_UNDEF, input_file, line_number,
         "No cwtype typemap defined for %s\n", SwigType_str(t, 0));
     }
 
@@ -1449,7 +1467,7 @@ public:
       }
       Printf(im_return_type, "%s", tm);
     } else {
-      Swig_warning(WARN_D_TYPEMAP_CSTYPE_UNDEF, input_file, line_number, "No dwtype typemap defined for %s\n", SwigType_str(t, 0));
+      Swig_warning(WARN_D_TYPEMAP_DWTYPE_UNDEF, input_file, line_number, "No dwtype typemap defined for %s\n", SwigType_str(t, 0));
     }
 
     is_void_return = (Cmp(c_return_type, "void") == 0);
@@ -1504,7 +1522,7 @@ public:
       if ((tm = Getattr(p, "tmap:cwtype"))) {
 	Printv(c_param_type, tm, NIL);
       } else {
-	Swig_warning(WARN_D_TYPEMAP_CTYPE_UNDEF, input_file, line_number, "No cwtype typemap defined for %s\n", SwigType_str(pt, 0));
+	Swig_warning(WARN_D_TYPEMAP_CWTYPE_UNDEF, input_file, line_number, "No cwtype typemap defined for %s\n", SwigType_str(pt, 0));
       }
 
       /* Get the intermediary class parameter types of the parameter */
@@ -1512,7 +1530,7 @@ public:
 	const String *inattributes = Getattr(p, "tmap:dwtype:inattributes");
 	Printf(im_param_type, "%s%s", inattributes ? inattributes : empty_string, tm);
       } else {
-	Swig_warning(WARN_D_TYPEMAP_CSTYPE_UNDEF, input_file, line_number, "No dwtype typemap defined for %s\n", SwigType_str(pt, 0));
+	Swig_warning(WARN_D_TYPEMAP_DWTYPE_UNDEF, input_file, line_number, "No dwtype typemap defined for %s\n", SwigType_str(pt, 0));
       }
 
       /* Add parameter to intermediary class method */
@@ -1694,10 +1712,10 @@ public:
       // in the typemap, but the »canthrow« attribute/feature is not set.
       if (!Getattr(n, "d:canthrow")) {
 	if (Strstr(f->code, "SWIG_exception")) {
-	  Swig_warning(WARN_D_CANTHROW, input_file, line_number,
+	  Swig_warning(WARN_D_CANTHROW_MISSING, input_file, line_number,
 	  "C code contains a call to SWIG_exception and D code does not handle pending exceptions via the canthrow attribute.\n");
 	} else if (Strstr(f->code, "SWIG_DSetPendingException")) {
-	  Swig_warning(WARN_D_CANTHROW, input_file, line_number,
+	  Swig_warning(WARN_D_CANTHROW_MISSING, input_file, line_number,
 	  "C code contains a call to a SWIG_DSetPendingException method and D code does not handle pending exceptions via the canthrow attribute.\n");
 	}
       }
@@ -1921,7 +1939,7 @@ public:
 	Printf(callback_def, "\nprivate extern(C) %s swigDirectorCallback_%s_%s(void* dObject", tm, classname, overloaded_name);
 	Printv(proxy_callback_return_type, tm, NIL);
       } else {
-	Swig_warning(WARN_D_TYPEMAP_CSTYPE_UNDEF, input_file, line_number,
+	Swig_warning(WARN_D_TYPEMAP_DWTYPE_UNDEF, input_file, line_number,
 	  "No dwtype typemap defined for %s\n", SwigType_str(returntype, 0));
       }
 
@@ -1934,7 +1952,7 @@ public:
 	  Delete(jretval_decl);
 	}
       } else {
-	Swig_warning(WARN_D_TYPEMAP_CTYPE_UNDEF, input_file, line_number,
+	Swig_warning(WARN_D_TYPEMAP_CWTYPE_UNDEF, input_file, line_number,
 	  "No cwtype typemap defined for %s for use in %s::%s (skipping director method)\n",
 	  SwigType_str(returntype, 0), SwigType_namestr(c_classname), SwigType_namestr(name));
 	output_director = false;
@@ -2074,17 +2092,17 @@ public:
 		replaceClassname(tm, pt);
 		Printf(proxy_method_param_list, "%s", tm);
 	      } else {
-		Swig_warning(WARN_D_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number,
+		Swig_warning(WARN_D_TYPEMAP_DPTYPE_UNDEF, input_file, line_number,
                   "No dptype typemap defined for %s\n", SwigType_str(pt, 0));
 	      }
 	    } else {
-	      Swig_warning(WARN_D_TYPEMAP_CSDIRECTORIN_UNDEF, input_file, line_number,
+	      Swig_warning(WARN_D_TYPEMAP_DDIRECTORIN_UNDEF, input_file, line_number,
                 "No ddirectorin typemap defined for %s for use in %s::%s (skipping director method)\n",
 		SwigType_str(pt, 0), SwigType_namestr(c_classname), SwigType_namestr(name));
 	      output_director = false;
 	    }
 	  } else {
-	    Swig_warning(WARN_D_TYPEMAP_CSTYPE_UNDEF, input_file, line_number,
+	    Swig_warning(WARN_D_TYPEMAP_DWTYPE_UNDEF, input_file, line_number,
               "No dwtype typemap defined for %s for use in %s::%s (skipping director method)\n",
               SwigType_str(pt, 0), SwigType_namestr(c_classname), SwigType_namestr(name));
 	    output_director = false;
@@ -2095,12 +2113,12 @@ public:
 	  Delete(desc_tm);
 	} else {
 	  if (!desc_tm) {
-	    Swig_warning(WARN_D_TYPEMAP_CSDIRECTORIN_UNDEF, input_file, line_number,
+	    Swig_warning(WARN_D_TYPEMAP_DDIRECTORIN_UNDEF, input_file, line_number,
               "No or improper directorin typemap defined for %s for use in %s::%s (skipping director method)\n",
               SwigType_str(c_param_type, 0), SwigType_namestr(c_classname), SwigType_namestr(name));
 	    p = nextSibling(p);
 	  } else if (!tm) {
-	    Swig_warning(WARN_D_TYPEMAP_CSDIRECTORIN_UNDEF, input_file, line_number,
+	    Swig_warning(WARN_D_TYPEMAP_DDIRECTORIN_UNDEF, input_file, line_number,
               "No or improper directorin typemap defined for argument %s for use in %s::%s (skipping director method)\n",
               SwigType_str(pt, 0), SwigType_namestr(c_classname), SwigType_namestr(name));
 	    p = nextSibling(p);
@@ -2111,7 +2129,7 @@ public:
 
 	Delete(tp);
       } else {
-	Swig_warning(WARN_D_TYPEMAP_CTYPE_UNDEF, input_file, line_number,
+	Swig_warning(WARN_D_TYPEMAP_CWTYPE_UNDEF, input_file, line_number,
           "No cwtype typemap defined for %s for use in %s::%s (skipping director method)\n",
           SwigType_str(pt, 0), SwigType_namestr(c_classname), SwigType_namestr(name));
 	output_director = false;
@@ -2174,9 +2192,8 @@ public:
     if (!is_void) {
       Parm *tp = NewParm(returntype, empty_str, n);
 
+      // RESEARCH: What happens if there is no ddirectorout typemap?
       if ((tm = Swig_typemap_lookup("ddirectorout", tp, "", 0))) {
-        // This will end up in the same module as the current proxy class, so
-        // pass true.
 	replaceClassname(tm, returntype);
 	Replaceall(tm, "$dpcall", upcall);
 
@@ -2273,7 +2290,7 @@ public:
 	replaceClassname(tm, type);
 	Printf(return_type, "%s", tm);
       } else {
-	Swig_warning(WARN_D_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number,
+	Swig_warning(WARN_D_TYPEMAP_DPTYPE_UNDEF, input_file, line_number,
           "No dptype typemap defined for %s\n", SwigType_str(type, 0));
       }
 
@@ -2576,7 +2593,7 @@ private:
       replaceClassname(tm, t);
       Printf(return_type, "%s", tm);
     } else {
-      Swig_warning(WARN_D_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number,
+      Swig_warning(WARN_D_TYPEMAP_DPTYPE_UNDEF, input_file, line_number,
         "No dptype typemap defined for %s\n", SwigType_str(t, 0));
     }
 
@@ -2683,7 +2700,7 @@ private:
 	    }
 	    Printv(imcall, tm, NIL);
 	  } else {
-	    Swig_warning(WARN_D_TYPEMAP_CSIN_UNDEF, input_file, line_number,
+	    Swig_warning(WARN_D_TYPEMAP_DIN_UNDEF, input_file, line_number,
 	      "No din typemap defined for %s\n", SwigType_str(pt, 0));
 	  }
 	}
@@ -2697,7 +2714,7 @@ private:
 	    const String *inattributes = Getattr(p, "tmap:dptype:inattributes");
 	    Printf(proxy_type, "%s%s", inattributes ? inattributes : empty_string, tm);
 	  } else {
-	    Swig_warning(WARN_D_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number,
+	    Swig_warning(WARN_D_TYPEMAP_DPTYPE_UNDEF, input_file, line_number,
 	      "No dptype typemap defined for %s\n", SwigType_str(pt, 0));
 	  }
 
@@ -2774,7 +2791,7 @@ private:
       }
       Replaceall(tm, "$wcall", imcall);
     } else {
-      Swig_warning(WARN_D_TYPEMAP_CSOUT_UNDEF, input_file, line_number,
+      Swig_warning(WARN_D_TYPEMAP_DOUT_UNDEF, input_file, line_number,
 	"No dout typemap defined for %s\n", SwigType_str(t, 0));
     }
 
@@ -2836,7 +2853,7 @@ private:
       replaceClassname(tm, t);
       Printf(return_type, "%s", tm);
     } else {
-      Swig_warning(WARN_D_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number,
+      Swig_warning(WARN_D_TYPEMAP_DPTYPE_UNDEF, input_file, line_number,
 	"No dptype typemap defined for %s\n", SwigType_str(t, 0));
     }
 
@@ -2884,7 +2901,7 @@ private:
 	const String *inattributes = Getattr(p, "tmap:dptype:inattributes");
 	Printf(param_type, "%s%s", inattributes ? inattributes : empty_string, tm);
       } else {
-	Swig_warning(WARN_D_TYPEMAP_CSWTYPE_UNDEF, input_file, line_number,
+	Swig_warning(WARN_D_TYPEMAP_DPTYPE_UNDEF, input_file, line_number,
           "No dptype typemap defined for %s\n", SwigType_str(pt, 0));
       }
 
@@ -2925,7 +2942,7 @@ private:
         }
 	Printv(imcall, tm, NIL);
       } else {
-	Swig_warning(WARN_D_TYPEMAP_CSIN_UNDEF, input_file, line_number,
+	Swig_warning(WARN_D_TYPEMAP_DIN_UNDEF, input_file, line_number,
 	  "No din typemap defined for %s\n", SwigType_str(pt, 0));
       }
 
@@ -2974,7 +2991,7 @@ private:
       replaceClassname(tm, t);
       Replaceall(tm, "$wcall", imcall);
     } else {
-      Swig_warning(WARN_D_TYPEMAP_CSOUT_UNDEF, input_file, line_number,
+      Swig_warning(WARN_D_TYPEMAP_DOUT_UNDEF, input_file, line_number,
 	"No dout typemap defined for %s\n", SwigType_str(t, 0));
     }
 
@@ -3781,7 +3798,7 @@ private:
     if (Getattr(n, "d:canthrow")) {
       int count = Replaceall(code, "$excode", excode);
       if (count < 1 || !excode) {
-	Swig_warning(WARN_D_EXCODE, input_file, line_number,
+	Swig_warning(WARN_D_EXCODE_MISSING, input_file, line_number,
 	  "D exception may not be thrown – no $excode or excode attribute in '%s' typemap.\n",
 	  typemap);
       }
