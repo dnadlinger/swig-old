@@ -18,47 +18,26 @@
 static import tango.sys.SharedLib;
 
 static this() {
+  tango.sys.SharedLib.SharedLib library;
   version (Posix) {
-    SwigBinder.library = tango.sys.SharedLib.SharedLib.load("lib$wraplibrary.so");
+    library = tango.sys.SharedLib.SharedLib.load("lib$wraplibrary.so");
   }
   version (Win32) {
-    SwigBinder.library = tango.sys.SharedLib.SharedLib.load("$wraplibrary.dll");
+    library = tango.sys.SharedLib.SharedLib.load("$wraplibrary.dll");
+  }
+
+  char[] bindCode(char[] functionPointer, char[] symbol) {
+    return functionPointer ~ " = cast(typeof(" ~ functionPointer ~
+      "))library.getSymbol(`" ~ symbol ~ "`);";
   }
 
   //#if !defined(SWIG_D_NO_EXCEPTION_HELPER)
-  bind(swigRegisterExceptionCallbacks)("SWIGRegisterExceptionCallbacks_$module");
+  mixin(bindCode("swigRegisterExceptionCallbacks", "SWIGRegisterExceptionCallbacks_$module"));
   //#endif // SWIG_D_NO_EXCEPTION_HELPER
   //#if !defined(SWIG_D_NO_STRING_HELPER)
-  bind(swigRegisterStringCallback)("SWIGRegisterStringCallback_$module");
+  mixin(bindCode("swigRegisterStringCallback", "SWIGRegisterStringCallback_$module"));
   //#endif // SWIG_D_NO_STRING_HELPER
   $wrapperloaderbindcode
-}
-
-private {
-  // The binding code is heavily inspired by Derelict.
-  struct SwigBinder {
-  public:
-    static tango.sys.SharedLib.SharedLib library;
-
-    static SwigBinder opCall(void** functionPointerAddress) {
-      SwigBinder binder;
-      binder.m_functionPointerAddress = functionPointerAddress;
-      return binder;
-    }
-
-    void opCall(char* name) {
-      *m_functionPointerAddress = library.getSymbol(name);
-    }
-
-  private:
-    void** m_functionPointerAddress;
-  }
-
-  template bind(Function) {
-    static SwigBinder bind(inout Function a) {
-      return SwigBinder(cast(void**) &a);
-    }
-  }
 }
 
 //#if !defined(SWIG_D_NO_EXCEPTION_HELPER)
@@ -76,4 +55,4 @@ extern(C) void function(SwigStringCallback callback) swigRegisterStringCallback;
 %}
 
 %pragma(d) wrapperloaderbindcommand = %{
-  bind($function)("$symbol");%}
+  mixin(bindCode("$function", "$symbol"));%}
