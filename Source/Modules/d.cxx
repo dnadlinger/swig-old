@@ -3509,7 +3509,7 @@ private:
    * Adds the given import statement to the given list of import statements if
    * there is no statement importing that module present yet.
    * --------------------------------------------------------------------------- */
-  void addImportStatement(String *target, const String *import) {
+  void addImportStatement(String *target, const String *import) const {
     char *position = Strstr(target, import);
     if (position) {
       // If the import statement has been found in the target string, we have to
@@ -3538,7 +3538,9 @@ private:
    * is needed in the currently generated proxy D module (i.e. if it is not the
    * current module itself).
    * --------------------------------------------------------------------------- */
-  String *createImportStatement(const String *dmodule_name, bool static_import = true) {
+  String *createImportStatement(const String *dmodule_name,
+    bool static_import = true) const {
+
     if (inProxyModule(dmodule_name)) {
       return NewStringf("");
     } else {
@@ -3560,7 +3562,7 @@ private:
    * used (package, module and type name). This is never the case if the split
    * proxy mode is not used, all proxy types are written to the same module then.
    * --------------------------------------------------------------------------- */
-  bool inProxyModule(const String *type_name) {
+  bool inProxyModule(const String *type_name) const {
     if (!split_proxy_dmodule) {
       // If we are not in split proxy module mode, proxy code is always written
       // to the same module.
@@ -3618,7 +3620,7 @@ private:
   /* ---------------------------------------------------------------------------
    * D::assertClassNameValidity()
    * --------------------------------------------------------------------------- */
-  void assertClassNameValidity(const String* class_name) {
+  void assertClassNameValidity(const String* class_name) const {
     if (split_proxy_dmodule) {
       if (Cmp(class_name, wrap_dmodule_name) == 0) {
 	Printf(stderr, "Class name cannot be equal to wrap D module name: %s\n",
@@ -3645,7 +3647,9 @@ private:
    *   also be used for temporary storage if non null
    * return is never NULL, unlike Swig_typemap_lookup()
    * --------------------------------------------------------------------------- */
-  const String *typemapLookup(Node *n, const_String_or_char_ptr tmap_method, SwigType *type, int warning, Node *typemap_attributes = 0) {
+  const String *typemapLookup(Node *n, const_String_or_char_ptr tmap_method,
+    SwigType *type, int warning, Node *typemap_attributes = 0) const {
+
     Node *node = !typemap_attributes ? NewHash() : typemap_attributes;
     Setattr(node, "type", type);
     Setfile(node, Getfile(n));
@@ -3661,6 +3665,7 @@ private:
     if (!typemap_attributes) {
       Delete(node);
     }
+
     return tm;
   }
 
@@ -3817,7 +3822,7 @@ private:
    * Replaces the $wrapdmodule and $module variables with their values in the
    * target string.
    * --------------------------------------------------------------------------- */
-  void replaceModuleVariables(String *target) {
+  void replaceModuleVariables(String *target) const {
     Replaceall(target, "$wrapdmodule", wrap_dmodule_fq_name);
     Replaceall(target, "$module", proxy_dmodule_name);
   }
@@ -3832,7 +3837,7 @@ private:
    * This method replaces the $excode variable with the exception handling code
    * in the excode typemap attribute if it »canthrow« an exception.
    * --------------------------------------------------------------------------- */
-  void replaceExcode(Node *n, String *code, const String *typemap, Node *parameter) {
+  void replaceExcode(Node *n, String *code, const String *typemap, Node *parameter) const {
     String *excode_attribute = NewStringf("tmap:%s:excode", typemap);
     String *excode = Getattr(parameter, excode_attribute);
     if (Getattr(n, "d:canthrow")) {
@@ -3855,7 +3860,7 @@ private:
    * is required to get SomeDClass in scope for the currently generated proxy
    * D module.
    * --------------------------------------------------------------------------- */
-  void replaceImportTypeMacros(String *target) {
+  void replaceImportTypeMacros(String *target) const {
     // Code from replace_embedded_typemap.
     char *start = 0;
     while ((start = Strstr(target, "$import_type("))) {
@@ -3904,14 +3909,14 @@ private:
   /* ---------------------------------------------------------------------------
    * D::getOverloadedName()
    * --------------------------------------------------------------------------- */
-  String *getOverloadedName(Node *n) {
+  String *getOverloadedName(Node *n) const {
     // A void* parameter is used for all wrapped classes in the wrapper code.
     // Thus, the wrapper function names for overloaded functions are postfixed
     // with a counter string to make them unique.
-    String *overloaded_name = NewStringf("%s", Getattr(n, "sym:name"));
+    String *overloaded_name = Copy(Getattr(n, "sym:name"));
 
     if (Getattr(n, "sym:overloaded")) {
-      Printv(overloaded_name, Getattr(n, "sym:overname"), NIL);
+      Append(overloaded_name, Getattr(n, "sym:overname"));
     }
 
     return overloaded_name;
@@ -3920,8 +3925,8 @@ private:
   /* ---------------------------------------------------------------------------
    * D::getProxyName()
    *
-   * Test to see if a type corresponds to something wrapped with a proxy class
-   * Return NULL if not otherwise the proxy class name
+   * Returns the D class name if a type corresponds to something wrapped with a
+   * proxy class, NULL otherwise.
    * --------------------------------------------------------------------------- */
    const String *getProxyName(SwigType *t) {
     if (generate_proxies) {
@@ -3936,7 +3941,7 @@ private:
   /* ---------------------------------------------------------------------------
    * D::directorClassName()
    * --------------------------------------------------------------------------- */
-  String *getDirectorClassName(Node *n) {
+  String *getDirectorClassName(Node *n) const {
     String *dirclassname;
     const char *attrib = "director:classname";
 
@@ -3961,7 +3966,7 @@ private:
    * Return:
    *   arg - a unique parameter name
    * --------------------------------------------------------------------------- */
-  String *makeParameterName(Node *n, Parm *p, int arg_num, bool setter) {
+  String *makeParameterName(Node *n, Parm *p, int arg_num, bool setter) const {
     String *arg = 0;
     String *pn = Getattr(p, "name");
 
@@ -4000,7 +4005,7 @@ private:
    * Determine whether the code in the typemap can throw a D exception.
    * If so, note it for later when excodeSubstitute() is called.
    * --------------------------------------------------------------------------- */
-  void canThrow(Node *n, const String *typemap, Node *parameter) {
+  void canThrow(Node *n, const String *typemap, Node *parameter) const {
     String *canthrow_attribute = NewStringf("tmap:%s:canthrow", typemap);
     String *canthrow = Getattr(parameter, canthrow_attribute);
     if (canthrow)
@@ -4013,7 +4018,7 @@ private:
    *
    * Helper function to indent a code (string) by one level.
    * --------------------------------------------------------------------------- */
-  void indentCode(String* code) {
+  void indentCode(String* code) const {
     Replaceall(code, "\n", "\n  ");
     Replaceall(code, "  \n", "\n");
     Chop(code);
@@ -4022,7 +4027,7 @@ private:
   /* ---------------------------------------------------------------------------
    * D::emitBanner()
    * --------------------------------------------------------------------------- */
-  void emitBanner(File *f) {
+  void emitBanner(File *f) const {
     Printf(f, "/* ----------------------------------------------------------------------------\n");
     Swig_banner_target_lang(f, " *");
     Printf(f, " * ----------------------------------------------------------------------------- */\n\n");
