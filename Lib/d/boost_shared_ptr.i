@@ -141,7 +141,8 @@
   return ret;
 }
 
-
+// For shared pointers, both the derived and the base class have to »own« their
+// pointer; otherwise the reference count is not decreased properly on destruction.
 %typemap(dbody) SWIGTYPE %{
 private void* m_swigCObject;
 private bool m_swigOwnCObject;

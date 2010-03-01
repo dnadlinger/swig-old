@@ -61,6 +61,10 @@
   }
 }
 
+// Unfortunately, the »package« visibility attribute does not work in D when the
+// module in question is in the root package (happens if no -package is specified
+// at the SWIG command line), so we are stuck with public visibility for
+// swigGetCObject().
 %typemap(dbody) SWIGTYPE %{
 private void* m_swigCObject;
 protected bool m_swigOwnCObject;
@@ -104,7 +108,7 @@ protected this() {
   m_swigCObject = null;
 }
 
-public static void* swigGetCObject($dclassname obj) {
+package static void* swigGetCObject($dclassname obj) {
   return (obj is null) ? null : obj.m_swigCObject;
 }
 %}
@@ -125,7 +129,7 @@ protected this() {
   m_swigCMemberPtr = null;
 }
 
-public static char* swigGetCMemberPtr($dclassname obj) {
+package static char* swigGetCMemberPtr($dclassname obj) {
   return (obj is null) ? null : obj.m_swigCMemberPtr;
 }
 %}
