@@ -686,8 +686,8 @@ public:
    * wrapdmoduleimports   - import statements for the wrap module
    *
    * proxydmodulecode     - text (D code) is copied verbatim to the proxy module
-   *
-   * globalproxyimports   - import statements inserted into all proxy modules.
+   *                        (the main proxy module if in split proxy mode).
+   * globalproxyimports   - import statements inserted into _all_ proxy modules.
    * --------------------------------------------------------------------------- */
   virtual int pragmaDirective(Node *n) {
     if (!ImportMode) {
@@ -3727,6 +3727,8 @@ private:
    * See D::replaceClassname().
    * --------------------------------------------------------------------------- */
   void replaceClassnameVariable(String *target, const char *variable, SwigType *type) {
+    // TODO: Fix const-correctness of methods called in here and make type const.
+
     // We make use of the fact that this function is called at least once for
     // every type encountered which is written to a seperate file, which allows
     // us to handle imports here.
@@ -3737,8 +3739,7 @@ private:
     // generated module name is discarded.
     String *import_name;
 
-    // TODO: Fix const-correctness of methods called in here and make type const.
-
+    String *qualified_type_name;
     if (SwigType_isenum(type)) {
       // RESEARCH: Make sure that we really cannot get here for anonymous enums.
       Node *n = enumLookup(type);
@@ -3752,69 +3753,57 @@ private:
 	Delete(scopename_prefix);
       }
 
-      String *full_name;
       if (parent_name) {
-	if (inProxyModule(parent_name)) {
-	  full_name = NewStringf("%s.%s", parent_name, symname);
-	} else {
-	  full_name = NewStringf("%s%s.%s.%s", package, parent_name, parent_name, symname);
-	}
+	qualified_type_name = createQualifiedName(parent_name);
+	Printv(qualified_type_name, ".", symname, NIL);
 
 	// An enum nested in a class is not written to a seperate module (this
 	// would not even be possible in D), so just import the parent.
 	import_name = Copy(parent_name);
       } else {
-	if (inProxyModule(symname)) {
-	  full_name = Copy(symname);
-	} else {
-	  full_name = NewStringf("%s%s.%s", package, symname, symname);
-	}
+	qualified_type_name = createQualifiedName(symname);
 
 	// A non-nested enum is written to a seperate module, import it.
 	import_name = Copy(symname);
       }
-
-      Replaceall(target, variable, full_name);
-      Delete(full_name);
     } else {
-      const String *classname = getProxyName(type);
-      if (classname) {
+      const String *class_name = getProxyName(type);
+      if (class_name) {
 	// This is something wrapped as a proxy class (getProxyName() works for
 	// pointers to classes too).
-	String *full_name;
-	if (inProxyModule(classname)) {
-	  full_name = Copy(classname);
-	} else {
-	  full_name = NewStringf("%s%s.%s", package, classname, classname);
-	}
-	Replaceall(target, variable, full_name);
-	Delete(full_name);
-
-	import_name = Copy(classname);
+	qualified_type_name = createQualifiedName(class_name);
+	import_name = Copy(class_name);
       } else {
 	// SWIG does not know anything about the type (after resolving typedefs).
 	// Just mangle the type name string like $descriptor(type) would do.
 	String *descriptor = NewStringf("SWIGTYPE%s", SwigType_manglestr(type));
-	String *full_name;
-	if (inProxyModule(descriptor)) {
-	  full_name = Copy(descriptor);
-	} else {
-	  full_name = NewStringf("%s%s.%s", package, descriptor, descriptor);
-	}
-	Replaceall(target, variable, full_name);
-	Delete(full_name);
+	qualified_type_name = createQualifiedName(descriptor);
+	import_name = Copy(descriptor);
 
 	// Add to hash table so that a type wrapper class can be created later.
 	Setattr(unknown_types, descriptor, type);
 
-	import_name = Copy(descriptor);
 	Delete(descriptor);
       }
     }
 
+    Replaceall(target, variable, qualified_type_name);
+    Delete(qualified_type_name);
+
     requireDType(import_name);
     Delete(import_name);
   }
+
+  /* ---------------------------------------------------------------------------
+   * D::createQualifiedName()
+   * --------------------------------------------------------------------------- */
+  String *createQualifiedName(const String *class_name) const {
+    if (inProxyModule(class_name)) {
+      return Copy(class_name);
+    } else {
+      return NewStringf("%s%s.%s", package, class_name, class_name);
+    }
+}
 
   /* ---------------------------------------------------------------------------
    * D::replaceModuleVariables()
