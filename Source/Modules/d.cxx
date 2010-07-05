@@ -903,7 +903,7 @@ public:
     if (generate_proxies) {
       String *overloaded_name = getOverloadedName(n);
       String *intermediary_function_name =
-        Swig_name_member(proxy_class_name, overloaded_name);
+        Swig_name_member(NSPACE_TODO,proxy_class_name, overloaded_name);
       Setattr(n, "imfuncname", intermediary_function_name);
 
       String *proxy_func_name = Copy(Getattr(n, "sym:name"));
@@ -939,7 +939,7 @@ public:
     if (generate_proxies) {
       String *overloaded_name = getOverloadedName(n);
       String *intermediary_function_name =
-        Swig_name_member(proxy_class_name, overloaded_name);
+        Swig_name_member(NSPACE_TODO,proxy_class_name, overloaded_name);
       Setattr(n, "proxyfuncname", Getattr(n, "sym:name"));
       Setattr(n, "imfuncname", intermediary_function_name);
       writeProxyClassFunction(n);
@@ -1035,7 +1035,7 @@ public:
     NewString("");
 
     String *overloaded_name = getOverloadedName(n);
-    String *mangled_overname = Swig_name_construct(overloaded_name);
+    String *mangled_overname = Swig_name_construct(NSPACE_TODO,overloaded_name);
     String *imcall = NewString("");
 
     const String *methodmods = Getattr(n, "feature:d:methodmodifiers");
@@ -1236,7 +1236,7 @@ public:
     String *symname = Getattr(n, "sym:name");
 
     if (generate_proxies) {
-      Printv(destructor_call, wrap_dmodule_fq_name, ".", Swig_name_destroy(symname), "(m_swigCObject)", NIL);
+      Printv(destructor_call, wrap_dmodule_fq_name, ".", Swig_name_destroy(NSPACE_TODO,symname), "(m_swigCObject)", NIL);
     }
     return SWIG_OK;
   }
@@ -1895,7 +1895,7 @@ public:
     // we're consistent with the sym:overload name in functionWrapper. (?? when
     // does the overloaded method name get set?)
 
-    imclass_dmethod = NewStringf("SwigDirector_%s", Swig_name_member(classname, overloaded_name));
+    imclass_dmethod = NewStringf("SwigDirector_%s", Swig_name_member(NSPACE_TODO,classname, overloaded_name));
 
     if (returntype) {
       qualified_return = SwigType_rcaststr(returntype, "c_result");
@@ -2622,7 +2622,7 @@ private:
     if (wrapping_member_flag) {
       // Check if this is a setter method for a public member.
       setter_flag = (Cmp(Getattr(n, "sym:name"),
-	Swig_name_set(Swig_name_member(proxy_class_name, variable_name))) == 0);
+	Swig_name_set(NSPACE_TODO,Swig_name_member(NSPACE_TODO,proxy_class_name, variable_name))) == 0);
     }
 
     // Write function modifiers.
@@ -2792,7 +2792,7 @@ private:
       Node *explicit_n = Getattr(n, "explicitcallnode");
       if (explicit_n) {
 	String *ex_overloaded_name = getOverloadedName(explicit_n);
-	String *ex_intermediary_function_name = Swig_name_member(proxy_class_name, ex_overloaded_name);
+	String *ex_intermediary_function_name = Swig_name_member(NSPACE_TODO,proxy_class_name, ex_overloaded_name);
 
 	String *ex_imcall = Copy(imcall);
 	Replaceall(ex_imcall, "$imfuncname", ex_intermediary_function_name);
