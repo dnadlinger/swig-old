@@ -23,16 +23,16 @@
 %typemap(dwtype) SWIGTYPE & "void*"
 %typemap(dptype) SWIGTYPE & "$dclassname"
 
-%typemap(cwtype) SWIGTYPE *& "void *"
-%typemap(dwtype) SWIGTYPE *& "void*"
-%typemap(dptype) SWIGTYPE *& "$*dclassname"
+%typemap(cwtype) SWIGTYPE *const& "void *"
+%typemap(dwtype) SWIGTYPE *const& "void*"
+%typemap(dptype) SWIGTYPE *const& "$*dclassname"
 
 %typecheck(SWIG_TYPECHECK_POINTER)
     SWIGTYPE,
     SWIGTYPE *,
     SWIGTYPE &,
     SWIGTYPE [],
-    SWIGTYPE *&
+    SWIGTYPE *const&
   ""
 
 
@@ -100,6 +100,9 @@
   return ret;
 }
 
+// Use the same typemaps for const pointers.
+%apply SWIGTYPE * { SWIGTYPE *const }
+
 
 /*
  * Reference conversion typemaps.
@@ -153,14 +156,14 @@
  * Pointer reference conversion typemaps.
  */
 
-%typemap(in) SWIGTYPE *& ($*1_ltype temp = 0)
+%typemap(in) SWIGTYPE *const& ($*1_ltype temp = 0)
 %{ temp = ($*1_ltype)$input;
-   $1 = &temp; %}
-%typemap(out) SWIGTYPE *&
+   $1 = ($1_ltype)&temp; %}
+%typemap(out) SWIGTYPE *const&
 %{ $result = (void *)*$1; %}
 
-%typemap(din) SWIGTYPE *& "$*dclassname.swigGetCObject($dinput)"
-%typemap(dout, excode=SWIGEXCODE) SWIGTYPE *& {
+%typemap(din) SWIGTYPE *const& "$*dclassname.swigGetCObject($dinput)"
+%typemap(dout, excode=SWIGEXCODE) SWIGTYPE *const& {
   void* cPtr = $wcall;
   $*dclassname ret = (cPtr is null) ? null : new $*dclassname(cPtr, $owner);$excode
   return ret;
