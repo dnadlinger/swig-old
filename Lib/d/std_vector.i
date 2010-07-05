@@ -24,7 +24,7 @@
 %include <std_common.i>
 
 // MACRO for use within the std::vector class body
-%define SWIG_STD_VECTOR_MINIMUM_INTERNAL(CONST_REFERENCE_TYPE, CWTYPE...)
+%define SWIG_STD_VECTOR_MINIMUM_INTERNAL(CONST_REFERENCE, CWTYPE...)
 %typemap(dimports) std::vector<CWTYPE > "static import tango.core.Exception;"
 %typemap(dcode) std::vector<CWTYPE > %{
 public this($typemap(dptype, CWTYPE)[] values) {
@@ -107,9 +107,9 @@ public void capacity(size_t value) {
   public:
     typedef size_t size_type;
     typedef CWTYPE value_type;
-    typedef CONST_REFERENCE_TYPE const_reference;
+    typedef CONST_REFERENCE const_reference;
     void clear();
-    void push_back(const value_type& x);
+    void push_back(CWTYPE const& x);
     size_type size() const;
     size_type capacity() const;
     void reserve(size_type n) throw (std::length_error);
@@ -162,11 +162,11 @@ public void capacity(size_t value) {
         return (*$self)[index];
       }
    }
-   // Use const value_type& instead of const_reference to work around SWIG code
+   // Use CWTYPE const& instead of const_reference to work around SWIG code
    // generation issue when using const pointers as vector elements (like
    // std::vector< const int* >).
    %extend {
-      void setElement(size_type index, const value_type& val) throw (std::out_of_range) {
+      void setElement(size_type index, CWTYPE const& val) throw (std::out_of_range) {
         if ((index < 0) || ($self->size() <= index)) {
           throw std::out_of_range("Tried to set value of element with invalid index.");
         }
@@ -176,7 +176,7 @@ public void capacity(size_t value) {
 %enddef
 
 %define SWIG_STD_VECTOR_MINIMUM(CWTYPE...)
-SWIG_STD_VECTOR_MINIMUM_INTERNAL(const value_type&, CWTYPE)
+SWIG_STD_VECTOR_MINIMUM_INTERNAL(CWTYPE const&, CWTYPE)
 %enddef
 
 // Extra methods added to the collection class if operator== is defined for the class being wrapped
@@ -190,7 +190,7 @@ SWIG_STD_VECTOR_MINIMUM_INTERNAL(const value_type&, CWTYPE)
 %define SWIG_STD_VECTOR_ENHANCED(CWTYPE...)
 namespace std {
   template<> class vector<CWTYPE > {
-    SWIG_STD_VECTOR_MINIMUM_INTERNAL(const value_type&, CWTYPE)
+    SWIG_STD_VECTOR_MINIMUM_INTERNAL(CWTYPE const&, CWTYPE)
     SWIG_STD_VECTOR_EXTRA_OP_EQUALS_EQUALS(CWTYPE)
   };
 }
@@ -222,15 +222,11 @@ namespace std {
     SWIG_STD_VECTOR_MINIMUM(T)
   };
   // specializations for pointers
-  template<class T> class vector<T*> {
-    SWIG_STD_VECTOR_MINIMUM_INTERNAL(const value_type&, T*)
-    SWIG_STD_VECTOR_EXTRA_OP_EQUALS_EQUALS(T*)
+  template<class T> class vector<T *> {
+    SWIG_STD_VECTOR_MINIMUM_INTERNAL(T *const&, T *)
+    SWIG_STD_VECTOR_EXTRA_OP_EQUALS_EQUALS(T *)
   };
-  template<class T> class vector<const T*> {
-    SWIG_STD_VECTOR_MINIMUM_INTERNAL(const value_type&, const T*)
-    SWIG_STD_VECTOR_EXTRA_OP_EQUALS_EQUALS(const T*)
-  };
-  // bool is a bit different in the C++ standard
+  // bool is a bit different in the C++ standard - const_reference in particular
   template<> class vector<bool> {
     SWIG_STD_VECTOR_MINIMUM_INTERNAL(bool, bool)
     SWIG_STD_VECTOR_EXTRA_OP_EQUALS_EQUALS(bool)
