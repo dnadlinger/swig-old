@@ -258,23 +258,24 @@
 
 /* please leave 870-889 free for PHP */
 
-#define WARN_D_TYPEMAP_CWTYPE_UNDEF           890
-#define WARN_D_TYPEMAP_DWTYPE_UNDEF           891
-#define WARN_D_TYPEMAP_DPTYPE_UNDEF           892
-#define WARN_D_MULTIPLE_INHERITANCE           893
-#define WARN_D_TYPEMAP_CLASSMOD_UNDEF         894
-#define WARN_D_TYPEMAP_DBODY_UNDEF            895
-#define WARN_D_TYPEMAP_DOUT_UNDEF             896
-#define WARN_D_TYPEMAP_DIN_UNDEF              897
-#define WARN_D_TYPEMAP_DDIRECTORIN_UNDEF      898
-#define WARN_D_TYPEMAP_DCONSTRUCTOR_UNDEF     899
-#define WARN_D_EXCODE_MISSING                 900
-#define WARN_D_CANTHROW_MISSING               901
-#define WARN_D_NO_DIRECTORCONNECT_ATTR        902
-#define WARN_D_NAME_COLLISION                 903
+#define WARN_GO_NAME_CONFLICT                 890
 
-/* FIXME: Used defined warnings start at 900! */
+/* please leave 890-899 free for Go */
 
+#define WARN_D_TYPEMAP_CWTYPE_UNDEF           900
+#define WARN_D_TYPEMAP_DWTYPE_UNDEF           901
+#define WARN_D_TYPEMAP_DPTYPE_UNDEF           902
+#define WARN_D_MULTIPLE_INHERITANCE           903
+#define WARN_D_TYPEMAP_CLASSMOD_UNDEF         904
+#define WARN_D_TYPEMAP_DBODY_UNDEF            905
+#define WARN_D_TYPEMAP_DOUT_UNDEF             906
+#define WARN_D_TYPEMAP_DIN_UNDEF              907
+#define WARN_D_TYPEMAP_DDIRECTORIN_UNDEF      908
+#define WARN_D_TYPEMAP_DCONSTRUCTOR_UNDEF     909
+#define WARN_D_EXCODE_MISSING                 910
+#define WARN_D_CANTHROW_MISSING               911
+#define WARN_D_NO_DIRECTORCONNECT_ATTR        912
+#define WARN_D_NAME_COLLISION                 913
 
 /* Feel free to claim any number in this space that's not currently being used. Just make sure you
    add an entry here */

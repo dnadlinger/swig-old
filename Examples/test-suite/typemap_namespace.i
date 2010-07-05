@@ -26,6 +26,9 @@ namespace Foo {
     %typemap(javain) Str1 * = char *;
     %typemap(javaout) Str1 * = char *;
 #endif
+#ifdef SWIGGO
+    %typemap(gotype) Str1 * = char *;
+#endif
 #ifdef SWIGD
     %typemap(cwtype) Str1 * = char *;
     %typemap(dwtype) Str1 * = char *;
@@ -34,7 +37,7 @@ namespace Foo {
     %typemap(dout) Str1 * = char *;
 #endif
     %typemap(in) Str1 * = char *;
-#if !(defined(SWIGCSHARP) || defined(SWIGLUA) || defined(SWIGPHP) || defined(SWIGMZSCHEME) || defined(SWIGOCAML) || defined(SWIGD))
+#if !(defined(SWIGCSHARP) || defined(SWIGLUA) || defined(SWIGPHP) || defined(SWIGMZSCHEME) || defined(SWIGOCAML) || defined(SWIGGO) || defined(SWIGD))
     %typemap(freearg) Str1 * = char *;
 #endif
     %typemap(typecheck) Str1 * = char *;

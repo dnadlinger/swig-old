@@ -95,8 +95,8 @@ enum Exclamation {
 
 enum ContainYourself {
   slap = 10,
-  my,
+  mine,
   thigh
-} Slap = slap, My = my, Thigh = thigh, *pThigh = &Thigh, arrayContainYourself[3] = {slap, my, thigh};
+} Slap = slap, Mine = mine, Thigh = thigh, *pThigh = &Thigh, arrayContainYourself[3] = {slap, mine, thigh};
 %}
 
