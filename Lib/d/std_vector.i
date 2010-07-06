@@ -195,16 +195,6 @@ namespace std {
 }
 %enddef
 
-// Legacy macros
-%define SWIG_STD_VECTOR_SPECIALIZE(DPTYPE, CWTYPE...)
-#warning SWIG_STD_VECTOR_SPECIALIZE macro deprecated, please see d/std_vector.i and switch to SWIG_STD_VECTOR_ENHANCED
-SWIG_STD_VECTOR_ENHANCED(CWTYPE)
-%enddef
-
-%define SWIG_STD_VECTOR_SPECIALIZE_MINIMUM(DPTYPE, CWTYPE...)
-#warning SWIG_STD_VECTOR_SPECIALIZE_MINIMUM macro deprecated, it is no longer required
-%enddef
-
 %{
 #include <vector>
 #include <stdexcept>
