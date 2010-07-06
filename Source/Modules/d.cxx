@@ -3109,7 +3109,7 @@ private:
 
     // Add code to do C++ casting to base class (only for classes in an inheritance hierarchy)
     if (derived) {
-      writeClassUpcast(proxy_class_name, c_classname, c_baseclass);
+      writeClassUpcast(n, proxy_class_name, c_classname, c_baseclass);
     }
 
     /*
@@ -3269,20 +3269,54 @@ private:
   /* ---------------------------------------------------------------------------
    * D::writeClassUpcast()
    * --------------------------------------------------------------------------- */
-  void writeClassUpcast(const String* d_class_name, const String* c_class_name,
-    const String* c_base_name) {
+  void writeClassUpcast(Node *n, const String* d_class_name,
+    String* c_class_name, String* c_base_name) {
 
+    String *smartptr = Getattr(n, "feature:smartptr");
     String *upcast_name = NewString("");
-    Printv(upcast_name, d_class_name, "Upcast", NIL);
+    Printv(upcast_name, d_class_name,
+      (smartptr != 0 ? "SmartPtrUpcast" : "Upcast"), NIL);
+
     String *upcast_wrapper_name = Swig_name_wrapper(upcast_name);
 
     writeWrapDModuleFunction(upcast_name, "void*", "(void* objectRef)",
       upcast_wrapper_name);
 
-    Printv(upcasts_code,
-      "SWIGEXPORT $cbaseclass * SWIGSTDCALL ", upcast_wrapper_name,
-      "($cclass *objectRef) {\n", "    return ($cbaseclass *)objectRef;\n" "}\n",
-      "\n", NIL);
+    if (smartptr) {
+      SwigType *spt = Swig_cparse_type(smartptr);
+      if (spt) {
+        SwigType *smart = SwigType_typedef_resolve_all(spt);
+        Delete(spt);
+        SwigType *bsmart = Copy(smart);
+        SwigType *rclassname = SwigType_typedef_resolve_all(c_class_name);
+        SwigType *rbaseclass = SwigType_typedef_resolve_all(c_base_name);
+        Replaceall(bsmart, rclassname, rbaseclass);
+        Delete(rclassname);
+        Delete(rbaseclass);
+        String *smartnamestr = SwigType_namestr(smart);
+        String *bsmartnamestr = SwigType_namestr(bsmart);
+        Printv(upcasts_code,
+          "SWIGEXPORT ", bsmartnamestr, " * SWIGSTDCALL ", upcast_wrapper_name,
+            "(", smartnamestr, " *objectRef) {\n",
+          "    return objectRef ? new ", bsmartnamestr, "(*objectRef) : 0;\n"
+          "}\n",
+          "\n", NIL);
+        Delete(bsmartnamestr);
+        Delete(smartnamestr);
+        Delete(bsmart);
+      } else {
+        Swig_error(Getfile(n), Getline(n),
+          "Invalid type (%s) in 'smartptr' feature for class %s.\n",
+          smartptr, c_class_name);
+      }
+    } else {
+      Printv(upcasts_code,
+        "SWIGEXPORT ", c_base_name, " * SWIGSTDCALL ", upcast_wrapper_name,
+          "(", c_base_name, " *objectRef) {\n",
+        "    return (", c_base_name, " *)objectRef;\n"
+        "}\n",
+        "\n", NIL);
+    }
 
     Replaceall(upcasts_code, "$cclass", c_class_name);
     Replaceall(upcasts_code, "$cbaseclass", c_base_name);

@@ -162,7 +162,7 @@ private void* m_swigCObject;
 private bool m_swigOwnCObject;
 
 public this(void* cObject, bool ownCObject) {
-  super($wrapdmodule.$dclassname_SWIGSharedPtrUpcast(cObject), ownCObject);
+  super($wrapdmodule.$dclassnameSmartPtrUpcast(cObject), ownCObject);
   m_swigCObject = cObject;
   m_swigOwnCObject = ownCObject;
 }
@@ -196,10 +196,6 @@ public static void* swigGetCObject($dclassname obj) {
     super.dispose();
   }
 }
-
-%typemap(dwtype) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > swigSharedPtrUpcast "void*"
-%typemap(din) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > swigSharedPtrUpcast "$typemap(dptype, TYPE).swigGetCObject($dinput)"
-
 
 %template() SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >;
 %enddef
