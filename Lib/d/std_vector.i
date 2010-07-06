@@ -175,10 +175,6 @@ public void capacity(size_t value) {
     }
 %enddef
 
-%define SWIG_STD_VECTOR_MINIMUM(CWTYPE...)
-SWIG_STD_VECTOR_MINIMUM_INTERNAL(CWTYPE const&, CWTYPE)
-%enddef
-
 // Extra methods added to the collection class if operator== is defined for the class being wrapped
 // The class will then implement IList<>, which adds extra functionality
 %define SWIG_STD_VECTOR_EXTRA_OP_EQUALS_EQUALS(CWTYPE...)
@@ -186,11 +182,14 @@ SWIG_STD_VECTOR_MINIMUM_INTERNAL(CWTYPE const&, CWTYPE)
     }
 %enddef
 
+// For vararg handling in macros, from swigmacros.swg
+#define %arg(X...) X
+
 // Macros for std::vector class specializations/enhancements
 %define SWIG_STD_VECTOR_ENHANCED(CWTYPE...)
 namespace std {
   template<> class vector<CWTYPE > {
-    SWIG_STD_VECTOR_MINIMUM_INTERNAL(CWTYPE const&, CWTYPE)
+    SWIG_STD_VECTOR_MINIMUM_INTERNAL(%arg(CWTYPE const&), %arg(CWTYPE))
     SWIG_STD_VECTOR_EXTRA_OP_EQUALS_EQUALS(CWTYPE)
   };
 }
@@ -219,7 +218,7 @@ namespace std {
   // primary (unspecialized) class template for std::vector
   // does not require operator== to be defined
   template<class T> class vector {
-    SWIG_STD_VECTOR_MINIMUM(T)
+    SWIG_STD_VECTOR_MINIMUM_INTERNAL(T const&, T)
   };
   // specializations for pointers
   template<class T> class vector<T *> {
