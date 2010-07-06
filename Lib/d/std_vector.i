@@ -25,8 +25,8 @@
 
 // MACRO for use within the std::vector class body
 %define SWIG_STD_VECTOR_MINIMUM_INTERNAL(CONST_REFERENCE, CWTYPE...)
-%typemap(dimports) std::vector<CWTYPE > "static import tango.core.Exception;"
-%typemap(dcode) std::vector<CWTYPE > %{
+%typemap(dimports) std::vector< CWTYPE > "static import tango.core.Exception;"
+%typemap(dcode) std::vector< CWTYPE > %{
 public this($typemap(dptype, CWTYPE)[] values) {
   this();
   append(values);
@@ -117,8 +117,8 @@ public void capacity(size_t value) {
     vector(const vector &other);
     %extend {
       vector(size_type capacity) throw (std::length_error) {
-        std::vector<CWTYPE >* pv = 0;
-        pv = new std::vector<CWTYPE >();
+        std::vector< CWTYPE >* pv = 0;
+        pv = new std::vector< CWTYPE >();
 
         // Might throw std::length_error.
         pv->reserve(capacity);
@@ -135,7 +135,7 @@ public void capacity(size_t value) {
           throw std::out_of_range("Tried to remove last element from empty vector.");
         }
 
-        std::vector<CWTYPE >::const_reference value = $self->back();
+        std::vector< CWTYPE >::const_reference value = $self->back();
         $self->pop_back();
         return value;
       }
@@ -145,8 +145,8 @@ public void capacity(size_t value) {
           throw std::out_of_range("Tried to remove element with invalid index.");
         }
 
-        std::vector<CWTYPE >::iterator it = $self->begin() + index;
-        std::vector<CWTYPE >::const_reference value = *it;
+        std::vector< CWTYPE >::iterator it = $self->begin() + index;
+        std::vector< CWTYPE >::const_reference value = *it;
         $self->erase(it);
         return value;
       }
