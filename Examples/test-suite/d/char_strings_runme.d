@@ -74,6 +74,16 @@ void main() {
       throw new Exception("Test char set 6 failed, iteration " ~ toString(i));
   }
 
+  for (i=0; i<count; i++) {
+    if (!SetCharConstStaticString(OTHERLAND_MSG ~ toString(i), i))
+      throw new Exception("Test char set 7 failed, iteration " ~ toString(i));
+  }
+
+  for (i=0; i<count; i++) {
+    if (!SetConstCharConstStaticString(OTHERLAND_MSG ~ toString(i), i))
+      throw new Exception("Test char set 8 failed, iteration " ~ toString(i));
+  }
+
   // get set function
   for (i=0; i<count*10; i++) {
     char[] ping = OTHERLAND_MSG ~ toString(i);
