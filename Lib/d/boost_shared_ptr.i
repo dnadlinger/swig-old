@@ -1,6 +1,6 @@
 %include <shared_ptr.i>
 
-%define SWIG_SHARED_PTR_TYPEMAPS(_PROXYCLASS_NOT_USED, CONST, TYPE...)
+%define SWIG_SHARED_PTR_TYPEMAPS(CONST, TYPE...)
 
 %naturalvar TYPE;
 %naturalvar SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >;
