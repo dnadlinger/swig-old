@@ -95,8 +95,11 @@ INPUT_TYPEMAP(unsigned long long, unsigned long long,   ulong)
 INPUT_TYPEMAP(float,              float,                float)
 INPUT_TYPEMAP(double,             double,               double)
 
+INPUT_TYPEMAP(enum SWIGTYPE,      unsigned int,         int)
+%typemap(dptype) enum SWIGTYPE *INPUT, enum SWIGTYPE &INPUT "$*dclassname"
 
 #undef INPUT_TYPEMAP
+
 
 /*
 OUTPUT typemaps
@@ -188,6 +191,9 @@ OUTPUT_TYPEMAP(long long,          long long,            long,     INT64_PTR)
 OUTPUT_TYPEMAP(unsigned long long, unsigned long long,   ulong,    UINT64_PTR)
 OUTPUT_TYPEMAP(float,              float,                float,    FLOAT_PTR)
 OUTPUT_TYPEMAP(double,             double,               double,   DOUBLE_PTR)
+
+OUTPUT_TYPEMAP(enum SWIGTYPE,      unsigned int,         int,      INT32_PTR)
+%typemap(dptype) enum SWIGTYPE *OUTPUT, enum SWIGTYPE &OUTPUT "out $*dclassname"
 
 #undef OUTPUT_TYPEMAP
 
@@ -289,5 +295,7 @@ INOUT_TYPEMAP(unsigned long long, unsigned long long,   ulong,    UINT64_PTR)
 INOUT_TYPEMAP(float,              float,                float,    FLOAT_PTR)
 INOUT_TYPEMAP(double,             double,               double,   DOUBLE_PTR)
 
-#undef INOUT_TYPEMAP
+INOUT_TYPEMAP(enum SWIGTYPE,      unsigned int,         int,      INT32_PTR)
+%typemap(dptype) enum SWIGTYPE *INOUT, enum SWIGTYPE &INOUT "ref $*dclassname"
 
+#undef INOUT_TYPEMAP
