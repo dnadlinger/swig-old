@@ -15,7 +15,7 @@ INPUT typemaps
 --------------
 
 These typemaps are used for pointer/reference parameters that are input only
-and are mapped to a C# input parameter.
+and are mapped to a D input parameter.
 
 The following typemaps can be applied to turn a pointer or reference into a simple
 input value.  That is, instead of passing a pointer or reference to an object,
@@ -34,7 +34,7 @@ you would use a real value instead.
         unsigned long long *INPUT, unsigned long long &INPUT
         float              *INPUT, float              &INPUT
         double             *INPUT, double             &INPUT
-         
+
 To use these, suppose you had a C function like this :
 
         double fadd(double *a, double *b) {
@@ -42,7 +42,7 @@ To use these, suppose you had a C function like this :
         }
 
 You could wrap it with SWIG as follows :
-        
+
         %include <typemaps.i>
         double fadd(double *INPUT, double *INPUT);
 
@@ -52,15 +52,14 @@ or you can use the %apply directive :
         %apply double *INPUT { double *a, double *b };
         double fadd(double *a, double *b);
 
-In C# you could then use it like this:
-        double answer = modulename.fadd(10.0, 20.0);
-
+In D you could then use it like this:
+        double answer = fadd(10.0, 20.0);
 */
 
-%define INPUT_TYPEMAP(TYPE, CTYPE, CSTYPE)
-%typemap(cwtype) TYPE *INPUT, TYPE &INPUT "CTYPE"
-%typemap(dwtype) TYPE *INPUT, TYPE &INPUT "CSTYPE"
-%typemap(dptype) TYPE *INPUT, TYPE &INPUT "CSTYPE"
+%define INPUT_TYPEMAP(TYPE, CWTYPE, DTYPE)
+%typemap(cwtype) TYPE *INPUT, TYPE &INPUT "CWTYPE"
+%typemap(dwtype) TYPE *INPUT, TYPE &INPUT "DTYPE"
+%typemap(dptype) TYPE *INPUT, TYPE &INPUT "DTYPE"
 %typemap(din) TYPE *INPUT, TYPE &INPUT "$dinput"
 %typemap(ddirectorin) TYPE *INPUT, TYPE &INPUT "$winput"
 %typemap(ddirectorout) TYPE *INPUT, TYPE &INPUT "$dpcall"
@@ -72,10 +71,10 @@ In C# you could then use it like this:
 %{ $result = ($1_ltype)&$input; %}
 
 %typemap(directorin) TYPE &INPUT
-%{ $input = (CTYPE *)$1; %}
+%{ $input = (CWTYPE *)$1; %}
 
 %typemap(directorin) TYPE *INPUT
-%{ $input = (CTYPE *)$1; %}
+%{ $input = (CWTYPE *)$1; %}
 
 %typemap(typecheck) TYPE *INPUT = TYPE;
 %typemap(typecheck) TYPE &INPUT = TYPE;
@@ -96,6 +95,7 @@ INPUT_TYPEMAP(unsigned long long, unsigned long long,   ulong)
 INPUT_TYPEMAP(float,              float,                float)
 INPUT_TYPEMAP(double,             double,               double)
 
+
 #undef INPUT_TYPEMAP
 
 /*
@@ -103,11 +103,11 @@ OUTPUT typemaps
 ---------------
 
 These typemaps are used for pointer/reference parameters that are output only and
-are mapped to a C# output parameter.
+are mapped to a D output parameter.
 
-The following typemaps can be applied to turn a pointer or reference into an "output"
-value.  When calling a function, no input value would be given for
-a parameter, but an output value would be returned. In C#, the 'out' keyword is
+The following typemaps can be applied to turn a pointer or reference into an
+"output" value. When calling a function, no input value would be given for
+a parameter, but an output value would be returned. In D, the 'out' keyword is
 used when passing the parameter to a function that takes an output parameter.
 
         bool               *OUTPUT, bool               &OUTPUT
@@ -123,7 +123,7 @@ used when passing the parameter to a function that takes an output parameter.
         unsigned long long *OUTPUT, unsigned long long &OUTPUT
         float              *OUTPUT, float              &OUTPUT
         double             *OUTPUT, double             &OUTPUT
-         
+
 For example, suppose you were trying to wrap the modf() function in the
 C math library which splits x into integral and fractional parts (and
 returns the integer part in one of its parameters):
@@ -141,18 +141,17 @@ or you can use the %apply directive :
         %apply double *OUTPUT { double *ip };
         double modf(double x, double *ip);
 
-The C# output of the function would be the function return value and the 
-value returned in the second output parameter. In C# you would use it like this:
+The D output of the function would be the function return value and the
+value returned in the second output parameter. In D you would use it like this:
 
     double dptr;
-    double fraction = modulename.modf(5, out dptr);
-
+    double fraction = modf(5, dptr);
 */
 
-%define OUTPUT_TYPEMAP(TYPE, CTYPE, CSTYPE, TYPECHECKPRECEDENCE)
-%typemap(cwtype) TYPE *OUTPUT, TYPE &OUTPUT "CTYPE *"
-%typemap(dwtype) TYPE *OUTPUT, TYPE &OUTPUT "out CSTYPE"
-%typemap(dptype) TYPE *OUTPUT, TYPE &OUTPUT "out CSTYPE"
+%define OUTPUT_TYPEMAP(TYPE, CWTYPE, DTYPE, TYPECHECKPRECEDENCE)
+%typemap(cwtype) TYPE *OUTPUT, TYPE &OUTPUT "CWTYPE *"
+%typemap(dwtype) TYPE *OUTPUT, TYPE &OUTPUT "out DTYPE"
+%typemap(dptype) TYPE *OUTPUT, TYPE &OUTPUT "out DTYPE"
 %typemap(din) TYPE *OUTPUT, TYPE &OUTPUT "$dinput"
 %typemap(ddirectorin) TYPE *OUTPUT, TYPE &OUTPUT "$winput"
 %typemap(ddirectorout) TYPE *OUTPUT, TYPE &OUTPUT "$dpcall"
@@ -193,7 +192,7 @@ OUTPUT_TYPEMAP(double,             double,               double,   DOUBLE_PTR)
 #undef OUTPUT_TYPEMAP
 
 %typemap(in) bool *OUTPUT, bool &OUTPUT
-%{ *$input = 0; 
+%{ *$input = 0;
    $1 = ($1_ltype)$input; %}
 
 
@@ -202,11 +201,11 @@ INOUT typemaps
 --------------
 
 These typemaps are for pointer/reference parameters that are both input and
-output and are mapped to a C# reference parameter.
+output and are mapped to a D reference parameter.
 
 The following typemaps can be applied to turn a pointer or reference into a
 reference parameters, that is the parameter is both an input and an output.
-In C#, the 'ref' keyword is used for reference parameters.
+In D, the 'ref' keyword is used for reference parameters.
 
         bool               *INOUT, bool               &INOUT
         signed char        *INOUT, signed char        &INOUT
@@ -221,7 +220,7 @@ In C#, the 'ref' keyword is used for reference parameters.
         unsigned long long *INOUT, unsigned long long &INOUT
         float              *INOUT, float              &INOUT
         double             *INOUT, double             &INOUT
-         
+
 For example, suppose you were trying to wrap the following function :
 
         void neg(double *x) {
@@ -239,23 +238,22 @@ or you can use the %apply directive :
         %apply double *INOUT { double *x };
         void neg(double *x);
 
-The C# output of the function would be the new value returned by the 
-reference parameter. In C# you would use it like this:
+The D output of the function would be the new value returned by the
+reference parameter. In D you would use it like this:
 
 
        double x = 5.0;
-       neg(ref x);
+       neg(x);
 
 The implementation of the OUTPUT and INOUT typemaps is different to the scripting
-languages in that the scripting languages will return the output value as part 
+languages in that the scripting languages will return the output value as part
 of the function return value.
-
 */
 
-%define INOUT_TYPEMAP(TYPE, CTYPE, CSTYPE, TYPECHECKPRECEDENCE)
-%typemap(cwtype) TYPE *INOUT, TYPE &INOUT "CTYPE *"
-%typemap(dwtype) TYPE *INOUT, TYPE &INOUT "ref CSTYPE"
-%typemap(dptype) TYPE *INOUT, TYPE &INOUT "ref CSTYPE"
+%define INOUT_TYPEMAP(TYPE, CWTYPE, DTYPE, TYPECHECKPRECEDENCE)
+%typemap(cwtype) TYPE *INOUT, TYPE &INOUT "CWTYPE *"
+%typemap(dwtype) TYPE *INOUT, TYPE &INOUT "ref DTYPE"
+%typemap(dptype) TYPE *INOUT, TYPE &INOUT "ref DTYPE"
 %typemap(din) TYPE *INOUT, TYPE &INOUT "$dinput"
 %typemap(ddirectorin) TYPE *INOUT, TYPE &INOUT "$winput"
 %typemap(ddirectorout) TYPE *INOUT, TYPE &INOUT "$dpcall"
