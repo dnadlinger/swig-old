@@ -2525,11 +2525,25 @@ public:
    * D::unmatchedTypemapRequestHandler()
    * --------------------------------------------------------------------------- */
   virtual Hash *unmatchedTypemapRequestHandler(Node *node, SwigType *type, const String *tm_method) {
+    // Only invoke lookupNativePointerTypemap if the type actually is a
+    // pointer to avoid endless recursive loops because the method also has
+    // to do typemap lookups internally.
+    // Also, check if the type is a const reference to a pointer - we can treat
+    // it just the same then.
     if (SwigType_ispointer(type)) {
-      // Only invoke lookupNativePointerTypemap if the type actually is a
-      // pointer to avoid endless recursive loops because the method also has
-      // to do typemap lookups internally.
       return lookupNativePointerTypemap(node, type, tm_method);
+    } else if (SwigType_isreference(type)){
+      Hash *result = 0;
+      SwigType *pointer_type = Copy(type);
+      SwigType_del_reference(pointer_type);
+      if (SwigType_isconst(pointer_type)) {
+        SwigType_del_qualifier(pointer_type);
+        if (SwigType_ispointer(pointer_type)){
+          result = lookupNativePointerTypemap(node, pointer_type, tm_method);
+        }
+      }
+      Delete(pointer_type);
+      return result;
     }
 
     return 0;
