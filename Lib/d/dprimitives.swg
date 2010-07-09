@@ -7,344 +7,93 @@
  * Typemaps for primitive types.
  * ----------------------------------------------------------------------------- */
 
-%typemap(cwtype) bool,               const bool &               "unsigned int"
-%typemap(cwtype) char,               const char &               "char"
-%typemap(cwtype) signed char,        const signed char &        "signed char"
-%typemap(cwtype) unsigned char,      const unsigned char &      "unsigned char"
-%typemap(cwtype) short,              const short &              "short"
-%typemap(cwtype) unsigned short,     const unsigned short &     "unsigned short"
-%typemap(cwtype) int,                const int &                "int"
-%typemap(cwtype) unsigned int,       const unsigned int &       "unsigned int"
-%typemap(cwtype) long,               const long &               "long"
-%typemap(cwtype) unsigned long,      const unsigned long &      "unsigned long"
-%typemap(cwtype) size_t,             const size_t &             "size_t"
-%typemap(cwtype) long long,          const long long &          "long long"
-%typemap(cwtype) unsigned long long, const unsigned long long & "unsigned long long"
-%typemap(cwtype) float,              const float &              "float"
-%typemap(cwtype) double,             const double &             "double"
-%typemap(cwtype) long double,        const long double &        "long double"
-
-%typemap(dwtype) bool,               const bool &                   "uint"
-%typemap(dwtype) char,               const char &                   "char"
-%typemap(dwtype) signed char,        const signed char &            "byte"
-%typemap(dwtype) unsigned char,      const unsigned char &          "ubyte"
-%typemap(dwtype) short,              const short &                  "short"
-%typemap(dwtype) unsigned short,     const unsigned short &         "ushort"
-%typemap(dwtype) int,                const int &                    "int"
-%typemap(dwtype) unsigned int,       const unsigned int &           "uint"
-%typemap(dwtype) long,               const long &                   "int"
-%typemap(dwtype) unsigned long,      const unsigned long &          "uint"
-%typemap(dwtype) size_t,             const size_t &                 "size_t"
-%typemap(dwtype) long long,          const long long &              "long"
-%typemap(dwtype) unsigned long long, const unsigned long long &     "ulong"
-%typemap(dwtype) float,              const float &                  "float"
-%typemap(dwtype) double,             const double &                 "double"
-
-%typemap(dptype) bool,               const bool &                   "bool"
-%typemap(dptype) char,               const char &                   "char"
-%typemap(dptype) signed char,        const signed char &            "byte"
-%typemap(dptype) unsigned char,      const unsigned char &          "ubyte"
-%typemap(dptype) short,              const short &                  "short"
-%typemap(dptype) unsigned short,     const unsigned short &         "ushort"
-%typemap(dptype) int,                const int &                    "int"
-%typemap(dptype) unsigned int,       const unsigned int &           "uint"
-%typemap(dptype) long,               const long &                   "int"
-%typemap(dptype) unsigned long,      const unsigned long &          "uint"
-%typemap(dptype) size_t,             const size_t &                 "size_t"
-%typemap(dptype) long long,          const long long &              "long"
-%typemap(dptype) unsigned long long, const unsigned long long &     "ulong"
-%typemap(dptype) float,              const float &                  "float"
-%typemap(dptype) double,             const double &                 "double"
-
-
 /*
- * Conversion generation typemaps for by-value primitives.
+ * The SWIG_D_PRIMITIVE macro is used to define the typemaps for the primitive
+ * types, because are more or less the same for all of them. The few special
+ * cases are handeled below.
  */
+%define SWIG_D_PRIMITIVE(TYPE, DTYPE)
+%typemap(cwtype) TYPE, const TYPE & "TYPE"
+%typemap(dwtype) TYPE, const TYPE & "DTYPE"
+%typemap(dptype, cprimitive="1") TYPE, const TYPE & "DTYPE"
 
-%typemap(in) char,
-             signed char,
-             unsigned char,
-             short,
-             unsigned short,
-             int,
-             unsigned int,
-             long,
-             unsigned long,
-             size_t,
-             long long,
-             unsigned long long,
-             float,
-             double
-  "$1 = ($1_ltype)$input;"
+%typemap(in) TYPE "$1 = ($1_ltype)$input;"
+%typemap(out) TYPE "$result = $1;"
+%typemap(directorin) TYPE "$input = $1;"
+%typemap(directorout) TYPE "$result = ($1_ltype)$input;"
+%typemap(ddirectorin) TYPE "$winput"
+%typemap(ddirectorout) TYPE "$dpcall"
 
-%typemap(in) bool "$1 = $input ? true : false;"
-
-
-%typemap(out) bool,
-              char,
-              signed char,
-              unsigned char,
-              short,
-              unsigned short,
-              int,
-              unsigned int,
-              long,
-              size_t,
-              long long,
-              unsigned long long,
-              float,
-              double
-  "$result = $1;"
-
-// Judging from the history of the C# module, the explicit cast is needed for
-// certain versions of VC++.
-%typemap(out) unsigned long "$result = (unsigned long)$1;"
-
-
-%typemap(directorin) bool,
-                     char,
-                     signed char,
-                     unsigned char,
-                     short,
-                     unsigned short,
-                     int,
-                     unsigned int,
-                     long,
-                     unsigned long,
-                     size_t,
-                     long long,
-                     unsigned long long,
-                     float,
-                     double
-  "$input = $1;"
-
-
-%typemap(directorout) char,
-                      signed char,
-                      unsigned char,
-                      short,
-                      unsigned short,
-                      int,
-                      unsigned int,
-                      long,
-                      unsigned long,
-                      size_t,
-                      long long,
-                      unsigned long long,
-                      float,
-                      double
-  "$result = ($1_ltype)$input;"
-
-%typemap(directorout) bool
-  "$result = $input ? true : false;"
-
-
-%typemap(ddirectorin) bool "($winput ? true : false)"
-%typemap(ddirectorin) char,
-                      signed char,
-                      unsigned char,
-                      short,
-                      unsigned short,
-                      int,
-                      unsigned int,
-                      long,
-                      unsigned long,
-                      size_t,
-                      long long,
-                      unsigned long long,
-                      float,
-                      double
-  "$winput"
-
-
-%typemap(ddirectorout) bool,
-                       char,
-                       signed char,
-                       unsigned char,
-                       short,
-                       unsigned short,
-                       int,
-                       unsigned int,
-                       long,
-                       unsigned long,
-                       size_t,
-                       long long,
-                       unsigned long long,
-                       float,
-                       double
-  "$dpcall"
-
-
-/*
- * Conversion generation typemaps for (const) by-reference primitives.
- */
-
-%typemap(in) const char & ($*1_ltype temp),
-             const signed char & ($*1_ltype temp),
-             const unsigned char & ($*1_ltype temp),
-             const short & ($*1_ltype temp),
-             const unsigned short & ($*1_ltype temp),
-             const int & ($*1_ltype temp),
-             const unsigned int & ($*1_ltype temp),
-             const long & ($*1_ltype temp),
-             const unsigned long & ($*1_ltype temp),
-             const size_t & ($*1_ltype temp),
-             const long long & ($*1_ltype temp),
-             const unsigned long long & ($*1_ltype temp),
-             const float & ($*1_ltype temp),
-             const double & ($*1_ltype temp)
+%typemap(in) const TYPE & ($*1_ltype temp)
 %{ temp = ($*1_ltype)$input;
    $1 = &temp; %}
+%typemap(out) const TYPE & "$result = *$1;"
+%typemap(directorin) const TYPE & "$input = $1_name;"
+%typemap(directorout,warning=SWIGWARN_TYPEMAP_THREAD_UNSAFE_MSG) const TYPE &
+%{ static $*1_ltype temp;
+   temp = ($*1_ltype)$input;
+   $result = &temp; %}
+%typemap(ddirectorin) const TYPE & "$winput"
+%typemap(ddirectorout) const TYPE & "$dpcall"
 
+%typemap(din) TYPE, const TYPE & "$dinput"
+%typemap(dout, excode=SWIGEXCODE) TYPE, const TYPE & {
+  auto ret = $wcall;$excode
+  return ret;
+}
+%enddef
+
+
+SWIG_D_PRIMITIVE(bool, bool)
+SWIG_D_PRIMITIVE(char, char)
+SWIG_D_PRIMITIVE(signed char, byte)
+SWIG_D_PRIMITIVE(unsigned char, ubyte)
+SWIG_D_PRIMITIVE(short, short)
+SWIG_D_PRIMITIVE(unsigned short, ushort)
+SWIG_D_PRIMITIVE(int, int)
+SWIG_D_PRIMITIVE(unsigned int, uint)
+SWIG_D_PRIMITIVE(long, int)
+SWIG_D_PRIMITIVE(unsigned long, uint)
+SWIG_D_PRIMITIVE(size_t, size_t)
+SWIG_D_PRIMITIVE(long long, long)
+SWIG_D_PRIMITIVE(unsigned long long, ulong)
+SWIG_D_PRIMITIVE(float, float)
+SWIG_D_PRIMITIVE(double, double)
+
+
+// The C++ boolean type needs some special casing since it is not part of the
+// C standard and is thus represented as unsigned int in the C wrapper layer.
+%typemap(cwtype) bool, const bool & "unsigned int"
+%typemap(dwtype) bool, const bool & "uint"
+
+%typemap(in) bool "$1 = $input ? true : false;"
 %typemap(in) const bool & ($*1_ltype temp)
 %{ temp = $input ? true : false;
    $1 = &temp; %}
 
-
-%typemap(out) const bool &,
-              const char &,
-              const signed char &,
-              const unsigned char &,
-              const short &,
-              const unsigned short &,
-              const int &,
-              const unsigned int &,
-              const long &,
-              const size_t &,
-              const long long &,
-              const unsigned long long &,
-              const float &,
-              const double &
-  "$result = *$1;"
-
-// Judging from the history of the C# module, the explicit cast is needed for
-// certain versions of VC++.
-%typemap(out) const unsigned long &      %{ $result = (unsigned long)*$1; %}
-
-
-%typemap(directorout,warning=SWIGWARN_TYPEMAP_THREAD_UNSAFE_MSG)
-             const char &,
-             const signed char &,
-             const unsigned char &,
-             const short &,
-             const unsigned short &,
-             const int &,
-             const unsigned int &,
-             const long &,
-             const unsigned long &,
-             const size_t &,
-             const long long &,
-             const float &,
-             const double &
-%{ static $*1_ltype temp;
-   temp = ($*1_ltype)$input;
-   $result = &temp; %}
-
+%typemap(directorout) bool
+  "$result = $input ? true : false;"
 %typemap(directorout,warning=SWIGWARN_TYPEMAP_THREAD_UNSAFE_MSG) const bool &
 %{ static $*1_ltype temp;
    temp = $input ? true : false;
    $result = &temp; %}
 
-
-%typemap(directorin) const bool &,
-		     const char &,
-		     const signed char &,
-		     const unsigned char &,
-		     const short &,
-		     const unsigned short &,
-		     const int &,
-		     const unsigned int &,
-		     const long &,
-		     const size_t &,
-		     const long long &,
-		     const unsigned long long &,
-		     const float &,
-		     const double &
-  "$input = $1_name;"
-
-
-%typemap(ddirectorin) const bool & "$winput"
-%typemap(ddirectorin) const char & ($*1_ltype temp),
-                      const signed char & ($*1_ltype temp),
-                      const unsigned char & ($*1_ltype temp),
-                      const short & ($*1_ltype temp),
-                      const unsigned short & ($*1_ltype temp),
-                      const int & ($*1_ltype temp),
-                      const unsigned int & ($*1_ltype temp),
-                      const long & ($*1_ltype temp),
-                      const unsigned long & ($*1_ltype temp),
-                      const size_t & ($*1_ltype temp),
-                      const long long & ($*1_ltype temp),
-                      const float & ($*1_ltype temp),
-                      const double & ($*1_ltype temp)
-  "$winput"
-
-
-%typemap(ddirectorout) const bool & "$dpcall"
-%typemap(ddirectorout) const char & ($*1_ltype temp),
-                       const signed char & ($*1_ltype temp),
-                       const unsigned char & ($*1_ltype temp),
-                       const short & ($*1_ltype temp),
-                       const unsigned short & ($*1_ltype temp),
-                       const int & ($*1_ltype temp),
-                       const unsigned int & ($*1_ltype temp),
-                       const long & ($*1_ltype temp),
-                       const unsigned long & ($*1_ltype temp),
-                       const size_t & ($*1_ltype temp),
-                       const long long & ($*1_ltype temp),
-                       const float & ($*1_ltype temp),
-                       const double & ($*1_ltype temp)
-  "$dpcall"
-
-
-/*
- * Conversion generation typemaps for both values and references.
- */
-
-%typemap(din) bool,               const bool &,
-              char,               const char &,
-              signed char,        const signed char &,
-              unsigned char,      const unsigned char &,
-              short,              const short &,
-              unsigned short,     const unsigned short &,
-              int,                const int &,
-              unsigned int,       const unsigned int &,
-              long,               const long &,
-              unsigned long,      const unsigned long &,
-              size_t,             const size_t &,
-              long long,          const long long &,
-              unsigned long long, const unsigned long long &,
-              float,              const float &,
-              double,             const double &
-  "$dinput"
-
+%typemap(ddirectorin) bool "($winput ? true : false)"
 
 %typemap(dout, excode=SWIGEXCODE) bool, const bool & {
   bool ret = $wcall ? true : false;$excode
   return ret;
 }
 
-%typemap(dout, excode=SWIGEXCODE) char,               const char &,
-                                  signed char,        const signed char &,
-                                  unsigned char,      const unsigned char &,
-                                  short,              const short &,
-                                  unsigned short,     const unsigned short &,
-                                  int,                const int &,
-                                  unsigned int,       const unsigned int &,
-                                  long,               const long &,
-                                  unsigned long,      const unsigned long &,
-                                  size_t,             const size_t &,
-                                  long long,          const long long &,
-                                  unsigned long long, const unsigned long long &,
-                                  float,              const float &,
-                                  double,             const double & {
-  auto ret = $wcall;$excode
-  return ret;
-}
+
+// Judging from the history of the C# module, the explicit casts are needed for
+// certain versions of VC++.
+%typemap(out) unsigned long "$result = (unsigned long)$1;"
+%typemap(out) const unsigned long & "$result = (unsigned long)*$1;"
 
 
 /*
- * Typecheck typemaps for both.
+ * Typecheck typemaps.
  */
 
 %typecheck(SWIG_TYPECHECK_BOOL)
