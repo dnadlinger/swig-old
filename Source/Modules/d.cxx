@@ -744,7 +744,7 @@ public:
 
     // Emit the enum declaration.
     if (typemap_lookup_type) {
-      const String *enummodifiers = typemapLookup(n, "dclassmodifiers", typemap_lookup_type, WARN_D_TYPEMAP_CLASSMOD_UNDEF);
+      const String *enummodifiers = lookupCodeTypemap(n, "dclassmodifiers", typemap_lookup_type, WARN_D_TYPEMAP_CLASSMOD_UNDEF);
       Printv(proxy_enum_code, "\n", enummodifiers, " ", symname, " {\n", NIL);
     } else {
       // Handle anonymous enums.
@@ -763,7 +763,7 @@ public:
     // Finish the enum.
     if (typemap_lookup_type) {
       Printv(proxy_enum_code,
-	typemapLookup(n, "dcode", typemap_lookup_type, WARN_NONE), // Extra D code
+	lookupCodeTypemap(n, "dcode", typemap_lookup_type, WARN_NONE), // Extra D code
 	"\n}\n", NIL);
     } else {
       // Handle anonymous enums.
@@ -773,7 +773,7 @@ public:
     Replaceall(proxy_enum_code, "$dclassname", symname);
 
     const String* imports =
-      typemapLookup(n, "dimports", typemap_lookup_type, WARN_NONE);
+      lookupCodeTypemap(n, "dimports", typemap_lookup_type, WARN_NONE);
     String* imports_trimmed;
     if (Len(imports) > 0) {
       imports_trimmed = Copy(imports);
@@ -1163,7 +1163,7 @@ public:
 
     // Insert the dconstructor typemap (replacing $directorconnect as needed).
     Hash *attributes = NewHash();
-    String *construct_tm = Copy(typemapLookup(n, "dconstructor",
+    String *construct_tm = Copy(lookupCodeTypemap(n, "dconstructor",
       Getattr(n, "name"), WARN_D_TYPEMAP_DCONSTRUCTOR_UNDEF, attributes));
     if (construct_tm) {
       const bool use_director = (parentNode(n) && Swig_directorclass(n));
@@ -3049,7 +3049,7 @@ private:
     // Inheritance from pure D classes.
     Node *attributes = NewHash();
     const String *pure_baseclass =
-      typemapLookup(n, "dbase", typemap_lookup_type, WARN_NONE, attributes);
+      lookupCodeTypemap(n, "dbase", typemap_lookup_type, WARN_NONE, attributes);
     bool purebase_replace = GetFlag(attributes, "tmap:dbase:replace") ? true : false;
     bool purebase_notderived = GetFlag(attributes, "tmap:dbase:notderived") ? true : false;
     Delete(attributes);
@@ -3129,7 +3129,7 @@ private:
     }
 
     // Write any custom import statements to the proxy module header.
-    const String *imports = typemapLookup(n, "dimports", typemap_lookup_type, WARN_NONE);
+    const String *imports = lookupCodeTypemap(n, "dimports", typemap_lookup_type, WARN_NONE);
     if (Len(imports) > 0) {
       String* imports_trimmed = Copy(imports);
       Chop(imports_trimmed);
@@ -3143,11 +3143,11 @@ private:
      */
     // Class modifiers.
     const String *modifiers =
-      typemapLookup(n, "dclassmodifiers", typemap_lookup_type, WARN_D_TYPEMAP_CLASSMOD_UNDEF);
+      lookupCodeTypemap(n, "dclassmodifiers", typemap_lookup_type, WARN_D_TYPEMAP_CLASSMOD_UNDEF);
 
     // User-defined interfaces.
     const String *interfaces =
-      typemapLookup(n, derived ? "dinterfaces_derived" : "dinterfaces", typemap_lookup_type, WARN_NONE);
+      lookupCodeTypemap(n, derived ? "dinterfaces_derived" : "dinterfaces", typemap_lookup_type, WARN_NONE);
 
     Printv(proxy_class_code,
       "\n",
@@ -3168,9 +3168,9 @@ private:
     // Default class body.
     const String *dbody;
     if (derived) {
-      dbody = typemapLookup(n, "dbody_derived", typemap_lookup_type, WARN_D_TYPEMAP_DBODY_UNDEF);
+      dbody = lookupCodeTypemap(n, "dbody_derived", typemap_lookup_type, WARN_D_TYPEMAP_DBODY_UNDEF);
     } else {
-      dbody = typemapLookup(n, "dbody", typemap_lookup_type, WARN_D_TYPEMAP_DBODY_UNDEF);
+      dbody = lookupCodeTypemap(n, "dbody", typemap_lookup_type, WARN_D_TYPEMAP_DBODY_UNDEF);
     }
 
     Printv(body, dbody, NIL);
@@ -3191,11 +3191,11 @@ private:
     String *dispose_methodmodifiers;
     attributes = NewHash();
     if (derived) {
-      tm = typemapLookup(n, "ddispose_derived", typemap_lookup_type, WARN_NONE, attributes);
+      tm = lookupCodeTypemap(n, "ddispose_derived", typemap_lookup_type, WARN_NONE, attributes);
       dispose_methodname = Getattr(attributes, "tmap:ddispose_derived:methodname");
       dispose_methodmodifiers = Getattr(attributes, "tmap:ddispose_derived:methodmodifiers");
     } else {
-      tm = typemapLookup(n, "ddispose", typemap_lookup_type, WARN_NONE, attributes);
+      tm = lookupCodeTypemap(n, "ddispose", typemap_lookup_type, WARN_NONE, attributes);
       dispose_methodname = Getattr(attributes, "tmap:ddispose:methodname");
       dispose_methodmodifiers = Getattr(attributes, "tmap:ddispose:methodmodifiers");
     }
@@ -3217,7 +3217,7 @@ private:
       // Write the destructor if the C++ one is accessible.
       if (*Char(destructor_call)) {
 	Printv(body,
-	  typemapLookup(n, "ddestructor", typemap_lookup_type, WARN_NONE), NIL);
+	  lookupCodeTypemap(n, "ddestructor", typemap_lookup_type, WARN_NONE), NIL);
       }
 
       // Write the dispose() method.
@@ -3253,7 +3253,7 @@ private:
 
     // Append extra user D code to the class body.
     Printv(body,
-      typemapLookup(n, "dcode", typemap_lookup_type, WARN_NONE), "\n", NIL);
+      lookupCodeTypemap(n, "dcode", typemap_lookup_type, WARN_NONE), "\n", NIL);
 
     // Write the class body and the curly bracket closing the class definition
     // to the proxy module.
@@ -3360,7 +3360,7 @@ private:
     }
 
     // Import statements.
-    const String *imports = typemapLookup(n, "dimports", type, WARN_NONE);
+    const String *imports = lookupCodeTypemap(n, "dimports", type, WARN_NONE);
     if (Len(imports) > 0) {
       String *imports_trimmed = Copy(imports);
       Chop(imports_trimmed);
@@ -3370,21 +3370,21 @@ private:
     }
 
     // Pure D baseclass and interfaces (no C++ inheritance possible.
-    const String *pure_baseclass = typemapLookup(n, "dbase", type, WARN_NONE);
-    const String *pure_interfaces = typemapLookup(n, "dinterfaces", type, WARN_NONE);
+    const String *pure_baseclass = lookupCodeTypemap(n, "dbase", type, WARN_NONE);
+    const String *pure_interfaces = lookupCodeTypemap(n, "dinterfaces", type, WARN_NONE);
 
     // Emit the class.
     Printv(code_target,
       "\n",
-      typemapLookup(n, "dclassmodifiers", type, WARN_D_TYPEMAP_CLASSMOD_UNDEF),
+      lookupCodeTypemap(n, "dclassmodifiers", type, WARN_D_TYPEMAP_CLASSMOD_UNDEF),
       " $dclassname",
       (*Char(pure_baseclass) || *Char(pure_interfaces)) ? " : " : "", pure_baseclass,
       ((*Char(pure_baseclass)) && *Char(pure_interfaces)) ? ", " : "", pure_interfaces,
       " {", NIL);
 
     String* body = NewString("");
-    Printv(body, typemapLookup(n, "dbody", type, WARN_D_TYPEMAP_DBODY_UNDEF),
-      typemapLookup(n, "dcode", type, WARN_NONE), NIL);
+    Printv(body, lookupCodeTypemap(n, "dbody", type, WARN_D_TYPEMAP_DBODY_UNDEF),
+      lookupCodeTypemap(n, "dcode", type, WARN_NONE), NIL);
     indentCode(body);
     Printv(code_target, body, "\n}\n", NIL);
     Delete(body);
@@ -3671,7 +3671,7 @@ private:
   }
 
   /* ---------------------------------------------------------------------------
-   * D::typemapLookup()
+   * D::lookupCodeTypemap()
    *
    * n - for input only and must contain info for Getfile(n) and Getline(n) to work
    * tmap_method - typemap method name
@@ -3681,7 +3681,7 @@ private:
    *   also be used for temporary storage if non null
    * return is never NULL, unlike Swig_typemap_lookup()
    * --------------------------------------------------------------------------- */
-  const String *typemapLookup(Node *n, const_String_or_char_ptr tmap_method,
+  const String *lookupCodeTypemap(Node *n, const_String_or_char_ptr tmap_method,
     SwigType *type, int warning, Node *typemap_attributes = 0) const {
 
     Node *node = !typemap_attributes ? NewHash() : typemap_attributes;
