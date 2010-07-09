@@ -3713,6 +3713,7 @@ private:
     }
 
     String *typemap_code = 0;
+    ParmList *typemap_kwargs = 0;
 
     if (SwigType_isfunction(stripped_type) && indirection_count > 0) {
       // type was a function pointer.
@@ -3769,6 +3770,11 @@ private:
             "}",
             ptr_dptype
           );
+          typemap_kwargs = NewHash();
+          Setattr(typemap_kwargs, "name", "excode");
+          Setattr(typemap_kwargs, "value",
+            "\n  if ($wrapdmodule.SwigPendingException.isPending) throw "
+            "$wrapdmodule.SwigPendingException.retrieve();");
         } else if (Cmp(tm_method, "ddirectorin") == 0 ) {
           typemap_code = NewStringf("cast(%s)$winput", ptr_dptype);
         } else if (Cmp(tm_method, "ddirectorout") == 0 ) {
@@ -3785,6 +3791,7 @@ private:
 
     Hash *result = NewHash();
     Setattr(result, "code", typemap_code);
+    Setattr(result, "kwargs", typemap_kwargs);
     return result;
   }
 
