@@ -9,7 +9,7 @@
 
 %typemap(cwtype) void "void"
 %typemap(dwtype) void "void"
-%typemap(dptype) void "void"
+%typemap(dptype, cprimitive="1") void "void"
 
 %typemap(out, null="") void ""
 %typemap(ddirectorin) void "$winput"
