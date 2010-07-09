@@ -220,6 +220,7 @@ public:
   virtual String *runtimeCode();	/* returns the language specific runtime code */
   virtual String *defaultExternalRuntimeFilename();	/* the default filename for the external runtime */
   virtual void replaceSpecialVariables(String *method, String *tm, Parm *parm); /* Language specific special variable substitutions for $typemap() */
+  virtual Hash *unmatchedTypemapRequestHandler(Node *node, SwigType *type, const String *tm_method);
 
   /* Runtime is C++ based, so extern "C" header section */
   void enable_cplus_runtime_mode();

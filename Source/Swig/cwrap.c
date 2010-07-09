@@ -624,6 +624,10 @@ String *Swig_unref_call(Node *n) {
 
 String *Swig_ref_call(Node *n, const String *lname) {
   Node *cn = Swig_methodclass(n);
+  /* TODO: Make sure to pass only valid nodes instead of checking here. */
+  if (!cn) {
+    return 0;
+  }
   String *ref = Swig_rflag_search(cn, "feature:ref", "feature:noref");
   if (ref) {
     ref = NewString(ref);

@@ -2521,6 +2521,20 @@ public:
     replaceClassname(tm, type);
   }
 
+  /* ---------------------------------------------------------------------------
+   * D::unmatchedTypemapRequestHandler()
+   * --------------------------------------------------------------------------- */
+  virtual Hash *unmatchedTypemapRequestHandler(Node *node, SwigType *type, const String *tm_method) {
+    if (SwigType_ispointer(type)) {
+      // Only invoke lookupNativePointerTypemap if the type actually is a
+      // pointer to avoid endless recursive loops because the method also has
+      // to do typemap lookups internally.
+      return lookupNativePointerTypemap(node, type, tm_method);
+    }
+
+    return 0;
+  }
+
 protected:
   /* ---------------------------------------------------------------------------
    * D::extraDirectorProtectedCPPMethodsRequired()
@@ -3668,6 +3682,114 @@ private:
 	SWIG_exit(EXIT_FAILURE);
       }
     }
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::lookupNativePointerTypemap()
+   *
+   * Returns a typemap hash for the given type if it is a pointer to a primitive
+   * type.
+   * --------------------------------------------------------------------------- */
+  Hash *lookupNativePointerTypemap(Node *node, SwigType *type, const String *tm_method) {
+    int indirection_count = 0;
+    SwigType *stripped_type = Copy(type);
+    while (SwigType_ispointer(stripped_type)) {
+      ++indirection_count;
+      SwigType_del_pointer(stripped_type);
+    }
+
+    String *typemap_code = 0;
+
+    if (SwigType_isfunction(stripped_type) && indirection_count > 0) {
+      // type was a function pointer.
+      SwigType_add_pointer(stripped_type);
+      --indirection_count;
+
+      SwigType *return_type = Copy(stripped_type);
+      SwigType *params_type = SwigType_functionpointer_decompose(return_type);
+      Hash *return_typemap = lookupNativePointerTypemap(node, return_type, tm_method);
+
+      List *parms = SwigType_parmlist(params_type);
+      List *parm_typemaps = NewList();
+      Iterator it;
+      for (it = First(parms); it.item; it = Next(it)) {
+        Hash *current_tm = lookupNativePointerTypemap(node, it.item, tm_method);
+        if (!current_tm) {
+          Delete(parm_typemaps);
+          parm_typemaps = NULL;
+          break;
+        }
+        Append(parm_typemaps, current_tm);
+      }
+
+      if (parm_typemaps && return_typemap) {
+        // TODO: Generate function pointer typemap here.
+        typemap_code = 0;
+        Delete(parm_typemaps);
+      }
+
+      Delete(return_type);
+    } else {
+      const String *dptype = getPrimitiveDptype(node, stripped_type);
+
+      if (dptype) {
+        String *ptr_dptype = Copy(dptype);
+        for (int i = 0; i < indirection_count; ++i) {
+          Append(ptr_dptype, "*");
+        }
+
+        // We are dealing with a primitive type.
+        if (Cmp(tm_method, "dptype") == 0) {
+          typemap_code = Copy(ptr_dptype);
+        } else if (Cmp(tm_method, "dwtype") == 0 ) {
+          typemap_code = NewString("void*");
+        } else if (Cmp(tm_method, "cwtype") == 0 ) {
+          typemap_code = NewString("void *");
+        } else if (Cmp(tm_method, "din") == 0 ) {
+          typemap_code = NewString("cast(void*)$dinput");
+        } else if (Cmp(tm_method, "dout") == 0 ) {
+          typemap_code = NewStringf(
+            "{\n"
+            "  auto ret = cast(%s)$wcall;$excode\n"
+            "  return ret;\n"
+            "}",
+            ptr_dptype
+          );
+        } else if (Cmp(tm_method, "ddirectorin") == 0 ) {
+          typemap_code = NewStringf("cast(%s)$winput", ptr_dptype);
+        } else if (Cmp(tm_method, "ddirectorout") == 0 ) {
+          typemap_code = NewStringf("cast(void*)$dpcall", ptr_dptype);
+        }
+
+        Delete(ptr_dptype);
+      }
+    }
+
+    if (!typemap_code) {
+      return 0;
+    }
+
+    Hash *result = NewHash();
+    Setattr(result, "code", typemap_code);
+    return result;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::getPrimitiveDptype()
+   *
+   * Returns the D proxy type for the passed type if it is a primitive type in
+   * both C and D.
+   * --------------------------------------------------------------------------- */
+  const String *getPrimitiveDptype(Node *node, SwigType *type) {
+    Hash *attributes = NewHash();
+
+    const String *result = lookupCodeTypemap(node, "dptype", type, WARN_NONE, attributes);
+    if(!GetFlag(attributes, "tmap:dptype:cprimitive")) {
+      result = 0;
+    }
+
+    Delete(attributes);
+    return result;
   }
 
   /* ---------------------------------------------------------------------------
