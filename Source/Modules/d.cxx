@@ -3829,6 +3829,11 @@ private:
         dptype = 0;
       } else {
         dptype = Copy(tm);
+
+        // We need to call replaceClassname here with the stripped type to avoid
+        // $dclassname in the enum typemaps being replaced later with the full
+        // type.
+        replaceClassname(dptype, stripped_type);
       }
       Delete(attributes);
     }

@@ -14,7 +14,7 @@
 
 %typemap(cwtype) enum SWIGTYPE "int"
 %typemap(dwtype) enum SWIGTYPE "int"
-%typemap(dptype) enum SWIGTYPE "$dclassname"
+%typemap(dptype, cprimitive="1") enum SWIGTYPE "$dclassname"
 
 %typecheck(SWIG_TYPECHECK_POINTER) enum SWIGTYPE ""
 
