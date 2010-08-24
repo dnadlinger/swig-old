@@ -1069,7 +1069,7 @@ public:
 
     /* Output each parameter */
     Parm *p = l;
-    for (uint i = 0; p; i++) {
+    for (unsigned int i = 0; p; i++) {
       if (checkAttribute(p, "varargs:ignore", "1")) {
 	// Skip ignored varargs.
 	p = nextSibling(p);
