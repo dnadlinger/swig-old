@@ -163,7 +163,7 @@ clisp_examples     :=
 uffi_examples      :=
 cffi_examples      :=
 r_examples         :=$(shell sed '/^\#/d' $(srcdir)/Examples/r/check.list)
-go_examples	   :=$(shell sed '/^\#/d' $(srcdir)/Examples/go/check.list)
+go_examples        :=$(shell sed '/^\#/d' $(srcdir)/Examples/go/check.list)
 d_examples         :=$(shell sed '/^\#/d' $(srcdir)/Examples/d/check.list)
 
 # all examples
@@ -174,6 +174,8 @@ check-%-examples :
 	fi
 	@if $(skip-$*); then					\
 	  echo skipping $* $(ACTION);				\
+	elif test -z "$($(strip $*_examples))"; then		\
+	  echo empty $* $(ACTION);				\
 	else							\
 	  $(MAKE) -k -s $($*_examples:=.actionexample) LANGUAGE=$* ACTION=$(ACTION); \
 	fi
@@ -420,7 +422,7 @@ lib-languages = gcj typemaps tcl perl5 python guile java mzscheme ruby php ocaml
 lib-modules = std
 
 
-install-lib: 
+install-lib:
 	@echo "Installing the SWIG library"
 	@$(MKINSTDIRS) $(DESTDIR)$(SWIG_LIB)
 	@for file in $(srcdir)/Lib/*.i $(srcdir)/Lib/*.swg ; do \

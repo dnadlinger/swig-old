@@ -49,23 +49,30 @@ else
 AC_CHECK_FUNC(popen, AC_DEFINE(HAVE_POPEN, 1, [Define if popen is available]), AC_MSG_NOTICE([Disabling popen]))
 fi
 
-dnl Look for RxSpencer
-AC_ARG_WITH(rxspencer, AS_HELP_STRING([--with-rxspencer], [Enable RxSpencer]), with_rxspencer="yes")
-if test x"${with_rxspencer}" = xyes ; then
-#check first for the header
- AC_CHECK_HEADER(rxspencer/regex.h,with_rxspencer="yes",with_rxspencer="no")
- if test x"${with_rxspencer}" = xyes ; then
-# now check for the library
-  AC_CHECK_LIB(rxspencer, regcomp,with_rxspencer="yes",with_rxspencer="no")
- fi
- if test x"${with_rxspencer}" = xyes ; then
-# library and header are available
-  AC_DEFINE(HAVE_RXSPENCER, 1,[Define if rxspencer is available])
-  LIBS="$LIBS -lrxspencer"
- else
-  AC_MSG_NOTICE([RxSpencer not found. Obtain it at http://arglist.com/regex or http://gnuwin32.sourceforge.net/packages.html])
- fi
-fi
+dnl PCRE
+AC_ARG_WITH([pcre],
+  [AS_HELP_STRING([--without-pcre],
+                  [Disable support for regular expressions using PCRE])],
+  [],
+  [with_pcre=yes])
+
+AC_MSG_CHECKING([whether to enable PCRE support])
+AC_MSG_RESULT([$with_pcre])
+AS_IF([test "x$with_pcre" != xno],
+  [AX_PATH_GENERIC([pcre],
+    [], dnl Minimal version of PCRE we need -- accept any
+    [], dnl custom sed script for version parsing is not needed
+    [AC_DEFINE([HAVE_PCRE], [1], [Define if you have PCRE library])
+     LIBS="$LIBS $PCRE_LIBS"
+     CPPFLAGS="$CPPFLAGS $PCRE_CFLAGS"
+    ],
+    [AC_MSG_FAILURE(
+        Can't find pcre-config script from PCRE (Perl Compatible Regular
+        Expressions) library package. You need to either download PCRE from
+        www.pcre.org and install it or use --without-pcre configure option to
+        disable regular expressions support in SWIG.)
+    ])
+  ])
 
 dnl CCache
 AC_ARG_ENABLE([ccache], AS_HELP_STRING([--disable-ccache], [disable building and installation of ccache-swig executable (default enabled)]), [enable_ccache=$enableval], [enable_ccache=yes])
@@ -1957,7 +1964,7 @@ AC_SUBST(RBIN)
 AC_ARG_WITH(go, AS_HELP_STRING([--without-go], [Disable Go])
 AS_HELP_STRING([--with-go=path], [Set location of Go compiler]),[GOBIN="$withval"], [GOBIN=yes])
 
-if test x"${GOBIN}" = xno -o x"${with_alllang}" = xno ; then 
+if test x"${GOBIN}" = xno -o x"${with_alllang}" = xno ; then
 AC_MSG_NOTICE([Disabling Go])
 GO=
 GOGCC=false
