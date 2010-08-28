@@ -1247,7 +1247,7 @@ public:
     String *symname = Getattr(n, "sym:name");
 
     if (generate_proxies) {
-      Printv(destructor_call, wrap_dmodule_fq_name, ".", Swig_name_destroy(NSPACE_TODO,symname), "(m_swigCObject)", NIL);
+      Printv(destructor_call, wrap_dmodule_fq_name, ".", Swig_name_destroy(NSPACE_TODO,symname), "(cast(void*)m_swigCObject)", NIL);
     }
     return SWIG_OK;
   }
@@ -2680,7 +2680,7 @@ private:
     // Write the wrapper function call up to the parameter list.
     Printv(imcall, wrap_dmodule_fq_name, ".$imfuncname(", NIL);
     if (!static_flag) {
-      Printf(imcall, "m_swigCObject");
+      Printf(imcall, "cast(void*)m_swigCObject");
     }
 
     // Write the parameter list for the proxy function declaration and the
@@ -2773,6 +2773,9 @@ private:
 
     Printf(imcall, ")");
     Printf(function_code, ") ");
+
+    if (d_version_2 && GetFlag(n, "memberget"))
+      Printf(function_code, "const ");
 
     // Lookup the code used to convert the wrapper return value to the proxy
     // function return type.
@@ -3446,7 +3449,7 @@ private:
       Printf(proxy_class_body_code, "    callback%s = &swigDirectorCallback_%s_%s;\n", methid, proxy_class_name, overloaded_name);
       Printf(proxy_class_body_code, "  }\n\n");
     }
-    Printf(proxy_class_body_code, "  %s.%s_director_connect(m_swigCObject, cast(void*)this", wrap_dmodule_fq_name, proxy_class_name);
+    Printf(proxy_class_body_code, "  %s.%s_director_connect(cast(void*)m_swigCObject, cast(void*)this", wrap_dmodule_fq_name, proxy_class_name);
     for (i = first_class_dmethod; i < curr_class_dmethod; ++i) {
       UpcallData *udata = Getitem(dmethods_seq, i);
       String *methid = Getattr(udata, "class_methodidx");
