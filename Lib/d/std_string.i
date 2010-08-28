@@ -22,10 +22,11 @@ namespace std {
 
 class string;
 
+%define SWIGD_STD_STRING_TYPEMAPS(DW_STRING_TYPE, DP_STRING_TYPE, FROM_STRINGZ, TO_STRINGZ)
 // string
 %typemap(cwtype) string, const string & "char *"
-%typemap(dwtype) string, const string & "char*"
-%typemap(dptype) string, const string & "char[]"
+%typemap(dwtype) string, const string & #DW_STRING_TYPE
+%typemap(dptype) string, const string & #DP_STRING_TYPE
 
 %typemap(in, canthrow=1) string, const string &
 %{ if (!$input) {
@@ -44,9 +45,9 @@ class string;
 %typemap(out) string %{ $result = SWIG_d_string_callback($1.c_str()); %}
 %typemap(out) const string & %{ $result = SWIG_d_string_callback($1->c_str()); %}
 
-%typemap(din) string, const string & "tango.stdc.stringz.toStringz($dinput)"
+%typemap(din) string, const string & "TO_STRINGZ($dinput)"
 %typemap(dout, excode=SWIGEXCODE) string, const string & {
-  char[] ret = tango.stdc.stringz.fromStringz($wcall);$excode
+  DP_STRING_TYPE ret = FROM_STRINGZ($wcall);$excode
   return ret;
 }
 
@@ -69,13 +70,32 @@ class string;
   $1_str = $input;
   $result = &$1_str; %}
 
-%typemap(ddirectorin) string, const string & "tango.stdc.stringz.fromStringz($winput)"
-%typemap(ddirectorout) string, const string & "tango.stdc.stringz.toStringz($dpcall)"
+%typemap(ddirectorin) string, const string & "FROM_STRINGZ($winput)"
+%typemap(ddirectorout) string, const string & "TO_STRINGZ($dpcall)"
 
 %typemap(throws, canthrow=1) string, const string &
 %{ SWIG_DSetPendingException(SWIG_DException, $1.c_str());
   return $null; %}
 
 %typemap(typecheck) string, const string & = char *;
+%enddef
+
+// We need to have the \0-terminated string conversion functions available in
+// the D proxy modules.
+#if defined(SWIGD2)
+SWIGD_STD_STRING_TYPEMAPS(const(char)*, string, std.conv.to!string, std.string.toStringz)
+
+%pragma(d) globalproxyimports = %{
+static import std.conv;
+static import std.string;
+%}
+#else
+// Could be easily extended to support Phobos as well.
+SWIGD_STD_STRING_TYPEMAPS(char*, char[], tango.stdc.stringz.fromStringz, tango.stdc.stringz.toStringz)
+
+%pragma(d) globalproxyimports = "static import tango.stdc.stringz;";
+#endif
+
+#undef SWIGD_STD_STRING_TYPEMAPS
 
 } // namespace std

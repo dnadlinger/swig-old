@@ -51,6 +51,9 @@ class D : public Language {
   // written to their own files.
   bool split_proxy_dmodule;
 
+  // Whether D2 is targeted (D1 if not).
+  bool d_version_2;
+
   /*
    * State variables which indicate what is being wrapped at the moment.
    * This is probably not the most elegant way of handling state, but it has
@@ -223,6 +226,7 @@ public:
       filenames_list(NULL),
       generate_proxies(true),
       split_proxy_dmodule(false),
+      d_version_2(false),
       native_function_flag(false),
       static_flag(false),
       variable_wrapper_flag(false),
@@ -280,7 +284,10 @@ public:
     // Look for certain command line options
     for (int i = 1; i < argc; i++) {
       if (argv[i]) {
-	if (strcmp(argv[i], "-wrapperlibrary") == 0) {
+        if ((strcmp(argv[i], "-d2") == 0)) {
+      	  Swig_mark_arg(i);
+      	  d_version_2 = true;
+      	} else if (strcmp(argv[i], "-wrapperlibrary") == 0) {
 	  if (argv[i + 1]) {
 	    wrap_library_name = NewString("");
 	    Printf(wrap_library_name, argv[i + 1]);
@@ -314,6 +321,10 @@ public:
 
     // Add a symbol to the parser for conditional compilation
     Preprocessor_define("SWIGD 1", 0);
+
+    if (d_version_2) {
+      Preprocessor_define("SWIGD2 1", 0);
+    }
 
     // Add typemap definitions
     SWIG_typemap_lang("d");

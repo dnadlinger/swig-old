@@ -7,20 +7,10 @@
  * Typemaps for wrapping pointers to/arrays of C chars as D strings.
  * ----------------------------------------------------------------------------- */
 
-%typemap(cwtype)  char *, char *&, char[ANY], char[]   "char *"
-%typemap(dwtype) char *, char *&, char[ANY], char[]   "char*"
-%typemap(dptype) char *, char *&, char[ANY], char[]   "char[]"
-
-%typecheck(SWIG_TYPECHECK_STRING)
-    char *,
-    char *&,
-    char[ANY],
-    char[]
-  ""
-
-// We need the \0-terminated string conversion functions.
-// Could be easily extended to support Phobos as well.
-%pragma(d) globalproxyimports = "static import tango.stdc.stringz;";
+%define SWIGD_STRING_TYPEMAPS(DW_STRING_TYPE, DP_STRING_TYPE, FROM_STRINGZ, TO_STRINGZ)
+%typemap(cwtype) char *, char *&, char[ANY], char[]   "char *"
+%typemap(dwtype) char *, char *&, char[ANY], char[]   #DW_STRING_TYPE
+%typemap(dptype) char *, char *&, char[ANY], char[]   #DP_STRING_TYPE
 
 
 /*
@@ -31,8 +21,8 @@
 %typemap(out) char * %{ $result = SWIG_d_string_callback((const char *)$1); %}
 %typemap(directorout, warning=SWIGWARN_TYPEMAP_DIRECTOROUT_PTR_MSG) char * %{ $result = ($1_ltype)$input; %}
 %typemap(directorin) char * %{ $input = SWIG_d_string_callback((const char *)$1); %}
-%typemap(ddirectorin) char * "tango.stdc.stringz.fromStringz($winput)"
-%typemap(ddirectorout) char * "tango.stdc.stringz.toStringz($dpcall)"
+%typemap(ddirectorin) char * "FROM_STRINGZ($winput)"
+%typemap(ddirectorout) char * "TO_STRINGZ($dpcall)"
 
 
 /*
@@ -59,8 +49,37 @@
 %typemap(ddirectorin) char[ANY], char[] "$winput"
 %typemap(ddirectorout) char[ANY], char[] "$dpcall"
 
-%typemap(din) char *, char *&, char[ANY], char[] "tango.stdc.stringz.toStringz($dinput)"
+
+%typemap(din) char *, char *&, char[ANY], char[] "TO_STRINGZ($dinput)"
 %typemap(dout, excode=SWIGEXCODE) char *, char *&, char[ANY], char[] {
-  char[] ret = tango.stdc.stringz.fromStringz($wcall);$excode
+  DP_STRING_TYPE ret = FROM_STRINGZ ## ($wcall);$excode
   return ret;
 }
+
+%typecheck(SWIG_TYPECHECK_STRING)
+    char *,
+    char *&,
+    char[ANY],
+    char[]
+  ""
+%enddef
+
+
+// We need to have the \0-terminated string conversion functions available in
+// the D proxy modules.
+#if defined(SWIGD2)
+SWIGD_STRING_TYPEMAPS(const(char)*, string, std.conv.to!string, std.string.toStringz)
+
+%pragma(d) globalproxyimports = %{
+static import std.conv;
+static import std.string;
+%}
+#else
+// Could be easily extended to support Phobos as well.
+SWIGD_STRING_TYPEMAPS(char*, char[], tango.stdc.stringz.fromStringz, tango.stdc.stringz.toStringz)
+
+%pragma(d) globalproxyimports = "static import tango.stdc.stringz;";
+#endif
+
+#undef SWIGD_STRING_TYPEMAPS
+
