@@ -2774,8 +2774,12 @@ private:
     Printf(imcall, ")");
     Printf(function_code, ") ");
 
-    if (d_version_2 && GetFlag(n, "memberget"))
-      Printf(function_code, "const ");
+    if (d_version_2 && wrapping_member_flag) {
+	    if (GetFlag(n, "memberget")) {
+	      Printf(function_code, "const ");
+	    }
+      Printf(function_code, "@property ");
+    }
 
     // Lookup the code used to convert the wrapper return value to the proxy
     // function return type.
@@ -3001,7 +3005,11 @@ private:
     }
 
     Printf(imcall, ")");
-    Printf(function_code, ")");
+    Printf(function_code, ") ");
+
+    if (d_version_2 && global_variable_flag) {
+      Printf(function_code, "@property ");
+    }
 
     // Lookup the code used to convert the wrapper return value to the proxy
     // function return type.
@@ -3040,7 +3048,7 @@ private:
 
     // The whole function code is now in stored tm (if there was a matching
     // type map, of course), so simply append it to the code buffer.
-    Printf(function_code, " %s\n", tm ? (const String *) tm : empty_string);
+    Printf(function_code, "%s\n", tm ? (const String *) tm : empty_string);
     Printv(proxy_dmodule_code, function_code, NIL);
 
     Delete(pre_code);
