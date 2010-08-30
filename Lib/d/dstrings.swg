@@ -67,19 +67,17 @@
 
 // We need to have the \0-terminated string conversion functions available in
 // the D proxy modules.
-#if defined(SWIGD2)
+#if (SWIG_D_VERSION == 1)
+// Could be easily extended to support Phobos as well.
+SWIGD_STRING_TYPEMAPS(char*, char[], tango.stdc.stringz.fromStringz, tango.stdc.stringz.toStringz)
+
+%pragma(d) globalproxyimports = "static import tango.stdc.stringz;";
+#else
 SWIGD_STRING_TYPEMAPS(const(char)*, string, std.conv.to!string, std.string.toStringz)
 
 %pragma(d) globalproxyimports = %{
 static import std.conv;
 static import std.string;
 %}
-#else
-// Could be easily extended to support Phobos as well.
-SWIGD_STRING_TYPEMAPS(char*, char[], tango.stdc.stringz.fromStringz, tango.stdc.stringz.toStringz)
-
-%pragma(d) globalproxyimports = "static import tango.stdc.stringz;";
 #endif
-
 #undef SWIGD_STRING_TYPEMAPS
-

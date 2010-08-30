@@ -51,8 +51,8 @@ class D : public Language {
   // written to their own files.
   bool split_proxy_dmodule;
 
-  // Whether D2 is targeted (D1 if not).
-  bool d_version_2;
+  // The major D version targeted (currently 1 or 2).
+  unsigned short d_version;
 
   /*
    * State variables which indicate what is being wrapped at the moment.
@@ -226,7 +226,7 @@ public:
       filenames_list(NULL),
       generate_proxies(true),
       split_proxy_dmodule(false),
-      d_version_2(false),
+      d_version(1),
       native_function_flag(false),
       static_flag(false),
       variable_wrapper_flag(false),
@@ -286,7 +286,7 @@ public:
       if (argv[i]) {
         if ((strcmp(argv[i], "-d2") == 0)) {
       	  Swig_mark_arg(i);
-      	  d_version_2 = true;
+      	  d_version = 2;
       	} else if (strcmp(argv[i], "-wrapperlibrary") == 0) {
 	  if (argv[i + 1]) {
 	    wrap_library_name = NewString("");
@@ -322,9 +322,11 @@ public:
     // Add a symbol to the parser for conditional compilation
     Preprocessor_define("SWIGD 1", 0);
 
-    if (d_version_2) {
-      Preprocessor_define("SWIGD2 1", 0);
-    }
+    // Also make the target D version available as preprocessor symbol for
+    // use in our library files.
+    String *version_define = NewStringf("SWIG_D_VERSION %u", d_version);
+    Preprocessor_define(version_define, 0);
+    Delete(version_define);
 
     // Add typemap definitions
     SWIG_typemap_lang("d");
@@ -2774,7 +2776,7 @@ private:
     Printf(imcall, ")");
     Printf(function_code, ") ");
 
-    if (d_version_2 && wrapping_member_flag) {
+    if (wrapping_member_flag && (d_version > 1)) {
 	    if (GetFlag(n, "memberget")) {
 	      Printf(function_code, "const ");
 	    }
@@ -3007,7 +3009,7 @@ private:
     Printf(imcall, ")");
     Printf(function_code, ") ");
 
-    if (d_version_2 && global_variable_flag) {
+    if (global_variable_flag && (d_version > 1)) {
       Printf(function_code, "@property ");
     }
 
