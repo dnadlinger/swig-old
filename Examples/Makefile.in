@@ -1221,7 +1221,7 @@ DCOMPILER = @DCOMPILER@
 DLIBPREFIX = @DLIBPREFIX@
 
 # ----------------------------------------------------------------
-# Build a dynamically loadable module C wrapper (D)
+# Build a dynamically loadable D wrapper for a C module
 # ----------------------------------------------------------------
 
 d: $(SRCS)
@@ -1230,7 +1230,7 @@ d: $(SRCS)
 	$(LDSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(CSHARP_DLNK) $(LIBS) -o $(DLIBPREFIX)$(TARGET)$(SO)
 
 # ----------------------------------------------------------------
-# Build a dynamically loadable module C++ wrapper (D)
+# Build a dynamically loadable D wrapper for a C++ module
 # ----------------------------------------------------------------
 
 d_cpp: $(SRCS)
@@ -1246,7 +1246,7 @@ d_compile: $(SRCS)
 	$(COMPILETOOL) $(DCOMPILER) $(DFLAGS) $(DSRCS)
 
 # -----------------------------------------------------------------
-# Cleaning the D examples
+# Clean the D examples
 # -----------------------------------------------------------------
 
 d_clean:
