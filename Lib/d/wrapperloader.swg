@@ -62,19 +62,43 @@ extern(C) void function(SwigStringCallback callback) swigRegisterStringCallback;
  * Currently uses the undocumented std.loader module, adapting it to another
  * library should be easy though.
  */
+static import std.algorithm;
 static import std.loader;
+static import std.range;
 
 static this() {
-  scope std.loader.ExeModule library;
+  string[] possibleFileNames;
   version (Posix) {
-    version(darwin) {
-      library = new std.loader.ExeModule("lib$wraplibrary.dylib");
-	 } else {
-	   library = new std.loader.ExeModule("lib$wraplibrary.so");
-	 }
+    version (OSX) {
+      possibleFileNames ~= ["lib$wraplibrary.dylib", "lib$wraplibrary.bundle"];
+    }
+    possibleFileNames ~= ["lib$wraplibrary.so"];
+  } else version (Windows) {
+    possibleFileNames ~= ["$wraplibrary.dll", "lib$wraplibrary.so"];
+  } else {
+    static assert(false, "Operating system not supported by the wrapper loading code.");
   }
-  version (Win32) {
-    library = new std.loader.ExeModule("$wraplibrary.dll");
+
+  string[] errorMessages;
+  scope std.loader.ExeModule library;
+  foreach (fileName; possibleFileNames) {
+    try {
+      library = new std.loader.ExeModule(fileName);
+    } catch (Exception e) {
+      errorMessages ~= e.msg;
+    }
+    if (library !is null) {
+      break;
+    }
+  }
+
+  if (library is null) {
+    throw new Exception(
+      "Could not load wrapper library dynamically. Tried: " ~
+      std.algorithm.reduce!`a ~ b`(
+        std.algorithm.map!`"\n " ~ a.at!(0) ~ "(" ~ a.at!(1) ~ ")"`(std.range.zip(possibleFileNames, errorMessages))
+      )
+    );
   }
 
   string bindCode(string functionPointer, string symbol) {
