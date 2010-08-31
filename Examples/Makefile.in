@@ -1226,6 +1226,11 @@ else
   SWIGD = $(SWIG) -d
 endif
 
+ifeq (dmd,$(DCOMPILER))
+  # DMD is 32bit only by now
+  CFLAGS += -m32
+endif
+
 # ----------------------------------------------------------------
 # Build a dynamically loadable D wrapper for a C module
 # ----------------------------------------------------------------
