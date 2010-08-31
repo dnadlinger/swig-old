@@ -1220,21 +1220,27 @@ go_clean:
 DCOMPILER = @DCOMPILER@
 DLIBPREFIX = @DLIBPREFIX@
 
+ifeq (2,$(D_VERSION))
+  SWIGD = $(SWIG) -d -d2
+else
+  SWIGD = $(SWIG) -d
+endif
+
 # ----------------------------------------------------------------
 # Build a dynamically loadable D wrapper for a C module
 # ----------------------------------------------------------------
 
 d: $(SRCS)
-	$(SWIG) -d $(SWIGOPT) $(INTERFACEPATH)
+	$(SWIGD) $(SWIGOPT) $(INTERFACEPATH)
 	$(CC) -c $(CCSHARED) $(CFLAGS) $(SRCS) $(ISRCS) $(INCLUDES)
-	$(LDSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(CSHARP_DLNK) $(LIBS) -o $(DLIBPREFIX)$(TARGET)$(SO)
+	$(LDSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(LIBS) -o $(DLIBPREFIX)$(TARGET)$(SO)
 
 # ----------------------------------------------------------------
 # Build a dynamically loadable D wrapper for a C++ module
 # ----------------------------------------------------------------
 
 d_cpp: $(SRCS)
-	$(SWIG) -d -c++ $(SWIGOPT) $(INTERFACEPATH)
+	$(SWIGD) -c++ $(SWIGOPT) $(INTERFACEPATH)
 	$(CXX) -c $(CCSHARED) $(CFLAGS) $(SRCS) $(CXXSRCS) $(ICXXSRCS) $(INCLUDES)
 	$(CXXSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(LIBS) $(CPP_DLLIBS) -o $(DLIBPREFIX)$(TARGET)$(SO)
 

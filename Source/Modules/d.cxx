@@ -3475,14 +3475,22 @@ private:
     // Only emit it if the proxy class has at least one method.
     if (first_class_dmethod < curr_class_dmethod) {
       Printf(proxy_class_body_code, "\n");
-      Printf(proxy_class_body_code, "private bool swigIsMethodOverridden(char[] methodName, char[] returnType, char[] parameterTypes)() {\n");
+      if ( d_version == 1 ) {
+        Printf(proxy_class_body_code, "private bool swigIsMethodOverridden(char[] methodName, char[] returnType, char[] parameterTypes)() {\n");
+      } else {
+        Printf(proxy_class_body_code, "private bool swigIsMethodOverridden(string methodName, string returnType, string parameterTypes)() {\n");
+      }
       Printf(proxy_class_body_code, "  auto vtblMethod = mixin(\"cast(\" ~ returnType ~ \" delegate(\" ~ parameterTypes ~ \"))&\" ~ methodName);\n");
       Printf(proxy_class_body_code, "  void* baseMethod = mixin(\"SwigAddressOf!(\" ~ methodName ~ \", \" ~ returnType ~ \" function(\" ~ parameterTypes ~ \"))\");\n");
       Printf(proxy_class_body_code, "  return (cast(void*)vtblMethod.funcptr != baseMethod);\n");
       Printf(proxy_class_body_code, "}\n");
       Printf(proxy_class_body_code, "\n");
       Printf(proxy_class_body_code, "private template SwigAddressOf(alias fn, Type) {\n");
-      Printf(proxy_class_body_code, "  const SwigAddressOf = cast(Type)&fn;\n");
+      if ( d_version == 1 ) {
+        Printf(proxy_class_body_code, "  const SwigAddressOf = cast(Type)&fn;\n");
+      } else {
+        Printf(proxy_class_body_code, "  enum SwigAddressOf = cast(Type)&fn;\n");
+      }
       Printf(proxy_class_body_code, "}\n");
     }
 

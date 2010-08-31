@@ -3,10 +3,15 @@
 #######################################################################
 
 LANGUAGE     = d
-TESTSUFFIX = _runme.d
 srcdir       = @srcdir@
 top_srcdir   = @top_srcdir@/..
 top_builddir = @top_builddir@/..
+
+ifeq (2,$(D_VERSION))
+  TESTSUFFIX = _runme.2.d
+else
+  TESTSUFFIX = _runme.1.d
+endif
 
 CPP_TEST_CASES = \
 	exception_partial_info
