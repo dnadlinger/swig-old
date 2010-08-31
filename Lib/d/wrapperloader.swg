@@ -69,9 +69,9 @@ static this() {
   version (Posix) {
     version(darwin) {
       library = new std.loader.ExeModule("lib$wraplibrary.dylib");
-	  } else {
-	    library = new std.loader.ExeModule("lib$wraplibrary.so");
-	  }
+	 } else {
+	   library = new std.loader.ExeModule("lib$wraplibrary.so");
+	 }
   }
   version (Win32) {
     library = new std.loader.ExeModule("$wraplibrary.dll");
