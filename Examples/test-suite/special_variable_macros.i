@@ -32,7 +32,7 @@ private:
 %}
 
 // This would never be done in real code, it is just a test of what madness can be done.
-// Note that the special variable substitutions $*1_type, $descriptor etc are for NameWrap 
+// Note that the special variable substitutions $*1_type, $descriptor etc are for NameWrap
 // even when used within the Name typemap via $typemap. I can't think of any useful use cases
 // for this behaviour in the C/C++ typemaps, but it is possible.
 %typemap(in) NameWrap *NAMEWRAP ($*1_type temp)
@@ -154,7 +154,7 @@ namespace Space {
   public static NewName factory(String s) {
   //below should expand to:
   //return new NewName( new Name(s) );
-    return new $typemap(cstype, Space::RenameMe)( new $typemap(cstype, Name)(s) ); 
+    return new $typemap(cstype, Space::RenameMe)( new $typemap(cstype, Name)(s) );
   }
 %}
 #elif defined(SWIGJAVA)
@@ -162,17 +162,23 @@ namespace Space {
   public static NewName factory(String s) {
   //below should expand to:
   //return new NewName( new Name(s) );
-    return new $typemap(jstype, Space::RenameMe)( new $typemap(jstype, Name)(s) ); 
+    return new $typemap(jstype, Space::RenameMe)( new $typemap(jstype, Name)(s) );
   }
 %}
 #elif defined(SWIGD)
+#if (SWIG_D_VERSION == 1)
 %typemap(dcode) Space::RenameMe %{
   public static NewName factory(char[] s) {
-  //below should expand to:
-  //return new NewName( new Name(s) );
     return new $typemap(dptype, Space::RenameMe)( new $typemap(dptype, Name)(s) );
   }
 %}
+#else
+%typemap(dcode) Space::RenameMe %{
+  public static NewName factory(string s) {
+    return new $typemap(dptype, Space::RenameMe)( new $typemap(dptype, Name)(s) );
+  }
+%}
+#endif
 #endif
 
 %rename(NewName) Space::RenameMe;
