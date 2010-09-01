@@ -259,7 +259,7 @@ Range opSlice(size_t a, size_t b) {
   return Range(this, a, b);
 }
 
-size_t opDollar() /+const+/ { // TODO: Make const as soon as const function wrapping is implemented.
+size_t opDollar() const {
   return length;
 }
 
@@ -447,8 +447,6 @@ int opApply(int delegate(ref size_t index, ref $typemap(dptype, CWTYPE) value) d
     typedef size_t size_type;
     typedef CWTYPE value_type;
     typedef CONST_REFERENCE const_reference;
-    const_reference front();
-    const_reference back();
     bool empty() const;
     void clear();
     void push_back(CWTYPE const& x);
