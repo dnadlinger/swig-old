@@ -2776,11 +2776,13 @@ private:
     Printf(imcall, ")");
     Printf(function_code, ") ");
 
-    if (wrapping_member_flag && (d_version > 1)) {
-	    if (GetFlag(n, "memberget")) {
-	      Printf(function_code, "const ");
-	    }
-      Printf(function_code, "@property ");
+    if (d_version > 1) {
+      if (GetFlag(n, "memberget") || SwigType_isconst(Getattr(n, "decl"))) {
+        Printf(function_code, "const ");
+      }
+      if (wrapping_member_flag) {
+        Printf(function_code, "@property ");
+      }
     }
 
     // Lookup the code used to convert the wrapper return value to the proxy
