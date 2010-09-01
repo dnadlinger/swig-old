@@ -8,10 +8,12 @@ top_srcdir   = @top_srcdir@/..
 top_builddir = @top_builddir@/..
 
 ifeq (2,$(D_VERSION))
-  TESTSUFFIX = _runme.2.d
+  VERSIONSUFFIX = .2
 else
-  TESTSUFFIX = _runme.1.d
+  VERSIONSUFFIX = .1
 endif
+
+TESTSUFFIX = _runme$(VERSIONSUFFIX).d
 
 CPP_TEST_CASES = \
 	exception_partial_info
@@ -27,17 +29,17 @@ SWIGOPT+=-splitproxy -package $*
 # Rules for the different types of tests
 %.cpptest:
 	$(setup)
-	+(cd $* && $(swig_and_compile_cpp))
+	+(cd $*$(VERSIONSUFFIX) && $(swig_and_compile_cpp))
 	+$(run_testcase)
 
 %.ctest:
 	$(setup)
-	+(cd $* && $(swig_and_compile_c))
+	+(cd $*$(VERSIONSUFFIX) && $(swig_and_compile_c))
 	+$(run_testcase)
 
 %.multicpptest:
 	$(setup)
-	+(cd $* && $(swig_and_compile_multi_cpp))
+	+(cd $*$(VERSIONSUFFIX) && $(swig_and_compile_multi_cpp))
 	+$(run_testcase)
 
 # Makes a directory for the testcase if it does not exist
@@ -47,21 +49,21 @@ setup = \
 	else								  \
 	  echo "$(ACTION)ing testcase $* under $(LANGUAGE)" ;		  \
 	fi;								  \
-	if [ ! -d $* ]; then						  \
-	  mkdir $*;							  \
+	if [ ! -d $*$(VERSIONSUFFIX) ]; then						  \
+	  mkdir $*$(VERSIONSUFFIX);							  \
 	fi
 
 # Compiles D files then runs the testcase. A testcase is only run if
 # a file is found which has _runme.d appended after the testcase name.
 run_testcase = \
 	if [ -f $(srcdir)/$(TESTPREFIX)$*$(TESTSUFFIX) ]; then \
-	  cd $* && \
+	  cd $*$(VERSIONSUFFIX) && \
 	  $(MAKE) -f $(top_builddir)/$(EXAMPLES)/Makefile \
 	  DFLAGS='-of$*_runme' \
 	  DSRCS='../$(TESTPREFIX)$*$(TESTSUFFIX) $*/*.d' d_compile && \
 	  env LD_LIBRARY_PATH=".:$$LD_LIBRARY_PATH" $(RUNTOOL) ./$*_runme; \
 	else \
-	  cd $* && \
+	  cd $*$(VERSIONSUFFIX) && \
 	  $(MAKE) -f $(top_builddir)/$(EXAMPLES)/Makefile \
 	  DFLAGS='-c' \
 	  DSRCS='$*/*.d' d_compile && cd .. ; \

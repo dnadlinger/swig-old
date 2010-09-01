@@ -1217,13 +1217,14 @@ go_clean:
 #####                         D                             ######
 ##################################################################
 
-DCOMPILER = @DCOMPILER@
 DLIBPREFIX = @DLIBPREFIX@
 
 ifeq (2,$(D_VERSION))
   SWIGD = $(SWIG) -d -d2
+  DCOMPILER = @D2COMPILER@
 else
   SWIGD = $(SWIG) -d
+  DCOMPILER = @D1COMPILER@
 endif
 
 ifeq (dmd,$(DCOMPILER))
