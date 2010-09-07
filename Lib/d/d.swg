@@ -75,10 +75,11 @@
 /*
  * typecheck typemaps:
  * -------------------
- * Because, unlike many scripting languages, D does not need any dynamic
- * dispatch helper to acces an overloaded function, the purpose of these is
- * merely to issue a warning for overloaded C++ functions that cannot be
- * overloaded in D (as more than one C++ type maps to a single D type).
+ * Because, unlike many scripting languages supported by SWIG, D does not need
+ * any dynamic dispatch helper to access an overloaded function, the purpose
+ * of these is merely to issue a warning for overloaded C++ functions that
+ * cannot be overloaded in D (as more than one C++ type maps to a single D
+ * type).
  */
 
 /*
