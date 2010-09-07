@@ -325,6 +325,7 @@ Hash *Preprocessor_define(const_String_or_char_ptr _str, int swigmacro) {
 
   /* Now look for a macro name */
   macroname = NewStringEmpty();
+  copy_location(str, macroname);
   while ((c = Getc(str)) != EOF) {
     if (c == '(') {
       argstr = NewStringEmpty();
@@ -360,6 +361,7 @@ Hash *Preprocessor_define(const_String_or_char_ptr _str, int swigmacro) {
   if (!swigmacro)
     skip_whitespace(str, 0);
   macrovalue = NewStringEmpty();
+  copy_location(str, macrovalue);
   while ((c = Getc(str)) != EOF) {
     Putc(c, macrovalue);
   }
@@ -500,10 +502,6 @@ Hash *Preprocessor_define(const_String_or_char_ptr _str, int swigmacro) {
       Setattr(macro, kpp_varargs, "1");
     }
   }
-  Setline(macrovalue, line);
-  Setfile(macrovalue, file);
-  Setline(macroname, line);
-  Setfile(macroname, file);
   Setattr(macro, kpp_value, macrovalue);
   Setline(macro, line);
   Setfile(macro, file);
@@ -556,7 +554,7 @@ void Preprocessor_undef(const_String_or_char_ptr str) {
  * Isolates macro arguments and returns them in a list.   For each argument,
  * leading and trailing whitespace is stripped (ala K&R, pg. 230).
  * ----------------------------------------------------------------------------- */
-static List *find_args(String *s) {
+static List *find_args(String *s, int ismacro, String *macro_name) {
   List *args;
   String *str;
   int c, level;
@@ -627,7 +625,10 @@ static List *find_args(String *s) {
     c = Getc(s);
   }
 unterm:
-  Swig_error(Getfile(args), Getline(args), "Unterminated macro call.\n");
+  if (ismacro)
+    Swig_error(Getfile(args), Getline(args), "Unterminated call invoking macro '%s'\n", macro_name);
+  else
+    Swig_error(Getfile(args), Getline(args), "Unterminated call to '%s'\n", macro_name);
   return args;
 }
 
@@ -642,7 +643,6 @@ static String *get_filename(String *str, int *sysfile) {
   String *fn;
   int c;
 
-  skip_whitespace(str, 0);
   fn = NewStringEmpty();
   copy_location(str, fn);
   c = Getc(str);
@@ -668,9 +668,7 @@ static String *get_filename(String *str, int *sysfile) {
 }
 
 static String *get_options(String *str) {
-
   int c;
-  skip_whitespace(str, 0);
   c = Getc(str);
   if (c == '(') {
     String *opt;
@@ -699,9 +697,12 @@ static String *get_options(String *str) {
  *
  * Perform macro expansion and return a new string.  Returns NULL if some sort
  * of error occurred.
+ * name - name of the macro
+ * args - arguments passed to the macro
+ * line_file - only used for line/file name when reporting errors
  * ----------------------------------------------------------------------------- */
 
-static String *expand_macro(String *name, List *args) {
+static String *expand_macro(String *name, List *args, String *line_file) {
   String *ns;
   DOH *symbols, *macro, *margs, *mvalue, *temp, *tempa, *e;
   int i, l;
@@ -718,8 +719,8 @@ static String *expand_macro(String *name, List *args) {
 
   if (macro_level == 0) {
     /* Store the start of the macro should the macro contain __LINE__ and __FILE__ for expansion */
-    macro_start_line = Getline(args);
-    macro_start_file = Getfile(args);
+    macro_start_line = Getline(args ? args : line_file);
+    macro_start_file = Getfile(args ? args : line_file);
   }
   macro_level++;
 
@@ -773,11 +774,11 @@ static String *expand_macro(String *name, List *args) {
   /* If there are arguments, see if they match what we were given */
   if (args && (margs) && (Len(margs) != Len(args))) {
     if (Len(margs) > (1 + isvarargs))
-      Swig_error(Getfile(args), Getline(args), "Macro '%s' expects %d arguments\n", name, Len(margs) - isvarargs);
+      Swig_error(macro_start_file, macro_start_line, "Macro '%s' expects %d arguments\n", name, Len(margs) - isvarargs);
     else if (Len(margs) == (1 + isvarargs))
-      Swig_error(Getfile(args), Getline(args), "Macro '%s' expects 1 argument\n", name);
+      Swig_error(macro_start_file, macro_start_line, "Macro '%s' expects 1 argument\n", name);
     else
-      Swig_error(Getfile(args), Getline(args), "Macro '%s' expects no arguments\n", name);
+      Swig_error(macro_start_file, macro_start_line, "Macro '%s' expects no arguments\n", name);
     macro_level--;
     return 0;
   }
@@ -1021,7 +1022,7 @@ static DOH *Preprocessor_replace(DOH *s) {
 	  c = Getc(s);
 	  if (c == '(') {
 	    Ungetc(c, s);
-	    args = find_args(s);
+	    args = find_args(s, 0, kpp_defined);
 	  } else if (isidchar(c)) {
 	    DOH *arg = NewStringEmpty();
 	    args = NewList();
@@ -1077,7 +1078,7 @@ static DOH *Preprocessor_replace(DOH *s) {
 	  /* See if the macro expects arguments */
 	  if (Getattr(m, kpp_args)) {
 	    /* Yep.  We need to go find the arguments and do a substitution */
-	    args = find_args(s);
+	    args = find_args(s, 1, id);
 	    if (!Len(args)) {
 	      Delete(args);
 	      args = 0;
@@ -1085,7 +1086,7 @@ static DOH *Preprocessor_replace(DOH *s) {
 	  } else {
 	    args = 0;
 	  }
-	  e = expand_macro(id, args);
+	  e = expand_macro(id, args, s);
 	  if (e) {
 	    Append(ns, e);
 	  }
@@ -1151,8 +1152,9 @@ static DOH *Preprocessor_replace(DOH *s) {
       /*      if (Getattr(m,"args")) {
          Swig_error(Getfile(id),Getline(id),"Macro arguments expected.\n");
          } */
-      e = expand_macro(id, 0);
-      Append(ns, e);
+      e = expand_macro(id, 0, s);
+      if (e)
+	Append(ns, e);
       Delete(e);
     } else {
       Append(ns, id);
@@ -1644,8 +1646,8 @@ String *Preprocessor_parse(String *s) {
 	      pop_imported();
 	    }
 	    Delete(s2);
+	    Delete(s1);
 	  }
-	  Delete(s1);
 	  Delete(fn);
 	}
       } else if (Equal(id, kpp_pragma)) {
@@ -1745,6 +1747,8 @@ String *Preprocessor_parse(String *s) {
 	  /* Got some kind of file inclusion directive  */
 	  if (allow) {
 	    DOH *s1, *s2, *fn, *opt;
+	    String *options_whitespace = NewString("");
+	    String *filename_whitespace = NewString("");
 	    int sysfile = 0;
 
 	    if (Equal(decl, kpp_dextern)) {
@@ -1752,14 +1756,16 @@ String *Preprocessor_parse(String *s) {
 	      Clear(decl);
 	      Append(decl, "%%import");
 	    }
+	    skip_whitespace(s, options_whitespace);
 	    opt = get_options(s);
+	    skip_whitespace(s, filename_whitespace);
 	    fn = get_filename(s, &sysfile);
 	    s1 = cpp_include(fn, sysfile);
 	    if (s1) {
 	      char *dirname;
 	      copy_location(s, chunk);
 	      add_chunk(ns, chunk, allow);
-	      Printf(ns, "%sfile%s \"%s\" [\n", decl, opt, Swig_filename_escape(Swig_last_file()));
+	      Printf(ns, "%sfile%s%s%s\"%s\" [\n", decl, options_whitespace, opt, filename_whitespace, Swig_filename_escape(Swig_last_file()));
 	      if (Equal(decl, kpp_dimport)) {
 		push_imported();
 	      }
@@ -1783,6 +1789,8 @@ String *Preprocessor_parse(String *s) {
 	      Delete(s1);
 	    }
 	    Delete(fn);
+	    Delete(filename_whitespace);
+	    Delete(options_whitespace);
 	  }
 	  state = 1;
 	} else if (Equal(decl, kpp_dline)) {

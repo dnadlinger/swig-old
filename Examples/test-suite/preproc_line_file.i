@@ -40,3 +40,39 @@ struct SillyStruct {
   int num;
   static const int LINE_NUMBER = __LINE__; /* This is a C test case, but we can still use a C++ feature to wrap a constant to test __LINE__ here */
 };
+
+#define SILLY_CLASS struct SillyMacroClass { int num; static const int LINE_NUM = __LINE__; };
+SILLY_CLASS
+
+%{
+#define SILLY_CLASS struct SillyMacroClass { int num; };
+SILLY_CLASS
+%}
+
+
+%inline %{
+#ifdef SWIG
+%define BODY
+  int num;
+  static const int LINE_NUM = __LINE__;
+%enddef
+%define KLASS(NAME)
+struct NAME {
+  BODY
+};
+%enddef
+#else
+#define KLASS(NAME) \
+struct NAME { \
+  int num; \
+};
+#endif
+KLASS(SillyMultipleMacroStruct)
+%}
+
+%inline %{
+
+#define INLINE_FILE __FILE__
+#define INLINE_LINE __LINE__
+%}
+
