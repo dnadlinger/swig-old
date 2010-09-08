@@ -914,6 +914,20 @@ public:
     Language::memberfunctionHandler(n);
 
     if (generate_proxies) {
+      // For each function, look if we have to alias in the parent class function
+      // for the overload resolution process to work as expected from C++
+      // (http://www.digitalmars.com/d/2.0/function.html#function-inheritance).
+      // For multiple overloads, only emit the alias directive once (for the
+      // first method, »sym:previousSibling« is null then).
+      // Smart pointer classes do not mirror the inheritance hierarchy of the
+      // underlying types, so aliasing the base class methods in is not required
+      // for them.
+      if (!Getattr(n, "sym:previousSibling") && !is_smart_pointer() &&
+          !areAllOverloadsOverridden(n)) {
+        String *name = Getattr(n, "sym:name");
+        Printf(proxy_class_body_code, "\nalias $dbaseclass.%s %s;", name, name);
+      }
+
       String *overloaded_name = getOverloadedName(n);
       String *intermediary_function_name =
         Swig_name_member(NSPACE_TODO,proxy_class_name, overloaded_name);
@@ -3055,7 +3069,7 @@ private:
 	"No dout typemap defined for %s\n", SwigType_str(t, 0));
     }
 
-    // The whole function code is now in stored tm (if there was a matching
+    // The whole function code is now stored in tm (if there was a matching
     // type map, of course), so simply append it to the code buffer.
     Printf(function_code, "%s\n", tm ? (const String *) tm : empty_string);
     Printv(proxy_dmodule_code, function_code, NIL);
@@ -3195,9 +3209,6 @@ private:
       (*Char(wanted_base) && *Char(interfaces)) ? ", " : "", interfaces, " {",
       NIL);
 
-    // wanted_base might refer to it, so we didn't delete earlier.
-    Delete(baseclass);
-
     /*
      * Write the proxy class body.
      */
@@ -3296,6 +3307,9 @@ private:
     // Write the class body and the curly bracket closing the class definition
     // to the proxy module.
     indentCode(body);
+    Replaceall(body, "$dbaseclass", baseclass);
+    Delete(baseclass);
+
     Printv(proxy_class_code, body, "\n}\n", NIL);
     Delete(body);
 
@@ -4268,6 +4282,105 @@ private:
   bool wrapMemberFunctionAsDConst(Node *n) const {
     if (d_version == 1) return false;
     return GetFlag(n, "memberget") || SwigType_isconst(Getattr(n, "decl"));
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::areAllOverloadsOverridden()
+   *
+   * Determines whether the class the passed function node belongs to overrides
+   * all the overlaods for the passed function node defined somewhere up the
+   * inheritance hierachy.
+   * --------------------------------------------------------------------------- */
+  bool areAllOverloadsOverridden(Node *n) const {
+    List *base_list = Getattr(parentNode(n), "bases");
+    if (!base_list) {
+      // If the class which contains n is not derived from any other class,
+      // there cannot be any not-overridden overloads.
+      return true;
+    }
+
+    // In case of multiple base classes, skip to the one which has not been
+    // ignored.
+    // RESEARCH: Also emit a warning in case of multiple inheritance here?
+    Iterator it = First(base_list);
+    while (it.item && GetFlag(it.item, "feature:ignore")) {
+      it = Next(it);
+    }
+    Node *base_class = it.item;
+
+    if (!base_class) {
+      // If all base classes have been ignored, there cannot be one either.
+      return true;
+    }
+
+    // We try to find at least a single overload which exists in the base class
+    // so we can progress up the inheritance hierachy even if there have been
+    // new overloads introduced after the topmost class.
+    Node *base_function = NULL;
+    for (Node *tmp = firstChild(base_class); tmp; tmp = nextSibling(tmp)) {
+      if (Strcmp(Getattr(tmp, "sym:name"), Getattr(n, "sym:name")) == 0) {
+        base_function = tmp;
+        break;
+      }
+    }
+
+    if (!base_function) {
+      // If there is no overload which also exists in the super class, there
+      // cannot be any base class overloads not overridden.
+      return true;
+    }
+
+    return ((siblingCount(base_function) <= overridingOverloadCount(n)) &&
+      areAllOverloadsOverridden(base_function));
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::siblingCount()
+   *
+   * Counts how many siblings a node has (including the argument itself).
+   * --------------------------------------------------------------------------- */
+  size_t siblingCount(Node *n) const {
+    size_t result = 1; // n itself.
+
+    Node *tmp = n;
+    while ((tmp = Getattr(tmp, "sym:previousSibling"))) {
+      ++result;
+    }
+    tmp = n;
+    while ((tmp = Getattr(tmp, "sym:nextSibling"))) {
+      ++result;
+    }
+
+    return result;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::overridingOverloadCount()
+   *
+   * Given a member function node, this function counts how many of the
+   * overloads of the function (including itself) override a function in the
+   * base class.
+   * --------------------------------------------------------------------------- */
+  size_t overridingOverloadCount(Node *n) const {
+    size_t result = 0;
+
+    // »Rewind« until the first sibling is reached.
+    while (Node *tmp = Getattr(n, "sym:previousSibling")) {
+      n = tmp;
+    }
+
+    do {
+      // KLUDGE: We also have to count the function if the access attribute is
+      // not present, since this means that it has been promoted into another
+      // protection level in the base class with the C++ »using« directive, and
+      // is thus taken into account when counting the base class overloads, even
+      // if it is not marked as »override« by the SWIG parser.
+      if (Getattr(n, "override") || !Getattr(n, "access")) {
+        ++result;
+      }
+    } while((n = Getattr(n, "sym:nextSibling")));
+
+    return result;
   }
 
   /* ---------------------------------------------------------------------------
