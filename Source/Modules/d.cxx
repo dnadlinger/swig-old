@@ -2312,26 +2312,32 @@ public:
     }
 
     if (!ignored_method) {
-      // Get D return types.
-      String *return_type = NewString("");
-      String *tm;
-      if ((tm = Swig_typemap_lookup("dptype", n, "", 0))) {
+      // Register the upcall method so that the callback registering code can
+      // be written later.
+
+      // We cannot directly use n here because its »type« attribute does not
+      // the full return type any longer after Language::functionHandler has
+      // returned.
+      Parm *tp = NewParm(returntype, empty_str, n);
+      String *dp_return_type = Swig_typemap_lookup("dptype", tp, "", 0);
+      if (dp_return_type) {
 	String *dptypeout = Getattr(n, "tmap:dptype:out");
 	if (dptypeout) {
           // The type in the dptype typemap's out attribute overrides the type
           // in the typemap itself.
-	  tm = dptypeout;
+	  dp_return_type = dptypeout;
         }
-	replaceClassname(tm, type);
-	Printf(return_type, "%s", tm);
+	replaceClassname(dp_return_type, returntype);
       } else {
 	Swig_warning(WARN_D_TYPEMAP_DPTYPE_UNDEF, input_file, line_number,
           "No dptype typemap defined for %s\n", SwigType_str(type, 0));
+        dp_return_type = NewString("");
       }
 
-      // Write the callback typedef/member to the C++ director class.
-      UpcallData *udata = addUpcallMethod(imclass_dmethod, symname, decl, overloaded_name, return_type, proxy_method_param_list);
-      Delete(return_type);
+      UpcallData *udata = addUpcallMethod(imclass_dmethod, symname, decl, overloaded_name, dp_return_type, proxy_method_param_list);
+      Delete(dp_return_type);
+
+      // Write the global callback function pointer on the C code.
       String *methid = Getattr(udata, "class_methodidx");
 
       Printf(director_callback_typedefs, "    typedef %s (SWIGSTDCALL* SWIG_Callback%s_t)", c_ret_type, methid);
@@ -3456,7 +3462,7 @@ private:
       String *param_list = Getattr(udata, "param_list");
       String *methid = Getattr(udata, "class_methodidx");
       Printf(proxy_class_body_code, "  %s.SwigDirector_%s_Callback%s callback%s;\n", wrap_dmodule_fq_name, proxy_class_name, methid, methid);
-      Printf(proxy_class_body_code, "  if (swigIsMethodOverridden!(\"%s\", \"%s\", \"%s\")) {\n", method, return_type, param_list);
+      Printf(proxy_class_body_code, "  if (swigIsMethodOverridden!(%s delegate(%s), %s)()) {\n", return_type, param_list, method);
       Printf(proxy_class_body_code, "    callback%s = &swigDirectorCallback_%s_%s;\n", methid, proxy_class_name, overloaded_name);
       Printf(proxy_class_body_code, "  }\n\n");
     }
@@ -3476,22 +3482,13 @@ private:
     // Only emit it if the proxy class has at least one method.
     if (first_class_dmethod < curr_class_dmethod) {
       Printf(proxy_class_body_code, "\n");
-      if ( d_version == 1 ) {
-        Printf(proxy_class_body_code, "private bool swigIsMethodOverridden(char[] methodName, char[] returnType, char[] parameterTypes)() {\n");
-      } else {
-        Printf(proxy_class_body_code, "private bool swigIsMethodOverridden(string methodName, string returnType, string parameterTypes)() {\n");
-      }
-      Printf(proxy_class_body_code, "  auto vtblMethod = mixin(\"cast(\" ~ returnType ~ \" delegate(\" ~ parameterTypes ~ \"))&\" ~ methodName);\n");
-      Printf(proxy_class_body_code, "  void* baseMethod = mixin(\"SwigAddressOf!(\" ~ methodName ~ \", \" ~ returnType ~ \" function(\" ~ parameterTypes ~ \"))\");\n");
-      Printf(proxy_class_body_code, "  return (cast(void*)vtblMethod.funcptr != baseMethod);\n");
+      Printf(proxy_class_body_code, "private bool swigIsMethodOverridden(DelegateType, alias fn)() {\n");
+      Printf(proxy_class_body_code, "  DelegateType dg = &fn;\n");
+      Printf(proxy_class_body_code, "  return dg.funcptr != SwigNonVirtualAddressOf!(typeof(dg.funcptr), fn);\n");
       Printf(proxy_class_body_code, "}\n");
       Printf(proxy_class_body_code, "\n");
-      Printf(proxy_class_body_code, "private template SwigAddressOf(alias fn, Type) {\n");
-      if ( d_version == 1 ) {
-        Printf(proxy_class_body_code, "  const SwigAddressOf = cast(Type)&fn;\n");
-      } else {
-        Printf(proxy_class_body_code, "  enum SwigAddressOf = cast(Type)&fn;\n");
-      }
+      Printf(proxy_class_body_code, "private static Function SwigNonVirtualAddressOf(Function, alias fn)() {\n");
+      Printf(proxy_class_body_code, "  return cast(Function) &fn;\n");
       Printf(proxy_class_body_code, "}\n");
     }
 
