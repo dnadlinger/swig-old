@@ -2776,13 +2776,12 @@ private:
     Printf(imcall, ")");
     Printf(function_code, ") ");
 
-    if (d_version > 1) {
-      if (GetFlag(n, "memberget") || SwigType_isconst(Getattr(n, "decl"))) {
-        Printf(function_code, "const ");
-      }
-      if (wrapping_member_flag) {
-        Printf(function_code, "@property ");
-      }
+    if (d_version > 1 && wrapping_member_flag) {
+      Printf(function_code, "@property ");
+    }
+
+    if (wrapMemberFunctionAsDConst(n)) {
+      Printf(function_code, "const ");
     }
 
     // Lookup the code used to convert the wrapper return value to the proxy
@@ -4252,7 +4251,7 @@ private:
   /* ---------------------------------------------------------------------------
    * D::canThrow()
    *
-   * Determine whether the code in the typemap can throw a D exception.
+   * Determines whether the code in the typemap can throw a D exception.
    * If so, note it for later when excodeSubstitute() is called.
    * --------------------------------------------------------------------------- */
   void canThrow(Node *n, const String *typemap, Node *parameter) const {
@@ -4261,6 +4260,17 @@ private:
     if (canthrow)
       Setattr(n, "d:canthrow", "1");
     Delete(canthrow_attribute);
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::wrapMemberFunctionAsDConst()
+   *
+   * Determines whether the member function represented by the passed node is
+   * wrapped as D »const« or not.
+   * --------------------------------------------------------------------------- */
+  bool wrapMemberFunctionAsDConst(Node *n) const {
+    if (d_version == 1) return false;
+    return GetFlag(n, "memberget") || SwigType_isconst(Getattr(n, "decl"));
   }
 
   /* ---------------------------------------------------------------------------
