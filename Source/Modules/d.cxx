@@ -4330,28 +4330,22 @@ private:
       return true;
     }
 
-    return ((siblingCount(base_function) <= overridingOverloadCount(n)) &&
+    size_t base_overload_count = 0;
+    for (Node *tmp = firstSibling(base_function); tmp; tmp = Getattr(tmp, "sym:nextSibling")) {
+      if (is_protected(base_function) &&
+          !(Swig_director_mode() && Swig_director_protected_mode() && Swig_all_protected_mode())) {
+        // If the base class function is »protected« and were are not in
+        // director mode, it is not emitted to the base class and thus we do
+        // not count it. Otherwise, we would run into issues if the visiblity
+        // of some functions was changed from protected to public in a child
+        // class with the using directive.
+        continue;
+      }
+      ++base_overload_count;
+    }
+
+    return ((base_overload_count <= overridingOverloadCount(n)) &&
       areAllOverloadsOverridden(base_function));
-  }
-
-  /* ---------------------------------------------------------------------------
-   * D::siblingCount()
-   *
-   * Counts how many siblings a node has (including the argument itself).
-   * --------------------------------------------------------------------------- */
-  size_t siblingCount(Node *n) const {
-    size_t result = 1; // n itself.
-
-    Node *tmp = n;
-    while ((tmp = Getattr(tmp, "sym:previousSibling"))) {
-      ++result;
-    }
-    tmp = n;
-    while ((tmp = Getattr(tmp, "sym:nextSibling"))) {
-      ++result;
-    }
-
-    return result;
   }
 
   /* ---------------------------------------------------------------------------
@@ -4364,11 +4358,7 @@ private:
   size_t overridingOverloadCount(Node *n) const {
     size_t result = 0;
 
-    // »Rewind« until the first sibling is reached.
-    while (Node *tmp = Getattr(n, "sym:previousSibling")) {
-      n = tmp;
-    }
-
+    Node *tmp = firstSibling(n);
     do {
       // KLUDGE: We also have to count the function if the access attribute is
       // not present, since this means that it has been promoted into another
@@ -4378,8 +4368,21 @@ private:
       if (Getattr(n, "override") || !Getattr(n, "access")) {
         ++result;
       }
-    } while((n = Getattr(n, "sym:nextSibling")));
+    } while((tmp = Getattr(tmp, "sym:nextSibling")));
 
+    return result;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::firstSibling()
+   *
+   * Returns the first sibling of the passed node.
+   * --------------------------------------------------------------------------- */
+  Node *firstSibling(Node *n) const {
+    Node *result = n;
+    while (Node *tmp = Getattr(result, "sym:previousSibling")) {
+      result = tmp;
+    }
     return result;
   }
 
