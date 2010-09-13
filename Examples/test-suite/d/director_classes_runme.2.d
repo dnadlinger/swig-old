@@ -39,7 +39,7 @@
  * DDerived - Ref(444.555)
  * DDerived - Ptr(444.555)
  * DDerived - FullyOverloaded(int 10)
- * DDerived - FullyOverloaded(bool True)
+ * DDerived - FullyOverloaded(bool true)
  * DDerived - SemiOverloaded(-678)
  * Base - SemiOverloaded(bool 1)
  * DDerived - DefaultParms(10, 2.2)
@@ -123,27 +123,27 @@ public class DDerived : Base {
   }
 
   public override DoubleHolder Val(DoubleHolder x) {
-    if (PrintDebug) writeln("DDerived - Val(%s)", x.val);
+    if (PrintDebug) writefln("DDerived - Val(%s)", x.val);
     return x;
   }
 
   public override DoubleHolder Ref(DoubleHolder x) {
-    if (PrintDebug) writeln("DDerived - Ref(%s)", x.val);
+    if (PrintDebug) writefln("DDerived - Ref(%s)", x.val);
     return x;
   }
 
   public override DoubleHolder Ptr(DoubleHolder x) {
-    if (PrintDebug) writeln("DDerived - Ptr(%s)", x.val);
+    if (PrintDebug) writefln("DDerived - Ptr(%s)", x.val);
     return x;
   }
 
   public override string FullyOverloaded(int x) {
-    if (PrintDebug) writeln("DDerived - FullyOverloaded(int %s)", x);
+    if (PrintDebug) writefln("DDerived - FullyOverloaded(int %s)", x);
     return "DDerived::FullyOverloaded(int)";
   }
 
   public override string FullyOverloaded(bool x) {
-    if (PrintDebug) writeln("DDerived - FullyOverloaded(bool %s)", x);
+    if (PrintDebug) writefln("DDerived - FullyOverloaded(bool %s)", x);
     return "DDerived::FullyOverloaded(bool)";
   }
 
@@ -156,14 +156,14 @@ public class DDerived : Base {
 
   public override string DefaultParms(int x, double y) {
     string ret = "DDerived::DefaultParms(int, double)";
-    if (PrintDebug) writeln("DDerived - DefaultParms(%s, %s)", x, y);
+    if (PrintDebug) writefln("DDerived - DefaultParms(%s, %s)", x, y);
     return ret;
   }
   // This method will never be called from C++ code because the two-parameter
   // DefaultParams() has a default value for the second parameter there. It is
   // only here to ensure consistent behavior for calls from C++ and D code.
   public override string DefaultParms(int x) {
-    if (PrintDebug) writeln("DDerived - DefaultParms(%s)", x);
+    if (PrintDebug) writefln("DDerived - DefaultParms(%s)", x);
     return DefaultParms(x, 1.1/*use C++ default here*/);
   }
 }
