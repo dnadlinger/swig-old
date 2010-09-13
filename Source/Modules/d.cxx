@@ -1418,11 +1418,14 @@ public:
       attributes = Copy(is_public(n) ? public_string : protected_string);
     }
 
-    if (static_flag) {
-      Printv(attributes, " static", NIL);
+    if (d_version == 1) {
+      if (static_flag) {
+        Printv(attributes, " static", NIL);
+      }
+      Printf(constants_code, "\n%s const %s %s = ", attributes, return_type, itemname);
+    } else {
+      Printf(constants_code, "\n%s enum %s %s = ", attributes, return_type, itemname);
     }
-
-    Printf(constants_code, "\n%s const %s %s = ", attributes, return_type, itemname);
     Delete(attributes);
 
     // Retrive the override value set via %dconstvalue, if any.
