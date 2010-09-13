@@ -50,7 +50,7 @@
 %typemap(ddirectorout) char[ANY], char[] "$dpcall"
 
 
-%typemap(din) char *, char *&, char[ANY], char[] "TO_STRINGZ($dinput)"
+%typemap(din) char *, char *&, char[ANY], char[] "($dinput ? TO_STRINGZ($dinput) : null)"
 %typemap(dout, excode=SWIGEXCODE) char *, char *&, char[ANY], char[] {
   DP_STRING_TYPE ret = FROM_STRINGZ ## ($wcall);$excode
   return ret;

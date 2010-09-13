@@ -45,7 +45,7 @@ class string;
 %typemap(out) string %{ $result = SWIG_d_string_callback($1.c_str()); %}
 %typemap(out) const string & %{ $result = SWIG_d_string_callback($1->c_str()); %}
 
-%typemap(din) string, const string & "TO_STRINGZ($dinput)"
+%typemap(din) string, const string & "($dinput ? TO_STRINGZ($dinput) : null)"
 %typemap(dout, excode=SWIGEXCODE) string, const string & {
   DP_STRING_TYPE ret = FROM_STRINGZ($wcall);$excode
   return ret;
