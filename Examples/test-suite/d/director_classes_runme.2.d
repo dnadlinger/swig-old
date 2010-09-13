@@ -147,12 +147,12 @@ public class DDerived : Base {
     return "DDerived::FullyOverloaded(bool)";
   }
 
-  // Note: no SemiOverloaded(bool x) method.
   public override string SemiOverloaded(int x) {
     string ret = "DDerived::SemiOverloaded(int)";
-    if (PrintDebug) writeln("DDerived - SemiOverloaded(%s)", x);
+    if (PrintDebug) writefln("DDerived - SemiOverloaded(%s)", x);
     return ret;
   }
+  alias Base.SemiOverloaded SemiOverloaded; // Alias in SemiOverloaded(bool x).
 
   public override string DefaultParms(int x, double y) {
     string ret = "DDerived::DefaultParms(int, double)";

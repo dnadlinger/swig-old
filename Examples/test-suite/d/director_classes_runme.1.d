@@ -146,12 +146,12 @@ public class DDerived : Base {
     return "DDerived::FullyOverloaded(bool)";
   }
 
-  // Note: no SemiOverloaded(bool x) method.
   public override char[] SemiOverloaded(int x) {
     char[] ret = "DDerived::SemiOverloaded(int)";
     if (PrintDebug) Stdout.formatln("DDerived - SemiOverloaded({0})", x);
     return ret;
   }
+  alias Base.SemiOverloaded SemiOverloaded; // Alias in SemiOverloaded(bool x).
 
   public override char[] DefaultParms(int x, double y) {
     char[] ret = "DDerived::DefaultParms(int, double)";
