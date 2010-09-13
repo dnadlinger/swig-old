@@ -914,20 +914,6 @@ public:
     Language::memberfunctionHandler(n);
 
     if (generate_proxies) {
-      // For each function, look if we have to alias in the parent class function
-      // for the overload resolution process to work as expected from C++
-      // (http://www.digitalmars.com/d/2.0/function.html#function-inheritance).
-      // For multiple overloads, only emit the alias directive once (for the
-      // first method, »sym:previousSibling« is null then).
-      // Smart pointer classes do not mirror the inheritance hierarchy of the
-      // underlying types, so aliasing the base class methods in is not required
-      // for them.
-      if (!Getattr(n, "sym:previousSibling") && !is_smart_pointer() &&
-          !areAllOverloadsOverridden(n)) {
-        String *name = Getattr(n, "sym:name");
-        Printf(proxy_class_body_code, "\nalias $dbaseclass.%s %s;", name, name);
-      }
-
       String *overloaded_name = getOverloadedName(n);
       String *intermediary_function_name =
         Swig_name_member(NSPACE_TODO,proxy_class_name, overloaded_name);
@@ -952,6 +938,23 @@ public:
 
       Delete(proxy_func_name);
       Delete(overloaded_name);
+
+      // For each function, look if we have to alias in the parent class function
+      // for the overload resolution process to work as expected from C++
+      // (http://www.digitalmars.com/d/2.0/function.html#function-inheritance).
+      // For multiple overloads, only emit the alias directive once (for the
+      // last method, »sym:nextSibling« is null then).
+      // Smart pointer classes do not mirror the inheritance hierarchy of the
+      // underlying types, so aliasing the base class methods in is not required
+      // for them.
+      // DMD BUG: We have to emit the alias after the last function becasue
+      // taking a delegate in the overload checking code fails otherwise
+      // (http://d.puremagic.com/issues/show_bug.cgi?id=4860).
+      if (!Getattr(n, "sym:nextSibling") && !is_smart_pointer() &&
+          !areAllOverloadsOverridden(n)) {
+        String *name = Getattr(n, "sym:name");
+        Printf(proxy_class_body_code, "\nalias $dbaseclass.%s %s;\n", name, name);
+      }
     }
     return SWIG_OK;
   }
