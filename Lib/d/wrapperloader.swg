@@ -8,53 +8,6 @@
  * wrapper module.
  * ----------------------------------------------------------------------------- */
 
-#if (SWIG_D_VERSION == 1)
-%pragma(d) wrapperloadercode = %{
-/*
- * Dynamically loads the C wrapper library as a shared library.
- *
- * Currently requires Tango, but there is no reason why Phobos could not be
- * supported too.
- */
-static import tango.sys.SharedLib;
-
-static this() {
-  tango.sys.SharedLib.SharedLib library;
-  version (Posix) {
-    library = tango.sys.SharedLib.SharedLib.load("lib$wraplibrary.so");
-  }
-  version (Win32) {
-    library = tango.sys.SharedLib.SharedLib.load("$wraplibrary.dll");
-  }
-
-  char[] bindCode(char[] functionPointer, char[] symbol) {
-    return functionPointer ~ " = cast(typeof(" ~ functionPointer ~
-      "))library.getSymbol(`" ~ symbol ~ "`);";
-  }
-
-  //#if !defined(SWIG_D_NO_EXCEPTION_HELPER)
-  mixin(bindCode("swigRegisterExceptionCallbacks", "SWIGRegisterExceptionCallbacks_$module"));
-  //#endif // SWIG_D_NO_EXCEPTION_HELPER
-  //#if !defined(SWIG_D_NO_STRING_HELPER)
-  mixin(bindCode("swigRegisterStringCallback", "SWIGRegisterStringCallback_$module"));
-  //#endif // SWIG_D_NO_STRING_HELPER
-  $wrapperloaderbindcode
-}
-
-//#if !defined(SWIG_D_NO_EXCEPTION_HELPER)
-extern(C) void function(
-  SwigExceptionCallback exceptionCallback,
-  SwigExceptionCallback illegalArgumentCallback,
-  SwigExceptionCallback illegalElementCallback,
-  SwigExceptionCallback ioCallback,
-  SwigExceptionCallback noSuchElementCallback) swigRegisterExceptionCallbacks;
-//#endif // SWIG_D_NO_EXCEPTION_HELPER
-
-//#if !defined(SWIG_D_NO_STRING_HELPER)
-extern(C) void function(SwigStringCallback callback) swigRegisterStringCallback;
-//#endif // SWIG_D_NO_STRING_HELPER
-%}
-#else
 %pragma(d) wrapperloadercode = %{
 /*
  * Dynamically loads the C wrapper library as a shared library.
@@ -84,37 +37,6 @@ extern(C) void function(SwigStringCallback callback) swigRegisterStringCallback;
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-class SharedLibLoadException : Exception {
-  this(in string[] libNames, in string[] reasons) {
-    string msg = "Failed to load one or more shared libraries:";
-    foreach(i, n; libNames)
-    {
-      msg ~= "\n\t" ~ n ~ " - ";
-      if(i < reasons.length)
-        msg ~= reasons[i];
-      else
-        msg ~= "Unknown";
-    }
-    super(msg);
-  }
-}
-
-class SymbolLoadException : Exception {
-  this(string sharedLibName, string symbolName)
-  {
-    super("Failed to load symbol " ~ symbolName ~ " from shared library " ~ sharedLibName);
-    _symbolName = symbolName;
-  }
-
-  string symbolName()
-  {
-    return _symbolName;
-  }
-
-private:
-  string _symbolName;
-}
-
 private {
   version(linux) {
     version = Nix;
@@ -133,12 +55,80 @@ private {
     version = Nix;
   }
 
+  version(Tango) {
+    static import tango.stdc.string;
+    static import tango.stdc.stringz;
+
+    version (PhobosCompatibility) {
+    } else {
+      alias char[] string;
+      alias wchar[] wstring;
+      alias dchar[] dstring;
+    }
+  } else {
+    version(D_Version2) {
+      static import std.conv;
+    }
+    static import std.string;
+    static import std.c.string;
+  }
+
   version(D_Version2) {
     mixin("alias const(char)* CCPTR;");
   } else {
     alias char* CCPTR;
   }
 
+  CCPTR swigToCString(string str) {
+    version(Tango) {
+      return tango.stdc.stringz.toStringz(str);
+    } else {
+      return std.string.toStringz(str);
+    }
+  }
+
+  string swigToDString(CCPTR cstr) {
+    version(Tango) {
+      return tango.stdc.stringz.fromStringz(cstr);
+    } else {
+      version(D_Version2) {
+        mixin("return std.conv.to!string(cstr);");
+      } else {
+        return std.c.string.toString(cstr);
+      }
+    }
+  }
+}
+
+class SwigSwigSharedLibLoadException : Exception {
+  this(in string[] libNames, in string[] reasons) {
+    string msg = "Failed to load one or more shared libraries:";
+    foreach(i, n; libNames) {
+      msg ~= "\n\t" ~ n ~ " - ";
+      if(i < reasons.length)
+        msg ~= reasons[i];
+      else
+        msg ~= "Unknown";
+    }
+    super(msg);
+  }
+}
+
+class SwigSymbolLoadException : Exception {
+  this(string SwigSharedLibName, string symbolName) {
+    super("Failed to load symbol " ~ symbolName ~ " from shared library " ~ SwigSharedLibName);
+    _symbolName = symbolName;
+  }
+
+  string symbolName() {
+    return _symbolName;
+  }
+
+private:
+  string _symbolName;
+}
+
+private {
   version(Nix) {
     version(freebsd) {
       // the dl* functions are in libc on FreeBSD
@@ -147,11 +137,13 @@ private {
       pragma(lib, "dl");
     }
 
-    version(linux) {
-      private import std.c.linux.linux;
+    version(Tango) {
+      import tango.sys.Common;
+    } else version(linux) {
+      import std.c.linux.linux;
     } else {
       extern(C) {
-        enum RTLD_NOW = 2;
+        const RTLD_NOW = 2;
 
         void *dlopen(CCPTR file, int mode);
         int dlclose(void* handle);
@@ -160,26 +152,26 @@ private {
       }
     }
 
-    alias void* SharedLibHandle;
+    alias void* SwigSharedLibHandle;
 
-    SharedLibHandle LoadSharedLib(string libName) {
-      return dlopen(std.string.toStringz(libName), RTLD_NOW);
+    SwigSharedLibHandle swigLoadSharedLib(string libName) {
+      return dlopen(swigToCString(libName), RTLD_NOW);
     }
 
-    void UnloadSharedLib(SharedLibHandle hlib) {
+    void swigUnloadSharedLib(SwigSharedLibHandle hlib) {
       dlclose(hlib);
     }
 
-    void* GetSymbol(SharedLibHandle hlib, string symbolName) {
-      return dlsym(hlib, std.string.toStringz(symbolName));
+    void* swigGetSymbol(SwigSharedLibHandle hlib, string symbolName) {
+      return dlsym(hlib, swigToCString(symbolName));
     }
 
-    string GetErrorStr() {
+    string swigGetErrorStr() {
       CCPTR err = dlerror();
       if (err is null) {
         return "Uknown Error";
       }
-      return std.conv.to!string(err);
+      return swigToDString(err);
     }
   } else version(Windows) {
     alias uint DWORD;
@@ -206,21 +198,21 @@ private {
       FORMAT_MESSAGE_FROM_SYSTEM      = 4096
     }
 
-    alias HMODULE SharedLibHandle;
+    alias HMODULE SwigSharedLibHandle;
 
-    SharedLibHandle LoadSharedLib(string libName) {
-      return LoadLibraryA(std.string.toStringz(libName));
+    SwigSharedLibHandle swigLoadSharedLib(string libName) {
+      return LoadLibraryA(swigToCString(libName));
     }
 
-    void UnloadSharedLib(SharedLibHandle hlib) {
+    void swigUnloadSharedLib(SwigSharedLibHandle hlib) {
       FreeLibrary(hlib);
     }
 
-    void* GetSymbol(SharedLibHandle hlib, string symbolName) {
-      return GetProcAddress(hlib, std.string.toStringz(symbolName));
+    void* swigGetSymbol(SwigSharedLibHandle hlib, string symbolName) {
+      return GetProcAddress(hlib, swigToCString(symbolName));
     }
 
-    string GetErrorStr() {
+    string swigGetErrorStr() {
       DWORD errcode = GetLastError();
 
       LPCSTR msgBuf;
@@ -235,7 +227,7 @@ private {
         0,
         null);
 
-      string text = std.conv.to!string(msgBuf);
+      string text = swigToDString(msgBuf);
       LocalFree(cast(HLOCAL)msgBuf);
 
       if (i >= 2) {
@@ -247,7 +239,7 @@ private {
     static assert(0, "Operating system not supported by the wrapper loading code.");
   }
 
-  final class SharedLib {
+  final class SwigSharedLib {
     void load(string[] names) {
       if (_hlib !is null) return;
 
@@ -255,10 +247,10 @@ private {
       string[] reasons;
 
       foreach(n; names) {
-        _hlib = LoadSharedLib(n);
+        _hlib = swigLoadSharedLib(n);
         if (_hlib is null) {
           failedLibs ~= n;
-          reasons ~= GetErrorStr();
+          reasons ~= swigGetErrorStr();
           continue;
         }
         _name = n;
@@ -266,28 +258,28 @@ private {
       }
 
       if (_hlib is null) {
-        throw new SharedLibLoadException(failedLibs, reasons);
+        throw new SwigSwigSharedLibLoadException(failedLibs, reasons);
       }
     }
 
     void* loadSymbol(string symbolName, bool doThrow = true) {
-      void* sym = GetSymbol(_hlib, symbolName);
+      void* sym = swigGetSymbol(_hlib, symbolName);
       if(doThrow && (sym is null)) {
-        throw new SymbolLoadException(_name, symbolName);
+        throw new SwigSymbolLoadException(_name, symbolName);
       }
       return sym;
     }
 
     void unload() {
       if(_hlib !is null) {
-        UnloadSharedLib(_hlib);
+        swigUnloadSharedLib(_hlib);
         _hlib = null;
       }
     }
 
   private:
     string _name;
-    SharedLibHandle _hlib;
+    SwigSharedLibHandle _hlib;
   }
 }
 
@@ -304,7 +296,7 @@ static this() {
     static assert(false, "Operating system not supported by the wrapper loading code.");
   }
 
-  auto library = new SharedLib;
+  auto library = new SwigSharedLib;
   library.load(possibleFileNames);
 
   string bindCode(string functionPointer, string symbol) {
@@ -334,7 +326,6 @@ extern(C) void function(
 extern(C) void function(SwigStringCallback callback) swigRegisterStringCallback;
 //#endif // SWIG_D_NO_STRING_HELPER
 %}
-#endif
 
 %pragma(d) wrapperloaderbindcommand = %{
   mixin(bindCode("$function", "$symbol"));%}
