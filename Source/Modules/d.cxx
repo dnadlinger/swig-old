@@ -3482,7 +3482,7 @@ private:
       String *param_list = Getattr(udata, "param_list");
       String *methid = Getattr(udata, "class_methodidx");
       Printf(proxy_class_body_code, "  %s.SwigDirector_%s_Callback%s callback%s;\n", wrap_dmodule_fq_name, proxy_class_name, methid, methid);
-      Printf(proxy_class_body_code, "  if (swigIsMethodOverridden!(%s delegate(%s), %s)()) {\n", return_type, param_list, method);
+      Printf(proxy_class_body_code, "  if (swigIsMethodOverridden!(%s delegate(%s), %s function(%s), %s)()) {\n", return_type, param_list, return_type, param_list, method);
       Printf(proxy_class_body_code, "    callback%s = &swigDirectorCallback_%s_%s;\n", methid, proxy_class_name, overloaded_name);
       Printf(proxy_class_body_code, "  }\n\n");
     }
@@ -3502,9 +3502,9 @@ private:
     // Only emit it if the proxy class has at least one method.
     if (first_class_dmethod < curr_class_dmethod) {
       Printf(proxy_class_body_code, "\n");
-      Printf(proxy_class_body_code, "private bool swigIsMethodOverridden(DelegateType, alias fn)() {\n");
+      Printf(proxy_class_body_code, "private bool swigIsMethodOverridden(DelegateType, FunctionType, alias fn)() {\n");
       Printf(proxy_class_body_code, "  DelegateType dg = &fn;\n");
-      Printf(proxy_class_body_code, "  return dg.funcptr != SwigNonVirtualAddressOf!(typeof(dg.funcptr), fn);\n");
+      Printf(proxy_class_body_code, "  return dg.funcptr != SwigNonVirtualAddressOf!(FunctionType, fn);\n");
       Printf(proxy_class_body_code, "}\n");
       Printf(proxy_class_body_code, "\n");
       Printf(proxy_class_body_code, "private static Function SwigNonVirtualAddressOf(Function, alias fn)() {\n");
