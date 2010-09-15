@@ -45,20 +45,24 @@ public class preproc_line_file_runme {
     if (preproc_line_file.MYLINE2 != 30)
       throw new RuntimeException("preproc failure");
 
-    if (SillyStruct.LINE_NUMBER != 41)
+    if (SillyStruct.LINE_NUMBER != 52)
       throw new RuntimeException("preproc failure");
 
-    if (SillyMacroClass.LINE_NUM != 45)
+    if (SillyMacroClass.LINE_NUM != 56)
       throw new RuntimeException("preproc failure");
 
-    if (SillyMultipleMacroStruct.LINE_NUM != 70)
+    if (SillyMultipleMacroStruct.LINE_NUM != 81)
       throw new RuntimeException("preproc failure");
 
-    if (preproc_line_file.INLINE_LINE != 76)
+    if (preproc_line_file.INLINE_LINE != 87)
       throw new RuntimeException("preproc failure");
 
     String inlineFile = preproc_line_file.INLINE_FILE;
     if (!(inlineFile.equals(FILENAME_UNIX) || inlineFile.equals(FILENAME_WINDOWS)))
       throw new RuntimeException("preproc failure");
+
+    if (Slash.LINE_NUM != 93)
+      throw new RuntimeException("preproc failure");
+
   }
 }
