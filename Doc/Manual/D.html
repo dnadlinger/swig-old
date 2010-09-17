@@ -52,7 +52,7 @@
 
 <p>Mapping of types between the C/C++ library, the C/C++ library wrapper exposing the C functions, the D wrapper module importing these functions and the D proxy code.</p>
 
-<p>The cwtype typemap is used to determine the types to use in the C wrapper functions. The types from the dwtype typemap are used in the extern(C) declarations of these functions in the D wrap module. The dptype typemap contains the D types used in the D proxy module/class.</p>
+<p>The <tt>cwtype</tt> typemap is used to determine the types to use in the C wrapper functions. The types from the <tt>dwtype</tt> typemap are used in the extern(C) declarations of these functions in the D wrap module. The <tt>dptype</tt> typemap contains the D types used in the D proxy module/class.</p>
 
 
 <H3><a name="D_in_out_directorin_direcetorout"></a>36.3.3 in, out, directorin, directorout</H3>
@@ -60,9 +60,9 @@
 
 <p>Used for converting between the types for C/C++ and D when generating the code for the wrapper functions (on the C++ side).</p>
 
-<p>The code from the in typemap is used to convert arguments to the C wrapper function to the type used in the wrapped code (cwtype->original C++ type), the out typemap is utilized to convert values from the wrapped code to wrapper function return types (original C++ type->cwtype).</p>
+<p>The code from the <tt>in</tt> typemap is used to convert arguments to the C wrapper function to the type used in the wrapped code (<tt>cwtype</tt>->original C++ type), the <tt>out</tt> typemap is utilized to convert values from the wrapped code to wrapper function return types (original C++ type-><tt>cwtype</tt>).</p>
 
-<p>The directorin typemap is used to convert parameters to the type used in the D director callback function, its return value is processed by directorout (see below).</p>
+<p>The <tt>directorin</tt> typemap is used to convert parameters to the type used in the D director callback function, its return value is processed by <tt>directorout</tt> (see below).</p>
 
 
 <H3><a name="D_din_dout_ddirectorin_ddirectorout"></a>36.3.4 din, dout, ddirectorin, ddirectorout</H3>
@@ -70,11 +70,11 @@
 
 <p>Typemaps for code generation in D proxy and type wrapper classes.</p>
 
-<p>The din typemap is used for converting function parameter types from the type used in the proxy module or class to the type used in the D wrap module.</p>
+<p>The <tt>din</tt> typemap is used for converting function parameter types from the type used in the proxy module or class to the type used in the D wrap module.</p>
 
-<p>The dout typemap is used for converting function return values from the return type used in the wrap D module to the type returned by the proxy function. The $excode special variable in dout typemaps is replaced by the excode typemap attribute code if the method can throw any exceptions from unmanaged code, otherwise by nothing.</p>
+<p>The <tt>dout</tt> typemap is used for converting function return values from the return type used in the wrap D module to the type returned by the proxy function. The <tt>$excode</tt> special variable in <tt>dout</tt> typemaps is replaced by the <tt>excode</tt> typemap attribute code if the method can throw any exceptions from unmanaged code, otherwise by nothing.</p>
 
-<p>The code from the ddirectorin and ddirectorout typemaps is used for conversion in director callback functions. Arguments are converted to the type used in the proxy class method they are calling by using the code from ddirectorin, the proxy class method return value is converted to the type the C++ code expects via the ddirectorout typemap.</p>
+<p>The code from the <tt>ddirectorin</tt> and <tt>ddirectorout</tt> typemaps is used for conversion in director callback functions. Arguments are converted to the type used in the proxy class method they are calling by using the code from <tt>ddirectorin</tt>, the proxy class method return value is converted to the type the C++ code expects via the <tt>ddirectorout</tt> typemap.</p>
 
 <p>The full chain of type conversions when a director callback is invoked looks like this:</p>
 
@@ -102,11 +102,11 @@
 
 <p>These typemaps are used for generating the skeleton of proxy classes for C++ types.</p>
 
-<p>By overriding dbase, dinterfaces or dinterfaces_derived, the inheritance chain of the generated proxy class for a type can be modified. dclassmodifiers allows you to add any custom modifiers around the class keyword.</p>
+<p>By overriding <tt>dbase</tt>, <tt>dinterfaces</tt> or <tt>dinterfaces_derived</tt>, the inheritance chain of the generated proxy class for a type can be modified. <tt>dclassmodifiers</tt> allows you to add any custom modifiers around the class keyword.</p>
 
-<p>Using dcode and dimports, you can specify additional D code which will be emitted into the class body respectively the imports section of the D module the class is written to.</p>
+<p>Using <tt>dcode</tt> and <tt>dimports</tt>, you can specify additional D code which will be emitted into the class body respectively the imports section of the D module the class is written to.</p>
 
-<p>dconstructor, ddestructor, ddispose and ddispose_derived are used to generate the class constructor, destructor and dispose() method, respectively. The auxiliary code for handling the pointer to the C++ object is stored in dbody and dbody_derived. You can override them for specific types.</p>
+<p><tt>dconstructor</tt>, <tt>ddestructor</tt>, <tt>ddispose</tt> and <tt>ddispose_derived</tt> are used to generate the class constructor, destructor and dispose() method, respectively. The auxiliary code for handling the pointer to the C++ object is stored in <tt>dbody</tt> and <tt>dbody_derived</tt>. You can override them for specific types.</p>
 
 
 <H3><a name="D_special_variables"></a>36.3.7 Special variable macros</H3>
