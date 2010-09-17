@@ -127,7 +127,7 @@
 
 <p>Using <tt>dcode</tt> and <tt>dimports</tt>, you can specify additional D code which will be emitted into the class body respectively the imports section of the D module the class is written to.</p>
 
-<p><tt>dconstructor</tt>, <tt>ddestructor</tt>, <tt>ddispose</tt> and <tt>ddispose_derived</tt> are used to generate the class constructor, destructor and dispose() method, respectively. The auxiliary code for handling the pointer to the C++ object is stored in <tt>dbody</tt> and <tt>dbody_derived</tt>. You can override them for specific types.</p>
+<p><tt>dconstructor</tt>, <tt>ddestructor</tt>, <tt>ddispose</tt> and <tt>ddispose_derived</tt> are used to generate the class constructor, destructor and <tt>dispose()</tt> method, respectively. The auxiliary code for handling the pointer to the C++ object is stored in <tt>dbody</tt> and <tt>dbody_derived</tt>. You can override them for specific types.</p>
 
 
 <H3><a name="D_special_variables"></a>36.3.7 Special variable macros</H3>
@@ -148,6 +148,10 @@
 <H2><a name="D_other_features"></a>36.8 Other features</H2>
 
 
+<p>The <tt>nspace</tt> feature of SWIG is not yet supported for D – all class modules are written to the same package, regardless of which C++ namespace they are in.</p>
+
+
+
 <H2><a name="D_typemap_examples"></a>36.9 D Typemap examples</H2>
 
 
@@ -156,6 +160,14 @@
 
 
 <H2><a name="D_planned_features"></a>36.10 Work in progress and planned features</H2>
+
+<p>There are a couple of features which are not implemented yet, but would be very useful and might be added in the near future:</p>
+
+<ul>
+  <li><em>Memory management:</em> Although the currently generated wrapper code works fine with regard to the GC for the test-suite, I would not be surprised if there are issues coming up in real-world multi-threaded usage.</li>
+  <li><em>Static linking:</em> Currently, the C wrapper code is compiled into a dynamic library, out of which the symbol addresses are looked up at runtime by the D part. If statically linking the different languages into one binary was supported, a tool-chain capable of performing IPO at link time could inline the wrapping code, effectively reducing the overhead for simple calls to zero.</li>
+  <li><em>C array handling:</em> Many data structures in some C/C++ libraries contain array containing of a pointer to the first element and the element count. Currently, one must manually writing wrapper code to be able to access these from D. It should be possible to add a set of SWIG macros to semi-automatically generate conversion code.</li>
+</ul>
 
 
 </body>
