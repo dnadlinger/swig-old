@@ -133,6 +133,63 @@
 <H3><a name="D_special_variables"></a>36.3.7 Special variable macros</H3>
 
 
+<p>The standard SWIG special variables are available for use within typemaps as described in the <a href="Typemaps.html#Typemaps">Typemaps documentation</a>, for example <tt>$1</tt>, <tt>$input</tt>, <tt>$result</tt> etc.</p>
+
+<p>When generating D wrappers, a few additional macros are available:</p>
+<dl>
+  <dt><tt>$dclassname</tt> (C#: <tt>$csclassname</tt>)</dt>
+  <dd>
+    <p>This special variable works similar to <a href="Typemaps.html#Typemaps_special_variables"><tt>$n_type</tt></a> in that it returns the name of a type – it expands to the D proxy class name of the type being wrapped. If the type does not have an associated proxy class, it expands to the type wrapper class name, for example, <tt>SWIGTYPE_p_p_SomeCppClass</tt> is generated when wrapping <tt>SomeCppClass **</tt>.</p>
+    <p>There are two other variants available, <tt>$&amp;dclassname</tt> and <tt>$*dclassname</tt>. The former adds a level of indirection, while the latter removes one. For instance, when wrapping <tt>Foo **</tt>, <tt>$*dclassname</tt> would be replaced by the proxy class name corresponding to <tt>Foo *</tt>.</p>
+  </dd>
+
+  <dt><tt>$null</tt></dt>
+  <dd><p>In code inserted into the generated C/C++ wrapper functions, this variable is replaced by either <tt>0</tt> or nothing at all, depending on whether the function has a return value or not. It can be used to bail out early e.g. in case of errors (<tt>return $null;</tt>).</p></dd>
+
+  <dt><tt>$dinput</tt></dt>
+  <dd>This variable is used in <tt>din</tt> typemaps and is replaced by the expression which is to be passed to C/C++. For example, this input
+    <div class="code"><pre>
+%typemap(din) SomeClass * "SomeClass.getCPointer($dinput)"
+
+%inline %{
+  class SomeClass {};
+  void foo(SomeClass *arg);
+%}</pre></div>
+    leads to the following D proxy code being generated:<div class="targetlang"><pre>
+void foo(SomeClass arg) {
+  example_wrap.foo(SomeClass.getCPointer(arg))
+}</pre></div></dd>
+
+  <dt><tt>$wcall</tt> and <tt>$owner</tt></dt>
+  <dd>
+    <p>These variables are used in <tt>dout</tt> typemaps. <tt>$wcall</tt> contains the call to the wrapper layer which provides the value to be used, and <tt>$owner</tt> signals if the caller is responsible for managing the object lifetime (that is, if the called method is a constructor or has been marked via <tt>%newobject</tt>).</p>
+    <p>Consider the following example:</p>
+<div class="code"><pre>
+%typemap(dout) SomeClass * {
+  return new SomeClass($wcall, $owner);
+}
+
+%inline %{
+  class SomeClass;
+  SomeClass *foo();
+
+  %newobject bar();
+  SomeClass *bar();
+%}</pre></div>
+    leads to the following D proxy code being generated:
+<div class="targetlang"><pre>
+SomeClass foo() {
+  return new SomeClass(test_wrap.foo(), false);
+}
+
+SomeClass bar() {
+  return new SomeClass(test_wrap.bar(), true);
+}
+</pre></div>
+  </dd>
+</dl>
+
+
 <H2><a name="D_features"></a>36.4 Features</H2>
 
 
@@ -150,6 +207,7 @@
 
 
 <H2><a name="D_directors"></a>36.7 D Directors</H2>
+
 
 <p>When the directors feature is activated, SWIG generates extra code on both the C++ and the D side to enable cross-language polymorphism. Essentially, this means that if you subclass a proxy class in D, C++ code can access any overridden virtual methods just as if you created a derived class in C++.</p>
 
