@@ -142,6 +142,11 @@
 <H2><a name="D_exceptions"></a>36.6 D Exceptions</H2>
 
 
+<p>Out of the box, C++ exceptions are fundamentally incompatible to their equivalent in the D world and cannot simply be propagated to a calling D method. There is, however, an easy way to solve this problem: Just catch the exception in the C/C++ wrapper layer, pass the contents to D, and make the wrapper code rethrow the exception in the D world.</p>
+
+<p>The implementation details of this are a bit crude, but the SWIG D module automatically takes care of this, as long as it is able to detect that an exception could potentially be thrown (e.g. because the C++ method has a <tt>throw()</tt> exception specification).</p>
+
+<p>As this feature is implemented in exactly the same way it is for C#, please see the <a href="CSharp.html#CSharp_exceptions">C# documentation</a> for a more detailed explanation.</p>
 
 
 <H2><a name="D_directors"></a>36.7 D Directors</H2>
@@ -162,6 +167,7 @@
 
 
 <H2><a name="D_planned_features"></a>36.10 Work in progress and planned features</H2>
+
 
 <p>There are a couple of features which are not implemented yet, but would be very useful and might be added in the near future:</p>
 
