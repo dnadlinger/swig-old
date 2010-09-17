@@ -14,7 +14,7 @@
 <li><a href="#D_command_line_invocation">Command line invocation</a>
 <li><a href="#D_typemaps">Typemaps</a>
 <ul>
-<li><a href="#D_typemap_quick_reference">C# name comparison</a>
+<li><a href="#D_typemap_name_comparison">C# &lt;-&gt; D name comparison</a>
 <li><a href="#D_cwtype_dwtype_dptype">cwtype, dwtype, dptype</a>
 <li><a href="#D_in_out_directorin_direcetorout">in, out, directorin, directorout</a>
 <li><a href="#D_din_dout_ddirectorin_ddirectorout">din, dout, ddirectorin, ddirectorout</a>
@@ -44,7 +44,28 @@
 <H2><a name="D_typemaps"></a>36.3 Typemaps</H2>
 
 
-<H3><a name="D_typemap_quick_reference"></a>36.3.1 C# name comparison</H3>
+<H3><a name="D_typemap_name_comparison"></a>36.3.1 C# &lt;-&gt; D name comparison</H3>
+
+
+<div class="diagram"><pre>
+ ctype                  &lt;-&gt;  cwtype
+ imtype                 &lt;-&gt;  dwtype
+ cstype                 &lt;-&gt;  dptype
+ csin                   &lt;-&gt;  din
+ csout                  &lt;-&gt;  dout
+ csdirectorin           &lt;-&gt;  ddirectorin
+ csdirectorout          &lt;-&gt;  ddirectorout
+ csinterfaces           &lt;-&gt;  dinterfaces
+ csinterfaces_derived   &lt;-&gt;  dinterfaces_derived
+ csbase                 &lt;-&gt;  dbase
+ csclassmodifiers       &lt;-&gt;  dclassmodifiers
+ cscode                 &lt;-&gt;  dcode
+ csimports              &lt;-&gt;  dimports
+ csbody                 &lt;-&gt;  dbody
+ csfinalize             &lt;-&gt;  ddestructor
+ csdestruct             &lt;-&gt;  ddispose
+ csdestruct_derived     &lt;-&gt;  ddispose_derived
+</pre></div>
 
 
 <H3><a name="D_cwtype_dwtype_dptype"></a>36.3.2 cwtype, dwtype, dptype</H3>
