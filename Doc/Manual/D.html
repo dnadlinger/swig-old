@@ -1,0 +1,138 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>SWIG and D</title>
+<link rel="stylesheet" type="text/css" href="style.css">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body bgcolor="#FFFFFF">
+<H1><a name="D"></a>36 SWIG and D</H1>
+<!-- INDEX -->
+<div class="sectiontoc">
+<ul>
+<li><a href="#D_introduction">Introduction</a>
+<li><a href="#D_command_line_invocation">Command line invocation</a>
+<li><a href="#D_typemaps">Typemaps</a>
+<ul>
+<li><a href="#D_typemap_quick_reference">C# name comparison</a>
+<li><a href="#D_cwtype_dwtype_dptype">cwtype, dwtype, dptype</a>
+<li><a href="#D_in_out_directorin_direcetorout">in, out, directorin, directorout</a>
+<li><a href="#D_din_dout_ddirectorin_ddirectorout">din, dout, ddirectorin, ddirectorout</a>
+<li><a href="#D_typecheck_typemaps">typecheck typemaps</a>
+<li><a href="#D_code_injection_typemaps">Code injection typemaps</a>
+<li><a href="#D_special_variables">Special variable macros</a>
+</ul>
+<li><a href="#D_features">Features</a>
+<li><a href="#D_pragmas">Pragmas</a>
+<li><a href="#D_exceptions">D Exceptions</a>
+<li><a href="#D_directors">D Directors</a>
+<li><a href="#D_other_features">Other features</a>
+<li><a href="#D_typemap_examples">D Typemap examples</a>
+<li><a href="#D_planned_features">Work in progress and planned features</a>
+</ul>
+</div>
+<!-- INDEX -->
+
+
+
+<H2><a name="D_introduction"></a>36.1 Introduction</H2>
+
+
+<H2><a name="D_command_line_invocation"></a>36.2 Command line invocation</H2>
+
+
+<H2><a name="D_typemaps"></a>36.3 Typemaps</H2>
+
+
+<H3><a name="D_typemap_quick_reference"></a>36.3.1 C# name comparison</H3>
+
+
+<H3><a name="D_cwtype_dwtype_dptype"></a>36.3.2 cwtype, dwtype, dptype</H3>
+
+
+<p>Mapping of types between the C/C++ library, the C/C++ library wrapper exposing the C functions, the D wrapper module importing these functions and the D proxy code.</p>
+
+<p>The cwtype typemap is used to determine the types to use in the C wrapper functions. The types from the dwtype typemap are used in the extern(C) declarations of these functions in the D wrap module. The dptype typemap contains the D types used in the D proxy module/class.</p>
+
+
+<H3><a name="D_in_out_directorin_direcetorout"></a>36.3.3 in, out, directorin, directorout</H3>
+
+
+<p>Used for converting between the types for C/C++ and D when generating the code for the wrapper functions (on the C++ side).</p>
+
+<p>The code from the in typemap is used to convert arguments to the C wrapper function to the type used in the wrapped code (cwtype->original C++ type), the out typemap is utilized to convert values from the wrapped code to wrapper function return types (original C++ type->cwtype).</p>
+
+<p>The directorin typemap is used to convert parameters to the type used in the D director callback function, its return value is processed by directorout (see below).</p>
+
+
+<H3><a name="D_din_dout_ddirectorin_ddirectorout"></a>36.3.4 din, dout, ddirectorin, ddirectorout</H3>
+
+
+<p>Typemaps for code generation in D proxy and type wrapper classes.</p>
+
+<p>The din typemap is used for converting function parameter types from the type used in the proxy module or class to the type used in the D wrap module.</p>
+
+<p>The dout typemap is used for converting function return values from the return type used in the wrap D module to the type returned by the proxy function. The $excode special variable in dout typemaps is replaced by the excode typemap attribute code if the method can throw any exceptions from unmanaged code, otherwise by nothing.</p>
+
+<p>The code from the ddirectorin and ddirectorout typemaps is used for conversion in director callback functions. Arguments are converted to the type used in the proxy class method they are calling by using the code from ddirectorin, the proxy class method return value is converted to the type the C++ code expects via the ddirectorout typemap.</p>
+
+<p>The full chain of type conversions when a director callback is invoked looks like this:</p>
+
+ <div class="diagram"><pre>      type CPPClass::method(type a)
+        ↑                     ↓
+   &lt;directorout&gt;         &lt;directorin&gt;
+        ↑                     ↓
+     cwtype methodCallback(ctype a)    C++
+ ::::::::::::::::::::::::::::::::::::::::::
+     dwtype methodCallback(dwtype a)    D
+        ↑                     ↓
+  &lt;ddirectorout&gt;       &lt;ddirectorin&gt;
+        ↑                     ↓
+      dptype DClass.method(dptype a)</pre></div>
+
+
+<H3><a name="D_typecheck_typemaps"></a>36.3.5 typecheck typemaps</H3>
+
+
+<p>Because, unlike many scripting languages supported by SWIG, D does not need any dynamic dispatch helper to access an overloaded function, the purpose of these is merely to issue a warning for overloaded C++ functions that cannot be overloaded in D (as more than one C++ type maps to a single D type).</p>
+
+
+<H3><a name="D_code_injection_typemaps"></a>36.3.6 Code injection typemaps</H3>
+
+
+<p>These typemaps are used for generating the skeleton of proxy classes for C++ types.</p>
+
+<p>By overriding dbase, dinterfaces or dinterfaces_derived, the inheritance chain of the generated proxy class for a type can be modified. dclassmodifiers allows you to add any custom modifiers around the class keyword.</p>
+
+<p>Using dcode and dimports, you can specify additional D code which will be emitted into the class body respectively the imports section of the D module the class is written to.</p>
+
+<p>dconstructor, ddestructor, ddispose and ddispose_derived are used to generate the class constructor, destructor and dispose() method, respectively. The auxiliary code for handling the pointer to the C++ object is stored in dbody and dbody_derived. You can override them for specific types.</p>
+
+
+<H3><a name="D_special_variables"></a>36.3.7 Special variable macros</H3>
+
+
+<H2><a name="D_features"></a>36.4 Features</H2>
+
+
+<H2><a name="D_pragmas"></a>36.5 Pragmas</H2>
+
+
+<H2><a name="D_exceptions"></a>36.6 D Exceptions</H2>
+
+
+<H2><a name="D_directors"></a>36.7 D Directors</H2>
+
+
+<H2><a name="D_other_features"></a>36.8 Other features</H2>
+
+
+<H2><a name="D_typemap_examples"></a>36.9 D Typemap examples</H2>
+
+
+<H2><a name="D_planned_features"></a>36.10 Work in progress and planned features</H2>
+
+
+</body>
+</html>
+
