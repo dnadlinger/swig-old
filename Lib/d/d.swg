@@ -63,7 +63,7 @@
  *        ↑                     ↓
  *   <directorout>         <directorin>
  *        ↑                     ↓
- *     cwtype methodCallback(ctype a)    C++
+ *     cwtype methodCallback(cwtype a)    C++
  * ::::::::::::::::::::::::::::::::::::::::::
  *     dwtype methodCallback(dwtype a)    D
  *        ↑                     ↓
