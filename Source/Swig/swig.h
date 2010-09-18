@@ -1,5 +1,5 @@
-/* ----------------------------------------------------------------------------- 
- * This file is part of SWIG, which is licensed as a whole under version 3 
+/* -----------------------------------------------------------------------------
+ * This file is part of SWIG, which is licensed as a whole under version 3
  * (or any later version) of the GNU General Public License. Some additional
  * terms also apply to certain portions of SWIG. The full details of the SWIG
  * license and copyrights can be found in the LICENSE and COPYRIGHT files
@@ -53,10 +53,10 @@ extern "C" {
   typedef DOH Typetab;
   typedef DOH SwigType;
 
-/* --- Legacy DataType interface.  These type codes are provided solely 
+/* --- Legacy DataType interface.  These type codes are provided solely
        for backwards compatibility with older modules --- */
 
-/* --- The ordering of type values is used to determine type-promotion 
+/* --- The ordering of type values is used to determine type-promotion
        in the parser.  Do not change */
 
 /* Numeric types */
@@ -319,7 +319,6 @@ extern int        ParmList_is_compactdefargs(ParmList *p);
   extern String *Swig_string_lower(String *s);
   extern String *Swig_string_upper(String *s);
   extern String *Swig_string_title(String *s);
-
   extern void Swig_init(void);
   extern int Swig_value_wrapper_mode(int mode);
 
@@ -334,6 +333,7 @@ extern int        ParmList_is_compactdefargs(ParmList *p);
   extern int Swig_warn_count(void);
   extern void Swig_error_msg_format(ErrorMessageFormat format);
   extern void Swig_diagnostic(const_String_or_char_ptr filename, int line, const char *fmt, ...);
+  extern String *Swig_stringify_with_location(DOH *object);
 
 /* --- C Wrappers --- */
   extern String *Swig_cparm_name(Parm *p, int i);
@@ -409,6 +409,8 @@ extern int        ParmList_is_compactdefargs(ParmList *p);
   extern void Wrapper_all_protected_mode_set(int);
   extern void Language_replace_special_variables(String *method, String *tm, Parm *parm);
   extern Hash *Language_unmatched_typemap_request_handler(Node *node, SwigType *type, const String *tm_method);
+  extern void Swig_print(DOH *object, int count);
+  extern void Swig_print_with_location(DOH *object, int count);
 
 
 /* -- template init -- */

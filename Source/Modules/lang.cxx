@@ -52,7 +52,7 @@ extern "C" {
     return all_protected_mode;
   }
   void Language_replace_special_variables(String *method, String *tm, Parm *parm) {
-  Language::instance()->replaceSpecialVariables(method, tm, parm);
+    Language::instance()->replaceSpecialVariables(method, tm, parm);
   }
   Hash *Language_unmatched_typemap_request_handler(Node *node, SwigType *type, const String *tm_method) {
     return Language::instance()->unmatchedTypemapRequestHandler(node, type, tm_method);
