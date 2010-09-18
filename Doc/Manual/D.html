@@ -91,11 +91,11 @@
 
 <p>Typemaps for code generation in D proxy and type wrapper classes.</p>
 
-<p>The <tt>din</tt> typemap is used for converting function parameter types from the type used in the proxy module or class to the type used in the D wrap module (the <a href="D.html#D_dinput"><tt>$dinput</tt></a> macro is replaced).</p>
+<p id="D_din">The <tt>din</tt> typemap is used for converting function parameter types from the type used in the proxy module or class to the type used in the D wrap module (the <a href="D.html#D_dinput"><tt>$dinput</tt></a> macro is replaced).</p>
 
-<p>The <tt>dout</tt> typemap is used for converting function return values from the return type used in the wrap D module to the type returned by the proxy function. The <tt>$excode</tt> special variable in <tt>dout</tt> typemaps is replaced by the <tt>excode</tt> typemap attribute code if the method can throw any exceptions from unmanaged code, otherwise by nothing (the <a href="D.html#D_wcall"><tt>$wcall</tt> and <tt>$owner</tt></a> macros are replaced).</p>
+<p id="D_dout">The <tt>dout</tt> typemap is used for converting function return values from the return type used in the wrap D module to the type returned by the proxy function. The <tt>$excode</tt> special variable in <tt>dout</tt> typemaps is replaced by the <tt>excode</tt> typemap attribute code if the method can throw any exceptions from unmanaged code, otherwise by nothing (the <a href="D.html#D_wcall"><tt>$wcall</tt> and <tt>$owner</tt></a> macros are replaced).</p>
 
-<p>The code from the <tt>ddirectorin</tt> and <tt>ddirectorout</tt> typemaps is used for conversion in director callback functions. Arguments are converted to the type used in the proxy class method they are calling by using the code from <tt>ddirectorin</tt>, the proxy class method return value is converted to the type the C++ code expects via the <tt>ddirectorout</tt> typemap.</p>
+<p id="D_ddirectorinout">The code from the <tt>ddirectorin</tt> and <tt>ddirectorout</tt> typemaps is used for conversion in director callback functions. Arguments are converted to the type used in the proxy class method they are calling by using the code from <tt>ddirectorin</tt>, the proxy class method return value is converted to the type the C++ code expects via the <tt>ddirectorout</tt> typemap (the <a href="D.html#D_dpcall"><tt>$dpcall</tt> and <tt>$winput</tt></a> macros are replaced).</p>
 
 <p>The full chain of type conversions when a director callback is invoked looks like this:</p>
 
@@ -127,7 +127,7 @@
 
 <p>Using <tt>dcode</tt> and <tt>dimports</tt>, you can specify additional D code which will be emitted into the class body respectively the imports section of the D module the class is written to.</p>
 
-<p><tt>dconstructor</tt>, <tt>ddestructor</tt>, <tt>ddispose</tt> and <tt>ddispose_derived</tt> are used to generate the class constructor, destructor and <tt>dispose()</tt> method, respectively. The auxiliary code for handling the pointer to the C++ object is stored in <tt>dbody</tt> and <tt>dbody_derived</tt>. You can override them for specific types.</p>
+<p id="D_class_code_typemaps"><tt>dconstructor</tt>, <tt>ddestructor</tt>, <tt>ddispose</tt> and <tt>ddispose_derived</tt> are used to generate the class constructor, destructor and <tt>dispose()</tt> method, respectively. The auxiliary code for handling the pointer to the C++ object is stored in <tt>dbody</tt> and <tt>dbody_derived</tt>. You can override them for specific types.</p>
 
 
 <H3><a name="D_special_variables"></a>36.3.7 Special variable macros</H3>
@@ -148,7 +148,7 @@
 
   <dt id="D_dinput"><tt>$dinput</tt></dt>
   <dd>
-    <p>This variable is used in <tt>din</tt> typemaps and is replaced by the expression which is to be passed to C/C++.</p>
+    <p>This variable is used in <tt><a href="D.html#D_din">din</a></tt> typemaps and is replaced by the expression which is to be passed to C/C++.</p>
     <p>For example, this input</p>
     <div class="code"><pre>
 %typemap(din) SomeClass * "SomeClass.getCPointer($dinput)"
@@ -165,7 +165,7 @@ void foo(SomeClass arg) {
 
   <dt id="D_wcall"><tt>$wcall</tt> and <tt>$owner</tt> (C#: <tt>$imcall</tt>)</dt>
   <dd>
-    <p>These variables are used in <tt>dout</tt> typemaps. <tt>$wcall</tt> contains the call to the wrapper layer which provides the value to be used, and <tt>$owner</tt> signals if the caller is responsible for managing the object lifetime (that is, if the called method is a constructor or has been marked via <tt>%newobject</tt>).</p>
+    <p>These variables are used in <tt><a href="D.html#D_dout">dout</a></tt> typemaps. <tt>$wcall</tt> contains the call to the wrapper layer which provides the value to be used, and <tt>$owner</tt> signals if the caller is responsible for managing the object lifetime (that is, if the called method is a constructor or has been marked via <tt>%newobject</tt>).</p>
     <p>Consider the following example:</p>
 <div class="code"><pre>
 %typemap(dout) SomeClass * {
@@ -187,6 +187,26 @@ SomeClass foo() {
 
 SomeClass bar() {
   return new SomeClass(example_wrap.bar(), true);
+}
+</pre></div>
+  </dd>
+
+  <dt><tt>$dpcall</tt> and <tt>$winput</tt></dt>
+  <dd id="D_dpcall"><p>These variables are used in the director-specific typemaps <a href="D.html#D_ddirectorinout"><tt>ddirectorin</tt></a> and <a href="D.html#D_ddirectorinout"><tt>ddirectorout</tt></a>. They are more or less the reverse of the <tt>$wcall</tt> and <tt>$dinput</tt> macros: <tt>$dpcall</tt> contains the invocation of the D proxy method of which the return value is to be passed back to C++, <tt>$winput</tt> contains the parameter value from C++.</p></dd>
+  
+  <dt><tt>$excode</tt></dt>
+  <dd><p>This variable is used in <tt>dout</tt> and <tt>dconstructor</tt> typemaps and is filled with the contents of the <tt>excode</tt> typemap attribute if an exception could be thrown from the C++ side. See the <a href="CSharp.html#CSharp_exceptions">C# documentation</a> for details.</p></dd>
+
+  <dt><tt>$dbaseclass</tt></dt>
+  <dd><p>Currently for internal use only, it contains the D name of the C++ base class (if any) inside proxy classes.</p></dd>
+
+  <dt><tt>$directorconnect</tt></dt>
+  <dd>
+    <p>This macro is only valid inside the <tt><a href="D.html#D_class_code_typemaps">dconstructor</a></tt> typemap and contains the value of the <tt>dconstructor</tt> typemap attribute if the currently wrapped class has directors enabled.</p>
+    <p>This is how the default <tt>dconstructor</tt> typemap looks like (you usually do not want to specify a custom one):</p>
+<div class="code"><pre>
+%typemap(dconstructor, excode=SWIGEXCODE,directorconnect="\n  swigDirectorConnect();") SWIGTYPE {
+  this($wcall, true);$excode$directorconnect
 }
 </pre></div>
   </dd>
