@@ -342,9 +342,15 @@ enum SomeReallyLongEnumName {
 <p>There are a couple of features which are not implemented yet, but would be very useful and might be added in the near future:</p>
 
 <ul>
-  <li><em>Memory management:</em> Although the currently generated wrapper code works fine with regard to the GC for the test-suite, I would not be surprised if there are issues coming up in real-world multi-threaded usage.</li>
   <li><em>Static linking:</em> Currently, the C wrapper code is compiled into a dynamic library, out of which the symbol addresses are looked up at runtime by the D part. If statically linking the different languages into one binary was supported, a tool-chain capable of performing IPO at link time could inline the wrapping code, effectively reducing the overhead for simple calls to zero.</li>
   <li><em>C array handling:</em> Many data structures in some C/C++ libraries contain array containing of a pointer to the first element and the element count. Currently, one must manually writing wrapper code to be able to access these from D. It should be possible to add a set of SWIG macros to semi-automatically generate conversion code.</li>
+</ul>
+
+<p>Some generated code might also be a bit rough around the edges, particularly in the following areas:</p>
+
+<ul>
+  <li><em>Memory management:</em> Although the currently generated wrapper code works fine with regard to the GC for the test-suite, there might be issues coming up in real-world multi-threaded usage.</li>
+  <li><em>D2 support</em>: Originally, the module has been developed for the use with D1, D2/Phobos support has been added in later. The basic features should work equally well for both, but there <em>could</em> be issues concerning const-correctness etc.</li>
 </ul>
 
 
