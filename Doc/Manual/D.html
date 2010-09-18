@@ -22,7 +22,7 @@
 <li><a href="#D_code_injection_typemaps">Code injection typemaps</a>
 <li><a href="#D_special_variables">Special variable macros</a>
 </ul>
-<li><a href="#D_features">Features</a>
+<li><a href="#D_features"><tt>%feature</tt>s</a>
 <li><a href="#D_pragmas">Pragmas</a>
 <li><a href="#D_exceptions">D Exceptions</a>
 <li><a href="#D_directors">D Directors</a>
@@ -243,7 +243,61 @@ $import_type(AnotherInterface)
 </dl>
 
 
-<H2><a name="D_features"></a>36.4 Features</H2>
+<H2><a name="D_features"></a>36.4 <tt>%feature</tt>s</H2>
+
+
+<p>The D module defines a number of directives which modify the <a href="Customization.html#Customization_features">SWIG features</a> set globally or for a specific declaration:</p>
+
+
+<dl>
+  <dt><tt>%dnativeconst</tt> and <tt>%dconstvalue(value)</tt></dt>
+  <dd>
+    <p>Out of the box, SWIG generates accessor methods for C <tt>#defines</tt> and C++ constants. The <tt>%dnativeconst</tt> directive enables wrapping these constants as D manifest constants (<tt>const</tt> in D1, <tt>enum</tt> in D2).</p>
+    <p>For this to work, the C/C++ code for the constant value must directly compile as D code, though. If this is not the case, you can manually override the expression written to the D wrapper using the <tt>%dconstvalue</tt> directive, passing the new value as parameter.</p>
+    <p>For <tt>enum</tt>s, again <tt>%dconstvalue</tt> can be used to override the value of an enum item if the initializer should not compile in D.</p>
+  </dd>
+
+  <dt><tt>%dmethodmodifiers</tt></dt>
+  <dd>
+    <p>This directive can be used to override the modifiers for a proxy function. For instance, you could make a <tt>public</tt> C++ member function <tt>private</tt> in D like this:</p>
+<div class="code"><pre>
+%dmethodmodifiers A::foo "private";
+
+%inline %{
+struct A {
+  void foo();
+};
+%}
+</pre></div>
+  </dd>
+
+  <dt><tt>%dstripprefix</tt></dt>
+  <dd>
+    <p>This feature is used for customizing the names of the members of a wrapped enum. This might be useful since in C++ the enum member symbols are part of the surrounding namespace, and thus, many coding style guideline require prefixing their name with the enum name:</p>
+<div class="code"><pre>
+enum Color {
+  Color_RED,
+  Color_GREEN,
+  Color_BLUE
+};
+</pre></div>
+    <p>In D, however, enum members are accessed via the enum type. To avoid having to write code like <tt>Color.Color_RED</tt>, the <tt>%dstripprefix</tt> feature allows you to strip a specified string from all enum members.</p>
+    <p>If no explicit value is set, it defaults to the enum name suffixed with an underscore, which covers the most widely used naming convention – just specifying <tt>%dstripprefix Color;</tt> would have the desired effect for the above example (the members being accessible via <tt>Color.RED</tt>, etc.).</p>
+    <p>If a differing naming scheme is used, you can also override the default name like this:</p>
+<div class="code"><pre>
+%dstripprefix SomeReallyLongEnumName "ShortName_";
+
+%inline %{
+enum SomeReallyLongEnumName {
+  ShortName_A,
+  ShortName_B,
+  ShortName_C
+};
+%}
+</pre></div>
+    <p>When working on a library which conforms to the default <tt>EnumName_</tt> naming scheme, you might want to enable the feature globally for all enums by just writing <tt>%dstripprefix;</tt> without any declaration specification.</p>
+  </dd>
+</dl>
 
 
 <H2><a name="D_pragmas"></a>36.5 Pragmas</H2>
@@ -254,7 +308,7 @@ $import_type(AnotherInterface)
 
 <p>Out of the box, C++ exceptions are fundamentally incompatible to their equivalent in the D world and cannot simply be propagated to a calling D method. There is, however, an easy way to solve this problem: Just catch the exception in the C/C++ wrapper layer, pass the contents to D, and make the wrapper code rethrow the exception in the D world.</p>
 
-<p>The implementation details of this are a bit crude, but the SWIG D module automatically takes care of this, as long as it is able to detect that an exception could potentially be thrown (e.g. because the C++ method has a <tt>throw()</tt> exception specification).</p>
+<p>The implementation details of this are a bit crude, but the SWIG D module automatically takes care of this, as long as it is able to detect that an exception could potentially be thrown (e.g. because the C++ method has a <tt>throw(…)</tt> exception specification).</p>
 
 <p>As this feature is implemented in exactly the same way it is for C#, please see the <a href="CSharp.html#CSharp_exceptions">C# documentation</a> for a more detailed explanation.</p>
 
