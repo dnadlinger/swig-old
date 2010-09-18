@@ -146,7 +146,7 @@
   <dt><tt>$null</tt></dt>
   <dd><p>In code inserted into the generated C/C++ wrapper functions, this variable is replaced by either <tt>0</tt> or nothing at all, depending on whether the function has a return value or not. It can be used to bail out early e.g. in case of errors (<tt>return $null;</tt>).</p></dd>
 
-  <dt id="D_dinput"><tt>$dinput</tt></dt>
+  <dt id="D_dinput"><tt>$dinput</tt> (C#: <tt>$csinput</tt>)</dt>
   <dd>
     <p>This variable is used in <tt><a href="D.html#D_din">din</a></tt> typemaps and is replaced by the expression which is to be passed to C/C++.</p>
     <p>For example, this input</p>
@@ -191,7 +191,7 @@ SomeClass bar() {
 </pre></div>
   </dd>
 
-  <dt><tt>$dpcall</tt> and <tt>$winput</tt></dt>
+  <dt><tt>$dpcall</tt> and <tt>$winput</tt> (C#: <tt>$cscall</tt>, <tt>$iminput</tt>)</dt>
   <dd id="D_dpcall"><p>These variables are used in the director-specific typemaps <a href="D.html#D_ddirectorinout"><tt>ddirectorin</tt></a> and <a href="D.html#D_ddirectorinout"><tt>ddirectorout</tt></a>. They are more or less the reverse of the <tt>$wcall</tt> and <tt>$dinput</tt> macros: <tt>$dpcall</tt> contains the invocation of the D proxy method of which the return value is to be passed back to C++, <tt>$winput</tt> contains the parameter value from C++.</p></dd>
 
   <dt><tt>$excode</tt></dt>
