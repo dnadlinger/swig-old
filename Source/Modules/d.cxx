@@ -693,6 +693,11 @@ public:
    * proxydmodulecode     - text (D code) is copied verbatim to the proxy module
    *                        (the main proxy module if in split proxy mode).
    * globalproxyimports   - import statements inserted into _all_ proxy modules.
+   *
+   * wrapperloadercode    - D code for loading the wrapper library (is copied to
+   *                        the wrap D module).
+   * wrapperloaderbindcommand - D code for binding a symbol from the wrapper
+   *                        library to the declaration in the wrap D module.
    * --------------------------------------------------------------------------- */
   virtual int pragmaDirective(Node *n) {
     if (!ImportMode) {
