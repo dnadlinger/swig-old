@@ -43,10 +43,6 @@ class D : public Language {
   /*
    * Command line-set modes of operation.
    */
-  // Whether proxy functions and classes are generated or only the low-level
-  // C-API is provided.
-  bool generate_proxies;
-
   // Whether a single proxy D module is generated or classes and enums are
   // written to their own files.
   bool split_proxy_dmodule;
@@ -224,7 +220,6 @@ public:
       f_directors(NULL),
       f_directors_h(NULL),
       filenames_list(NULL),
-      generate_proxies(true),
       split_proxy_dmodule(false),
       d_version(1),
       native_function_flag(false),
@@ -310,9 +305,6 @@ public:
 	} else if ((strcmp(argv[i], "-splitproxy") == 0)) {
 	  Swig_mark_arg(i);
 	  split_proxy_dmodule = true;
-	} else if ((strcmp(argv[i], "-noproxy") == 0)) {
-	  Swig_mark_arg(i);
-	  generate_proxies = false;
 	} else if (strcmp(argv[i], "-help") == 0) {
 	  Printf(stdout, "%s\n", usage);
 	}
@@ -797,7 +789,7 @@ public:
       imports_trimmed = NewString("");
     }
 
-    if (generate_proxies && is_wrapping_class()) {
+    if (is_wrapping_class()) {
       // Enums defined within the C++ class are written into the proxy
       // class.
       Printv(proxy_class_imports, imports_trimmed, NIL);
@@ -913,48 +905,46 @@ public:
   virtual int memberfunctionHandler(Node *n) {
     Language::memberfunctionHandler(n);
 
-    if (generate_proxies) {
-      String *overloaded_name = getOverloadedName(n);
-      String *intermediary_function_name =
-        Swig_name_member(NSPACE_TODO,proxy_class_name, overloaded_name);
-      Setattr(n, "imfuncname", intermediary_function_name);
+    String *overloaded_name = getOverloadedName(n);
+    String *intermediary_function_name =
+      Swig_name_member(NSPACE_TODO,proxy_class_name, overloaded_name);
+    Setattr(n, "imfuncname", intermediary_function_name);
 
-      String *proxy_func_name = Copy(Getattr(n, "sym:name"));
-      if (split_proxy_dmodule &&
-        Len(Getattr(n, "parms")) == 0 &&
-        Strncmp(proxy_func_name, package, Len(proxy_func_name)) == 0) {
-        // If we are in split proxy mode and the function is named like the
-        // target package, we append an underscore to its name to avoid clashes
-        // (due to the D compiler being unable to resolve the ambiguity between
-        // the package reference and the argument-less function call).
-        Swig_warning(WARN_D_NAME_COLLISION, input_file, line_number,
-          "Renaming %s::%s to %s_ because it would collide with the package name\n",
-          proxy_class_name, proxy_func_name, proxy_func_name);
-        Append(proxy_func_name, "_");
-      }
-      Setattr(n, "proxyfuncname", proxy_func_name);
+    String *proxy_func_name = Copy(Getattr(n, "sym:name"));
+    if (split_proxy_dmodule &&
+      Len(Getattr(n, "parms")) == 0 &&
+      Strncmp(proxy_func_name, package, Len(proxy_func_name)) == 0) {
+      // If we are in split proxy mode and the function is named like the
+      // target package, we append an underscore to its name to avoid clashes
+      // (due to the D compiler being unable to resolve the ambiguity between
+      // the package reference and the argument-less function call).
+      Swig_warning(WARN_D_NAME_COLLISION, input_file, line_number,
+        "Renaming %s::%s to %s_ because it would collide with the package name\n",
+        proxy_class_name, proxy_func_name, proxy_func_name);
+      Append(proxy_func_name, "_");
+    }
+    Setattr(n, "proxyfuncname", proxy_func_name);
 
-      writeProxyClassFunction(n);
+    writeProxyClassFunction(n);
 
-      Delete(proxy_func_name);
-      Delete(overloaded_name);
+    Delete(proxy_func_name);
+    Delete(overloaded_name);
 
-      // For each function, look if we have to alias in the parent class function
-      // for the overload resolution process to work as expected from C++
-      // (http://www.digitalmars.com/d/2.0/function.html#function-inheritance).
-      // For multiple overloads, only emit the alias directive once (for the
-      // last method, »sym:nextSibling« is null then).
-      // Smart pointer classes do not mirror the inheritance hierarchy of the
-      // underlying types, so aliasing the base class methods in is not required
-      // for them.
-      // DMD BUG: We have to emit the alias after the last function becasue
-      // taking a delegate in the overload checking code fails otherwise
-      // (http://d.puremagic.com/issues/show_bug.cgi?id=4860).
-      if (!Getattr(n, "sym:nextSibling") && !is_smart_pointer() &&
-          !areAllOverloadsOverridden(n)) {
-        String *name = Getattr(n, "sym:name");
-        Printf(proxy_class_body_code, "\nalias $dbaseclass.%s %s;\n", name, name);
-      }
+    // For each function, look if we have to alias in the parent class function
+    // for the overload resolution process to work as expected from C++
+    // (http://www.digitalmars.com/d/2.0/function.html#function-inheritance).
+    // For multiple overloads, only emit the alias directive once (for the
+    // last method, »sym:nextSibling« is null then).
+    // Smart pointer classes do not mirror the inheritance hierarchy of the
+    // underlying types, so aliasing the base class methods in is not required
+    // for them.
+    // DMD BUG: We have to emit the alias after the last function becasue
+    // taking a delegate in the overload checking code fails otherwise
+    // (http://d.puremagic.com/issues/show_bug.cgi?id=4860).
+    if (!Getattr(n, "sym:nextSibling") && !is_smart_pointer() &&
+        !areAllOverloadsOverridden(n)) {
+      String *name = Getattr(n, "sym:name");
+      Printf(proxy_class_body_code, "\nalias $dbaseclass.%s %s;\n", name, name);
     }
     return SWIG_OK;
   }
@@ -964,19 +954,18 @@ public:
    * --------------------------------------------------------------------------- */
   virtual int staticmemberfunctionHandler(Node *n) {
     static_flag = true;
+
     Language::staticmemberfunctionHandler(n);
 
-    if (generate_proxies) {
-      String *overloaded_name = getOverloadedName(n);
-      String *intermediary_function_name =
-        Swig_name_member(NSPACE_TODO,proxy_class_name, overloaded_name);
-      Setattr(n, "proxyfuncname", Getattr(n, "sym:name"));
-      Setattr(n, "imfuncname", intermediary_function_name);
-      writeProxyClassFunction(n);
-      Delete(overloaded_name);
-    }
-    static_flag = false;
+    String *overloaded_name = getOverloadedName(n);
+    String *intermediary_function_name =
+      Swig_name_member(NSPACE_TODO,proxy_class_name, overloaded_name);
+    Setattr(n, "proxyfuncname", Getattr(n, "sym:name"));
+    Setattr(n, "imfuncname", intermediary_function_name);
+    writeProxyClassFunction(n);
+    Delete(overloaded_name);
 
+    static_flag = false;
     return SWIG_OK;
   }
 
@@ -1040,11 +1029,6 @@ public:
    * --------------------------------------------------------------------------- */
   virtual int constructorHandler(Node *n) {
     Language::constructorHandler(n);
-
-    // Nothing more to do if we do not generate proxy classes.
-    if (!generate_proxies) {
-      return SWIG_OK;
-    }
 
     // Wrappers not wanted for some methods where the parameters cannot be overloaded in D.
     if (Getattr(n, "overload:ignore")) {
@@ -1264,10 +1248,7 @@ public:
   virtual int destructorHandler(Node *n) {
     Language::destructorHandler(n);
     String *symname = Getattr(n, "sym:name");
-
-    if (generate_proxies) {
-      Printv(destructor_call, wrap_dmodule_fq_name, ".", Swig_name_destroy(NSPACE_TODO,symname), "(cast(void*)m_swigCObject)", NIL);
-    }
+    Printv(destructor_call, wrap_dmodule_fq_name, ".", Swig_name_destroy(NSPACE_TODO,symname), "(cast(void*)m_swigCObject)", NIL);
     return SWIG_OK;
   }
 
@@ -1276,65 +1257,62 @@ public:
    * --------------------------------------------------------------------------- */
   virtual int classHandler(Node *n) {
     File *class_file = NULL;
-    if (generate_proxies) {
-      proxy_class_name = Copy(Getattr(n, "sym:name"));
 
-      if (!addSymbol(proxy_class_name, n)) {
-	return SWIG_ERROR;
-      }
+    proxy_class_name = Copy(Getattr(n, "sym:name"));
 
-      assertClassNameValidity(proxy_class_name);
-
-      if (split_proxy_dmodule) {
-	String *filename = NewStringf("%s%s.d", dmodule_directory, proxy_class_name);
-	class_file = NewFile(filename, "w", SWIG_output_files());
-	if (!class_file) {
-	  FileErrorDisplay(filename);
-	  SWIG_exit(EXIT_FAILURE);
-	}
-	Append(filenames_list, Copy(filename));
-	Delete(filename);
-
-	emitBanner(class_file);
-	Printf(class_file, "module %s%s;\n", package, proxy_class_name);
-	Printf(class_file, "\nstatic import %s;\n", wrap_dmodule_fq_name);
-      }
-
-      Clear(proxy_class_imports);
-      Clear(proxy_class_enums_code);
-      Clear(proxy_class_body_code);
-      Clear(proxy_class_epilogue_code);
-      Clear(proxy_class_code);
-      Clear(destructor_call);
+    if (!addSymbol(proxy_class_name, n)) {
+      return SWIG_ERROR;
     }
+
+    assertClassNameValidity(proxy_class_name);
+
+    if (split_proxy_dmodule) {
+      String *filename = NewStringf("%s%s.d", dmodule_directory, proxy_class_name);
+      class_file = NewFile(filename, "w", SWIG_output_files());
+      if (!class_file) {
+        FileErrorDisplay(filename);
+        SWIG_exit(EXIT_FAILURE);
+      }
+      Append(filenames_list, Copy(filename));
+      Delete(filename);
+
+      emitBanner(class_file);
+      Printf(class_file, "module %s%s;\n", package, proxy_class_name);
+      Printf(class_file, "\nstatic import %s;\n", wrap_dmodule_fq_name);
+    }
+
+    Clear(proxy_class_imports);
+    Clear(proxy_class_enums_code);
+    Clear(proxy_class_body_code);
+    Clear(proxy_class_epilogue_code);
+    Clear(proxy_class_code);
+    Clear(destructor_call);
+
 
     Language::classHandler(n);
 
-    if (generate_proxies) {
-      writeProxyClassAndUpcasts(n);
-      writeDirectorConnectWrapper(n);
 
-      Replaceall(proxy_class_code, "$dclassname", proxy_class_name);
+    writeProxyClassAndUpcasts(n);
+    writeDirectorConnectWrapper(n);
 
-      if (split_proxy_dmodule) {
-	Printv(class_file, global_proxy_imports, NIL);
-	Printv(class_file, proxy_class_imports, NIL);
+    Replaceall(proxy_class_code, "$dclassname", proxy_class_name);
 
-	replaceModuleVariables(proxy_class_code);
-	Printv(class_file, proxy_class_code, NIL);
+    if (split_proxy_dmodule) {
+      Printv(class_file, global_proxy_imports, NIL);
+      Printv(class_file, proxy_class_imports, NIL);
 
-	Close(class_file);
-	Delete(class_file);
-      } else {
-	Printv(proxy_dmodule_imports, proxy_class_imports, NIL);
-	Printv(proxy_dmodule_code, proxy_class_code, NIL);
-      }
+      replaceModuleVariables(proxy_class_code);
+      Printv(class_file, proxy_class_code, NIL);
 
-      if (generate_proxies) {
-	Delete(proxy_class_name);
-	proxy_class_name = NULL;
-      }
+      Close(class_file);
+      Delete(class_file);
+    } else {
+      Printv(proxy_dmodule_imports, proxy_class_imports, NIL);
+      Printv(proxy_dmodule_code, proxy_class_code, NIL);
     }
+
+    Delete(proxy_class_name);
+    proxy_class_name = NULL;
 
     return SWIG_OK;
   }
@@ -1387,8 +1365,6 @@ public:
     SwigType *t = Getattr(n, "type");
     ParmList *l = Getattr(n, "parms");
 
-    const bool to_class = generate_proxies && wrapping_member_flag;
-
     // Attach the non-standard typemaps to the parameter list.
     Swig_typemap_attach_parms("dptype", l, NULL);
 
@@ -1409,7 +1385,7 @@ public:
         "No dptype typemap defined for %s\n", SwigType_str(t, 0));
     }
 
-    const String *itemname = to_class ? variable_name : symname;
+    const String *itemname = wrapping_member_flag ? variable_name : symname;
 
     String *attributes = Getattr(n, "feature:d:methodmodifiers");
     if (attributes) {
@@ -1448,7 +1424,7 @@ public:
     }
 
     // Emit the generated code to appropriate place.
-    if (to_class) {
+    if (wrapping_member_flag) {
       Printv(proxy_class_body_code, constants_code, NIL);
     } else {
       Printv(proxy_dmodule_code, constants_code, NIL);
@@ -1779,13 +1755,13 @@ public:
     // If we are not processing an enum or constant, and we were not generating
     // a wrapper function which will be accessed via a proxy class, write a
     // function to the proxy D module.
-    if (!(generate_proxies && is_wrapping_class())) {
+    if (!is_wrapping_class()) {
       writeProxyDModuleFunction(n);
     }
 
     // If we are processing a public member variable, write the property-style
     // member function to the proxy class.
-    if (generate_proxies && wrapping_member_flag) {
+    if (wrapping_member_flag) {
       Setattr(n, "proxyfuncname", variable_name);
       Setattr(n, "imfuncname", symname);
 
@@ -1829,16 +1805,12 @@ public:
    * D::classDirector()
    * --------------------------------------------------------------------------- */
   virtual int classDirector(Node *n) {
-    if (generate_proxies) {
-      proxy_class_name = NewString(Getattr(n, "sym:name"));
-    }
+    proxy_class_name = NewString(Getattr(n, "sym:name"));
 
     int success = Language::classDirector(n);
 
-    if (generate_proxies) {
-      Delete(proxy_class_name);
-      proxy_class_name = NULL;
-    }
+    Delete(proxy_class_name);
+    proxy_class_name = NULL;
 
     return success;
   }
@@ -2624,10 +2596,6 @@ private:
     String *post_code = NewString("");
     String *terminator_code = NewString("");
 
-    // RESEARCH: We shouldn't even get here then?
-    if (!generate_proxies)
-      return;
-
     // Wrappers not wanted for some methods where the parameters cannot be
     // overloaded in D.
     if (Getattr(n, "overload:ignore"))
@@ -2934,7 +2902,7 @@ private:
     }
 
     /* Change function name for global variables */
-    if (generate_proxies && global_variable_flag) {
+    if (global_variable_flag) {
       // RESEARCH: Is the Copy() needed here?
       func_name = Copy(variable_name);
     } else {
@@ -4195,13 +4163,12 @@ private:
    * proxy class, NULL otherwise.
    * --------------------------------------------------------------------------- */
    const String *getProxyName(SwigType *t) {
-    if (generate_proxies) {
-      Node *n = classLookup(t);
-      if (n) {
-	return Getattr(n, "sym:name");
-      }
+    Node *n = classLookup(t);
+    if (n) {
+	    return Getattr(n, "sym:name");
+    } else {
+      return NULL;
     }
-    return NULL;
   }
 
   /* ---------------------------------------------------------------------------
