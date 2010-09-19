@@ -1,7 +1,7 @@
 module runme;
 
-static import example;
 import tango.io.Stdout;
+static import example;
 
 void main() {
   /*

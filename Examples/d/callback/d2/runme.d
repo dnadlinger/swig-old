@@ -1,18 +1,19 @@
-import example;
-import tango.io.Stdout;
+module runme;
 
+import std.stdio;
+import example;
 
 public class DCallback : Callback {
   public override void run() {
-    Stdout( "DCallback.run()" ).newline;
+    writeln( "DCallback.run()" );
   }
 }
 
 void main() {
   auto caller = new Caller();
 
-  Stdout( "Adding and calling a normal C++ callback" ).newline;
-  Stdout( "----------------------------------------" ).newline;
+  writeln( "Adding and calling a normal C++ callback" );
+  writeln( "----------------------------------------" );
   {
     scope auto callback = new Callback();
     caller.setCallback(callback);
@@ -20,9 +21,9 @@ void main() {
     caller.resetCallback();
   }
 
-  Stdout.newline;
-  Stdout( "Adding and calling a D callback" ).newline;
-  Stdout( "-------------------------------" ).newline;
+  writeln();
+  writeln( "Adding and calling a D callback" );
+  writeln( "-------------------------------" );
   {
     scope auto callback = new DCallback();
     caller.setCallback(callback);
@@ -30,6 +31,6 @@ void main() {
     caller.resetCallback();
   }
 
-  Stdout.newline;
-  Stdout( "D exit" ).newline;
+  writeln();
+  writeln( "D exit" );
 }

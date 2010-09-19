@@ -1,20 +1,21 @@
 // This example illustrates how C++ classes can be used from D using SWIG.
 // The D class gets mapped onto the C++ class and behaves as if it is a D class.
+module runme;
 
+import std.stdio;
 import example;
-import tango.io.Stdout;
 
 void main() {
   // ----- Object creation -----
 
-  Stdout( "Creating some objects:" ).newline;
+  writeln( "Creating some objects:" );
 
   {
     scope Square s = new Square(10);
     scope Circle c = new Circle(10);
 
     // ----- Access a static member -----
-    Stdout.format( "{} shapes were created.", Shape.nshapes ).newline;
+    writefln( "%s shapes were created.", Shape.nshapes );
 
     // ----- Member data access -----
 
@@ -28,30 +29,30 @@ void main() {
     shape.x = -10;
     shape.y = 5;
 
-    Stdout( "\nHere is their current position:" ).newline;
-    Stdout.format( "    Circle = ( {}, {} )", c.x, c.y ).newline;
-    Stdout.format( "    Square = ( {}, {} )", s.x, s.y ).newline;
+    writeln( "\nHere is their current position:" );
+    writefln( "    Circle = ( %s, %s )", c.x, c.y );
+    writefln( "    Square = ( %s, %s )", s.x, s.y );
 
     // ----- Call some methods -----
 
-    Stdout( "\nHere are some properties of the shapes:" ).newline;
+    writeln( "\nHere are some properties of the shapes:" );
     Shape[] shapes = [ cast(Shape) c, cast(Shape) s ];
     foreach ( currentShape; shapes )
     {
-      Stdout.format( "    {}", currentShape.classinfo.name ).newline;
-      Stdout.format( "        area      = {}", currentShape.area() ).newline;
-      Stdout.format( "        perimeter = {}", currentShape.perimeter() ).newline;
+      writefln( "    %s", currentShape.classinfo.name );
+      writefln( "        area      = %s", currentShape.area() );
+      writefln( "        perimeter = %s", currentShape.perimeter() );
     }
 
     // Notice how the area() and perimeter() functions really
     // invoke the appropriate virtual method on each object.
 
     // ----- Delete everything -----
-    Stdout( "\nGuess I'll clean up now:" ).newline;
+    writeln( "\nGuess I'll clean up now:" );
     // Note: when this using scope is exited the D destructors are called which
     // in turn call the C++ destructors.
   }
 
-  Stdout.format( "{} shapes remain", Shape.nshapes ).newline;
-  Stdout( "\nGoodbye!" ).newline;
+  writefln( "%s shapes remain", Shape.nshapes );
+  writeln( "\nGoodbye!" );
 }

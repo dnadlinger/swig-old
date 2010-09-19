@@ -1,20 +1,28 @@
-TOP        = ../..
-SWIG       = $(TOP)/../preinst-swig
-SRCS       = example.c
-TARGET     = example_wrap
-INTERFACE  = example.i
-SWIGOPT    =
-DSRCS      = *.d
-DFLAGS     = -ofrunme
+ifeq (2,$(D_VERSION))
+  WORKING_DIR = d2/
+else
+  WORKING_DIR = d1/
+endif
+
+TOP           = ../../..
+SWIG          = $(TOP)/../preinst-swig
+EXTRA_CFLAGS  = -I../ ../example.c example_wrap.c
+EXTRA_LDFLAGS = example.o example_wrap.o
+TARGET        = example_wrap
+SWIGOPT       = -outcurrentdir ../example.i
+DSRCS         = *.d
+DFLAGS        = -ofrunme
+
 
 all::	d
 
 d::
-	$(MAKE) -f $(TOP)/Makefile SRCS='$(SRCS)' SWIG='$(SWIG)' \
-	SWIGOPT='$(SWIGOPT)' TARGET='$(TARGET)' INTERFACE='$(INTERFACE)' d
+	cd $(WORKING_DIR); \
+	$(MAKE) -f $(TOP)/Makefile EXTRA_CFLAGS='$(EXTRA_CFLAGS)' EXTRA_LDFLAGS='$(EXTRA_LDFLAGS)' SWIG='$(SWIG)' SWIGOPT='$(SWIGOPT)' TARGET='$(TARGET)' d; \
 	$(MAKE) -f $(TOP)/Makefile DSRCS='$(DSRCS)' DFLAGS='$(DFLAGS)' d_compile
 
 clean::
+	cd $(WORKING_DIR); \
 	$(MAKE) -f $(TOP)/Makefile d_clean
 
 check: all

@@ -1,5 +1,7 @@
-import example;
+module runme;
+
 import tango.io.Stdout;
+import example;
 
 void main() {
   Stdout( "Printing out some enum values:" ).newline;
@@ -19,7 +21,7 @@ void main() {
   example.enum_test(color.GREEN, Foo.speed.LUDICROUS);
 
   Stdout( "\nTesting use of enum with class method:" ).newline;
-  scope auto f = new Foo();
+  scope f = new Foo();
   f.enum_test(Foo.speed.IMPULSE);
   f.enum_test(Foo.speed.WARP);
   f.enum_test(Foo.speed.LUDICROUS);

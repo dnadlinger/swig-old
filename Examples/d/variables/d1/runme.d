@@ -1,26 +1,26 @@
 // This example illustrates global variable access from C#.
+module runme;
 
-static import example;
 import tango.io.Stdout;
+static import example;
 
 void main() {
-
   // Try to set the values of some global variables
-  example.ivar   =  42;
-  example.svar   = -31000;
-  example.lvar   =  65537;
-  example.uivar  =  123456;
-  example.usvar  =  61000;
-  example.ulvar  =  654321;
-  example.scvar  =  -13;
-  example.ucvar  =  251;
-  example.cvar   =  'S';
-  example.fvar   =  3.14159f;
-  example.dvar   =  2.1828;
-  example.strvar =  "Hello World";
-  example.iptrvar= example.new_int(37);
-  example.ptptr  = example.new_Point(37,42);
-  example.name   = "Bill";
+  example.ivar    =  42;
+  example.svar    = -31000;
+  example.lvar    =  65537;
+  example.uivar   =  123456;
+  example.usvar   =  61000;
+  example.ulvar   =  654321;
+  example.scvar   =  -13;
+  example.ucvar   =  251;
+  example.cvar    =  'S';
+  example.fvar    =  3.14159f;
+  example.dvar    =  2.1828;
+  example.strvar  =  "Hello World";
+  example.iptrvar = example.new_int(37);
+  example.ptptr   = example.new_Point(37,42);
+  example.name    = "Bill";
 
   // Now print out the values of the variables
   Stdout.formatln( "Variables (printed from D):" );
