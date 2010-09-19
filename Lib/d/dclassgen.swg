@@ -108,7 +108,7 @@ protected this() {
   m_swigCObject = null;
 }
 
-package static void* swigGetCObject($dclassname obj) {
+public static void* swigGetCObject($dclassname obj) {
   return (obj is null) ? null : obj.m_swigCObject;
 }
 %}
