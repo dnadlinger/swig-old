@@ -3,12 +3,12 @@ import tango.io.Stdout;
 
 void main() {
   Stdout.formatln("ICONST  = {} (should be 42)", example.ICONST);
-  Stdout.formatln("FCONST  = {} (should be 2.1828)", example.FCONST);
+  Stdout.formatln("FCONST  = {} (should be 2.18)", example.FCONST);
   Stdout.formatln("CCONST  = {} (should be 'x')", example.CCONST);
   Stdout.formatln("CCONST2 = {} (this should be on a new line)", example.CCONST2);
   Stdout.formatln("SCONST  = {} (should be 'Hello World')", example.SCONST);
   Stdout.formatln("SCONST2 = {} (should be '\"Hello World\"')", example.SCONST2);
-  Stdout.formatln("EXPR    = {} (should be 48.5484)", example.EXPR);
+  Stdout.formatln("EXPR    = {} (should be 48.55)", example.EXPR);
   Stdout.formatln("iconst  = {} (should be 37)", example.iconst);
   Stdout.formatln("fconst  = {} (should be 3.14)", example.fconst);
 
