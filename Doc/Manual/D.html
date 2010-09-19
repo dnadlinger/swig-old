@@ -38,6 +38,15 @@
 <H2><a name="D_introduction"></a>36.1 Introduction</H2>
 
 
+<p>From the <a href="http://www.digitalmars.com/d/">D Programming Language</a> web site: <em>»D is a systems programming language. Its focus is on combining the power and high performance of C and C++ with the programmer productivity of modern languages like Ruby and Python. […] The D language is statically typed and compiles directly to machine code.«</em> As such, it is not very surprising that D is able to directly <a href="http://www.digitalmars.com/d/1.0/interfaceToC.html">interface with C libraries</a>. Why would a SWIG module for D be needed then in the first place?</p>
+
+<p>Well, besides the obvious downside that the C header files have to be manually converted to D modules for this to work, there is one major inconvenience with this approach: D code usually is on a higher abstraction level than C, and many of the features that make D interesting are simply not available when dealing with C libraries, requiring you e.g. to manually convert strings between pointers to <tt>\0</tt>-terminated char arrays and D char arrays, making the algorithms from the D2 standard library unusable with C arrays and data structures, and so on.</p>
+
+<p>While these issues can be worked around relatively easy by hand-coding a thin wrapper layer around the C library in question, there is another issue where writing wrapper code per hand is not feasible: C++ libraries. D did not support interfacing to C++ in version 1 at all, and even if <tt>extern(C++)</tt> has been added to D2, the support is still very limited, and a custom wrapper layer is still required in many cases. </p>
+
+<p>To help addressing these issues, the SWIG C# module has been forked to support D. Is has evolved quite a lot since then, but there are still many similarities, so if you do not find what you are looking for on this page, it might be worth having a look at the chapter on <a href="CSharp.html">C#</a> (and also on <a href="Java.html">Java</a>, since the C# module was in turn forked from it).</p>
+
+
 <H2><a name="D_command_line_invocation"></a>36.2 Command line invocation</H2>
 
 
@@ -327,6 +336,7 @@ enum SomeReallyLongEnumName {
 
 <p>The <a href="SWIGPlus.html#SWIGPlus_nspace"><tt>nspace</tt></a> feature of SWIG is not yet supported for D – all class modules are written to the same package, regardless of which C++ namespace they are in.</p>
 
+<p>Support of pointers to primitive types.</p>
 
 
 <H2><a name="D_typemap_examples"></a>36.9 D Typemap examples</H2>
