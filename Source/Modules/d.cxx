@@ -3107,7 +3107,7 @@ private:
             }
             String *proxyclassname = SwigType_str(Getattr(n, "classtypeobj"), 0);
             String *baseclassname = SwigType_str(Getattr(base.item, "name"), 0);
-            Swig_warning(WARN_D_MULTIPLE_INHERITANCE, input_file, line_number,
+            Swig_warning(WARN_D_MULTIPLE_INHERITANCE, Getfile(n), Getline(n),
 	      "Base %s of class %s ignored: multiple inheritance is not supported in D.\n", baseclassname, proxyclassname);
             base = Next(base);
           }
@@ -3128,12 +3128,12 @@ private:
       Delete(baseclass);
       baseclass = NULL;
       if (purebase_notderived) {
-        Swig_error(input_file, line_number,
+        Swig_error(Getfile(n), Getline(n),
 	  "The dbase typemap for proxy %s must contain just one of the 'replace' or 'notderived' attributes.\n",
 	  typemap_lookup_type);
       }
     } else if (baseclass && Len(pure_baseclass) > 0) {
-      Swig_warning(WARN_D_MULTIPLE_INHERITANCE, input_file, line_number,
+      Swig_warning(WARN_D_MULTIPLE_INHERITANCE, Getfile(n), Getline(n),
 	"Warning for %s proxy: Base class %s ignored. Multiple inheritance is not supported in D. "
 	"Perhaps you need one of the 'replace' or 'notderived' attributes in the dbase typemap?\n", typemap_lookup_type, pure_baseclass);
     }
@@ -3230,12 +3230,12 @@ private:
 
     if (tm && *Char(tm)) {
       if (!dispose_methodname) {
-	Swig_error(input_file, line_number,
+	Swig_error(Getfile(n), Getline(n),
 	  "No methodname attribute defined in the ddispose%s typemap for %s\n",
 	  (derived ? "_derived" : ""), proxy_class_name);
       }
       if (!dispose_methodmodifiers) {
-	Swig_error(input_file, line_number,
+	Swig_error(Getfile(n), Getline(n),
 	  "No methodmodifiers attribute defined in ddispose%s typemap for %s.\n",
 	  (derived ? "_derived" : ""), proxy_class_name);
       }
