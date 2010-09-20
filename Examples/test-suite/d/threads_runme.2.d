@@ -26,13 +26,8 @@ void main() {
   }
 
   // Wait for the threads to finish.
-  foreach (thread; threads) {
-    thread.join();
-  }
-
-  // Check if any thread has failed.
-  foreach (thread; threads) {
-    enforce(!thread.failed);
+  foreach (i, thread; threads) {
+    thread.join(true);
   }
 }
 
@@ -43,25 +38,18 @@ class TestThread : Thread {
   }
 
   void run() {
-    failed = false;
-    try {
-      foreach (i; WORK_RANGE) {
-	string given = "This is the test string that should come back. A number: " ~ to!string(i);
-	string received = m_kerf.StdString(given);
-	enforce(received == given, "StdString string does not match. Received: '" ~ received ~ "'. Expected: '" ~ given ~ "'.");
-      }
-      foreach (i; WORK_RANGE) {
-	string given = "This is the test string that should come back. A number: " ~ to!string(i);
-	string received = m_kerf.CharString(given);
-	enforce(received == given, "CharString string does not match. Received: '" ~ received ~ "'. Expected: '" ~ given ~ "'.");
-      }
-    } catch (Exception e) {
-      writefln("Test failed (thread %s): %s", name, e.msg);
-      failed = true;
+    foreach (i; WORK_RANGE) {
+    	string given = "This is the test string that should come back. A number: " ~ to!string(i);
+    	string received = m_kerf.StdString(given);
+    	enforce(received == given, "StdString string does not match. Received: '" ~ received ~ "'. Expected: '" ~ given ~ "'.");
+    }
+    foreach (i; WORK_RANGE) {
+    	string given = "This is the test string that should come back. A number: " ~ to!string(i);
+    	string received = m_kerf.CharString(given);
+    	enforce(received == given, "CharString string does not match. Received: '" ~ received ~ "'. Expected: '" ~ given ~ "'.");
     }
   }
 
-  bool failed;
 private:
   Kerfuffle m_kerf;
 }
