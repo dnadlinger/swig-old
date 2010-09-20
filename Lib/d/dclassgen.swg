@@ -61,6 +61,7 @@
   }
 }
 
+%define SWIGD_CLASS_BODIES(OP_EQUALS_RETURN)
 // Unfortunately, the »package« visibility attribute does not work in D when the
 // module in question is in the root package (happens if no -package is specified
 // at the SWIG command line), so we are stuck with public visibility for
@@ -74,6 +75,13 @@ public this(void* cObject, bool ownCObject) {
   m_swigOwnCObject = ownCObject;
 }
 
+public override OP_EQUALS_RETURN opEquals(Object rhs) {
+  if (auto other = cast($dclassname)rhs) {
+    return (m_swigCObject == other.m_swigCObject);
+  }
+  return super.opEquals(rhs);
+}
+
 public static void* swigGetCObject($dclassname obj) {
   return (obj is null) ? null : obj.m_swigCObject;
 }
@@ -85,6 +93,13 @@ private void* m_swigCObject;
 public this(void* cObject, bool ownCObject) {
   super($wrapdmodule.$dclassnameUpcast(cObject), ownCObject);
   m_swigCObject = cObject;
+}
+
+public override OP_EQUALS_RETURN opEquals(Object rhs) {
+  if (auto other = cast($dclassname)rhs) {
+    return (m_swigCObject == other.m_swigCObject);
+  }
+  return super.opEquals(rhs);
 }
 
 public static void* swigGetCObject($dclassname obj) {
@@ -108,6 +123,13 @@ protected this() {
   m_swigCObject = null;
 }
 
+public override OP_EQUALS_RETURN opEquals(Object rhs) {
+  if (auto other = cast($dclassname)rhs) {
+    return (m_swigCObject == other.m_swigCObject);
+  }
+  return super.opEquals(rhs);
+}
+
 public static void* swigGetCObject($dclassname obj) {
   return (obj is null) ? null : obj.m_swigCObject;
 }
@@ -129,7 +151,25 @@ protected this() {
   m_swigCMemberPtr = null;
 }
 
+public override OP_EQUALS_RETURN opEquals(Object rhs) {
+  if (auto other = cast($dclassname)rhs) {
+    return (m_swigCMemberPtr == other.m_swigCMemberPtr);
+  }
+  return super.opEquals(rhs);
+}
+
+
 package static char* swigGetCMemberPtr($dclassname obj) {
   return (obj is null) ? null : obj.m_swigCMemberPtr;
 }
 %}
+%enddef
+
+
+#if SWIG_D_VERSION == 1
+  SWIGD_CLASS_BODIES(int)
+#else
+  SWIGD_CLASS_BODIES(bool)
+#endif
+
+#undef SWIGD_CLASS_BODIES

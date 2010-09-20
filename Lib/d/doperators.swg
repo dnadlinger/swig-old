@@ -42,7 +42,10 @@
 %ignoreoperator(LNOT) operator!;
 
 // a != b is rewritten as !a.opEquals(b) in D.
-%rename(opEquals) operator==;
+// For now, just ignore both of them, since there would be quite a bit of magic
+// needed to correctly generate a wrapper method for non-primitives types (there is
+// only one opEquals overload with an Object parameter in D).
+%ignoreoperator(EQ) operator==;
 %ignoreoperator(NOTEQUAL) operator!=;
 
 // opCmp is used in D.
