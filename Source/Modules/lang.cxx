@@ -1347,7 +1347,7 @@ int Language::variableHandler(Node *n) {
     Swig_save("variableHandler", n, "feature:immutable", NIL);
     if (SmartPointer) {
       /* If a smart-pointer and it's a constant access, we have to set immutable */
-      if (Getattr(CurrentClass, "allocate:smartpointerconst")) {
+      if (!Getattr(CurrentClass, "allocate:smartpointermutable")) {
 	SetFlag(n, "feature:immutable");
       }
     }
@@ -1394,7 +1394,7 @@ int Language::membervariableHandler(Node *n) {
     int assignable = is_assignable(n);
 
     if (SmartPointer) {
-      if (Getattr(CurrentClass, "allocate:smartpointerconst")) {
+      if (!Getattr(CurrentClass, "allocate:smartpointermutable")) { 
 	assignable = 0;
       }
     }
@@ -2446,6 +2446,9 @@ int Language::classHandler(Node *n) {
     List *methods = Getattr(n, "allocate:smartpointer");
     cplus_mode = PUBLIC;
     SmartPointer = CWRAP_SMART_POINTER;
+    if (Getattr(n, "allocate:smartpointerconst") && Getattr(n, "allocate:smartpointermutable")) {
+      SmartPointer |= CWRAP_SMART_POINTER_OVERLOAD;
+    }
     Iterator c;
     for (c = First(methods); c.item; c = Next(c)) {
       emit_one(c.item);

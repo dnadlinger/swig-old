@@ -319,6 +319,7 @@ extern int        ParmList_is_compactdefargs(ParmList *p);
   extern String *Swig_string_lower(String *s);
   extern String *Swig_string_upper(String *s);
   extern String *Swig_string_title(String *s);
+  extern String *Swig_pcre_version(void);
   extern void Swig_init(void);
   extern int Swig_value_wrapper_mode(int mode);
 
@@ -369,6 +370,7 @@ extern int        ParmList_is_compactdefargs(ParmList *p);
 #define  CWRAP_DIRECTOR_ONE_CALL      0x08
 #define  CWRAP_DIRECTOR_TWO_CALLS     0x10
 #define  CWRAP_ALL_PROTECTED_ACCESS   0x20
+#define  CWRAP_SMART_POINTER_OVERLOAD 0x40
 
 /* --- Director Helpers --- */
   extern Node *Swig_methodclass(Node *n);

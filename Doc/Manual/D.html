@@ -6,7 +6,7 @@
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 </head>
 <body bgcolor="#FFFFFF">
-<H1><a name="D"></a>36 SWIG and D</H1>
+<H1><a name="D"></a>20 SWIG and D</H1>
 <!-- INDEX -->
 <div class="sectiontoc">
 <ul>
@@ -35,7 +35,7 @@
 
 
 
-<H2><a name="D_introduction"></a>36.1 Introduction</H2>
+<H2><a name="D_introduction"></a>20.1 Introduction</H2>
 
 
 <p>From the <a href="http://www.digitalmars.com/d/">D Programming Language</a> web site: <em>»D is a systems programming language. Its focus is on combining the power and high performance of C and C++ with the programmer productivity of modern languages like Ruby and Python. […] The D language is statically typed and compiles directly to machine code.«</em> As such, it is not very surprising that D is able to directly <a href="http://www.digitalmars.com/d/1.0/interfaceToC.html">interface with C libraries</a>. Why would a SWIG module for D be needed then in the first place?</p>
@@ -47,7 +47,7 @@
 <p>To help addressing these issues, the SWIG C# module has been forked to support D. Is has evolved quite a lot since then, but there are still many similarities, so if you do not find what you are looking for on this page, it might be worth having a look at the chapter on <a href="CSharp.html">C#</a> (and also on <a href="Java.html">Java</a>, since the C# module was in turn forked from it).</p>
 
 
-<H2><a name="D_command_line_invocation"></a>36.2 Command line invocation</H2>
+<H2><a name="D_command_line_invocation"></a>20.2 Command line invocation</H2>
 
 
 <p>To activate the D module, pass the <tt>-d</tt> option to SWIG at the command line. The same standard command line switches as with any other language module are available, plus the following D specific ones:</p>
@@ -72,10 +72,10 @@
 </dl>
 
 
-<H2><a name="D_typemaps"></a>36.3 Typemaps</H2>
+<H2><a name="D_typemaps"></a>20.3 Typemaps</H2>
 
 
-<H3><a name="D_typemap_name_comparison"></a>36.3.1 C# &lt;-&gt; D name comparison</H3>
+<H3><a name="D_typemap_name_comparison"></a>20.3.1 C# &lt;-&gt; D name comparison</H3>
 
 
 <div class="diagram"><pre>
@@ -99,7 +99,7 @@
 </pre></div>
 
 
-<H3><a name="D_cwtype_dwtype_dptype"></a>36.3.2 cwtype, dwtype, dptype</H3>
+<H3><a name="D_cwtype_dwtype_dptype"></a>20.3.2 cwtype, dwtype, dptype</H3>
 
 
 <p>Mapping of types between the C/C++ library, the C/C++ library wrapper exposing the C functions, the D wrapper module importing these functions and the D proxy code.</p>
@@ -107,7 +107,7 @@
 <p>The <tt>cwtype</tt> typemap is used to determine the types to use in the C wrapper functions. The types from the <tt>dwtype</tt> typemap are used in the extern(C) declarations of these functions in the D wrap module. The <tt>dptype</tt> typemap contains the D types used in the D proxy module/class.</p>
 
 
-<H3><a name="D_in_out_directorin_direcetorout"></a>36.3.3 in, out, directorin, directorout</H3>
+<H3><a name="D_in_out_directorin_direcetorout"></a>20.3.3 in, out, directorin, directorout</H3>
 
 
 <p>Used for converting between the types for C/C++ and D when generating the code for the wrapper functions (on the C++ side).</p>
@@ -117,7 +117,7 @@
 <p>The <tt>directorin</tt> typemap is used to convert parameters to the type used in the D director callback function, its return value is processed by <tt>directorout</tt> (see below).</p>
 
 
-<H3><a name="D_din_dout_ddirectorin_ddirectorout"></a>36.3.4 din, dout, ddirectorin, ddirectorout</H3>
+<H3><a name="D_din_dout_ddirectorin_ddirectorout"></a>20.3.4 din, dout, ddirectorin, ddirectorout</H3>
 
 
 <p>Typemaps for code generation in D proxy and type wrapper classes.</p>
@@ -143,13 +143,13 @@
       dptype DClass.method(dptype a)</pre></div>
 
 
-<H3><a name="D_typecheck_typemaps"></a>36.3.5 typecheck typemaps</H3>
+<H3><a name="D_typecheck_typemaps"></a>20.3.5 typecheck typemaps</H3>
 
 
 <p>Because, unlike many scripting languages supported by SWIG, D does not need any dynamic dispatch helper to access an overloaded function, the purpose of these is merely to issue a warning for overloaded C++ functions that cannot be overloaded in D (as more than one C++ type maps to a single D type).</p>
 
 
-<H3><a name="D_code_injection_typemaps"></a>36.3.6 Code injection typemaps</H3>
+<H3><a name="D_code_injection_typemaps"></a>20.3.6 Code injection typemaps</H3>
 
 
 <p>These typemaps are used for generating the skeleton of proxy classes for C++ types.</p>
@@ -161,7 +161,7 @@
 <p id="D_class_code_typemaps"><tt>dconstructor</tt>, <tt>ddestructor</tt>, <tt>ddispose</tt> and <tt>ddispose_derived</tt> are used to generate the class constructor, destructor and <tt>dispose()</tt> method, respectively. The auxiliary code for handling the pointer to the C++ object is stored in <tt>dbody</tt> and <tt>dbody_derived</tt>. You can override them for specific types.</p>
 
 
-<H3><a name="D_special_variables"></a>36.3.7 Special variable macros</H3>
+<H3><a name="D_special_variables"></a>20.3.7 Special variable macros</H3>
 
 
 <p>The standard SWIG special variables are available for use within typemaps as described in the <a href="Typemaps.html#Typemaps">Typemaps documentation</a>, for example <tt>$1</tt>, <tt>$input</tt>, <tt>$result</tt> etc.</p>
@@ -274,7 +274,7 @@ $import_type(AnotherInterface)
 </dl>
 
 
-<H2><a name="D_features"></a>36.4 <tt>%feature</tt>s</H2>
+<H2><a name="D_features"></a>20.4 <tt>%feature</tt>s</H2>
 
 
 <p>The D module defines a number of directives which modify the <a href="Customization.html#Customization_features">SWIG features</a> set globally or for a specific declaration:</p>
@@ -331,7 +331,8 @@ enum SomeReallyLongEnumName {
 </dl>
 
 
-<H2><a name="D_pragmas"></a>36.5 Pragmas</H2>
+<H2><a name="D_pragmas"></a>20.5 Pragmas</H2>
+
 
 <p>There are a few SWIG pragmas specific to the D module, which you can use to influence the D code SWIG generates:</p>
 
@@ -369,7 +370,7 @@ enum SomeReallyLongEnumName {
 </dl>
 
 
-<H2><a name="D_exceptions"></a>36.6 D Exceptions</H2>
+<H2><a name="D_exceptions"></a>20.6 D Exceptions</H2>
 
 
 <p>Out of the box, C++ exceptions are fundamentally incompatible to their equivalent in the D world and cannot simply be propagated to a calling D method. There is, however, an easy way to solve this problem: Just catch the exception in the C/C++ wrapper layer, pass the contents to D, and make the wrapper code rethrow the exception in the D world.</p>
@@ -379,7 +380,7 @@ enum SomeReallyLongEnumName {
 <p>As this feature is implemented in exactly the same way it is for C#, please see the <a href="CSharp.html#CSharp_exceptions">C# documentation</a> for a more detailed explanation.</p>
 
 
-<H2><a name="D_directors"></a>36.7 D Directors</H2>
+<H2><a name="D_directors"></a>20.7 D Directors</H2>
 
 
 <p>When the directors feature is activated, SWIG generates extra code on both the C++ and the D side to enable cross-language polymorphism. Essentially, this means that if you subclass a proxy class in D, C++ code can access any overridden virtual methods just as if you created a derived class in C++.</p>
@@ -388,7 +389,7 @@ enum SomeReallyLongEnumName {
 </p>
 
 
-<H2><a name="D_other_features"></a>36.8 Other features</H2>
+<H2><a name="D_other_features"></a>20.8 Other features</H2>
 
 
 <p>The <a href="SWIGPlus.html#SWIGPlus_nspace"><tt>nspace</tt></a> feature of SWIG is not yet supported for D – all class modules are written to the same package, regardless of which C++ namespace they are in.</p>
@@ -396,14 +397,14 @@ enum SomeReallyLongEnumName {
 <p>Support of pointers to primitive types.</p>
 
 
-<H2><a name="D_typemap_examples"></a>36.9 D Typemap examples</H2>
+<H2><a name="D_typemap_examples"></a>20.9 D Typemap examples</H2>
 
 
 <p>There are no D-specific typemap examples yet. However, with the above <a href="D.html#D_typemap_name_comparison">name comparison table</a>, you should be able to get an idea what can be done by looking at the <a href="CSharp.html#CSharp_typemap_examples">corresponding C# section</a>.</p>
 
 
 
-<H2><a name="D_planned_features"></a>36.10 Work in progress and planned features</H2>
+<H2><a name="D_planned_features"></a>20.10 Work in progress and planned features</H2>
 
 
 <p>There are a couple of features which are not implemented yet, but would be very useful and might be added in the near future:</p>
