@@ -4259,6 +4259,7 @@ private:
    * --------------------------------------------------------------------------- */
   bool wrapMemberFunctionAsDConst(Node *n) const {
     if (d_version == 1) return false;
+    if (static_flag) return false; // Never emit »const« for static member functions.
     return GetFlag(n, "memberget") || SwigType_isconst(Getattr(n, "decl"));
   }
 
