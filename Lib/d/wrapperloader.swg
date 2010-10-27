@@ -169,7 +169,7 @@ private {
     string swigGetErrorStr() {
       CCPTR err = dlerror();
       if (err is null) {
-        return "Uknown Error";
+        return "Unknown Error";
       }
       return swigToDString(err);
     }
@@ -178,7 +178,7 @@ private {
     alias CCPTR LPCSTR;
     alias void* HMODULE;
     alias void* HLOCAL;
-    alias int(*FARPROC)();
+    alias int function() FARPROC;
     struct VA_LIST {}
 
     extern (Windows) {
