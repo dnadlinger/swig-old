@@ -1,7 +1,4 @@
 /* -----------------------------------------------------------------------------
- * See the LICENSE file for information on copyright, usage and redistribution
- * of SWIG, and the README file for authors - http://www.swig.org/release.html.
- *
  * dvoid.swg
  *
  * Typemaps for handling void function return types and empty parameter lists.

@@ -1,7 +1,4 @@
 /* -----------------------------------------------------------------------------
- * See the LICENSE file for information on copyright, usage and redistribution
- * of SWIG, and the README file for authors - http://www.swig.org/release.html.
- *
  * dhead.swg
  *
  * Support code for exceptions if the SWIG_D_NO_EXCEPTION_HELPER is not defined

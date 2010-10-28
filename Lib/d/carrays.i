@@ -1,7 +1,4 @@
 /* -----------------------------------------------------------------------------
- * See the LICENSE file for information on copyright, usage and redistribution
- * of SWIG, and the README file for authors - http://www.swig.org/release.html.
- *
  * carrays.i
  *
  * D-specific version of ../carrays.i.
@@ -17,7 +14,7 @@
  *        void delete_NAME(TYPE *);
  *        TYPE NAME_getitem(TYPE *, int index);
  *        void NAME_setitem(TYPE *, int index, TYPE value);
- * 
+ *
  * ----------------------------------------------------------------------------- */
 
 %define %array_functions(TYPE,NAME)

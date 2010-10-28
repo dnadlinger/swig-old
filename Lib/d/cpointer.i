@@ -1,7 +1,4 @@
 /* -----------------------------------------------------------------------------
- * See the LICENSE file for information on copyright, usage and redistribution
- * of SWIG, and the README file for authors - http://www.swig.org/release.html.
- *
  * cpointer.i
  *
  * D-specific version of ../cpointer.i.
@@ -20,7 +17,7 @@
  *           type value();
  *           void assign(type value);
  *       };
- *         
+ *
  * Example:
  *
  *    %pointer_class(int, intp);
@@ -90,7 +87,7 @@ static NAME * frompointer(TYPE *t) {
 
 %enddef
 
-/* ----------------------------------------------------------------------------- 
+/* -----------------------------------------------------------------------------
  * %pointer_functions(type,name)
  *
  * Create functions for allocating/deallocating pointers.   This can be used
@@ -111,7 +108,7 @@ static NAME * frompointer(TYPE *t) {
  *    30
  *    >>> delete_intp(a)
  *    >>> delete_intp(b)
- * 
+ *
  * ----------------------------------------------------------------------------- */
 
 %define %pointer_functions(TYPE,NAME)
