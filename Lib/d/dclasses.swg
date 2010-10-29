@@ -14,7 +14,7 @@
 
 %typemap(cwtype) SWIGTYPE * "void *"
 %typemap(dwtype) SWIGTYPE * "void*"
-%typemap(dptype) SWIGTYPE * "$dclassname"
+%typemap(dptype, nativepointer="$dptype") SWIGTYPE * "$dclassname"
 
 %typemap(cwtype) SWIGTYPE & "void *"
 %typemap(dwtype) SWIGTYPE & "void*"
@@ -87,11 +87,21 @@
 %typemap(directorout, warning=SWIGWARN_TYPEMAP_DIRECTOROUT_PTR_MSG) SWIGTYPE *
   "$result = ($1_ltype)$input;"
 
-%typemap(ddirectorin) SWIGTYPE * "($winput is null) ? null : new $dclassname($winput, false)"
-%typemap(ddirectorout) SWIGTYPE * "$dclassname.swigGetCObject($dpcall)"
+%typemap(ddirectorin,
+  nativepointer="cast($dptype)$winput"
+) SWIGTYPE * "($winput is null) ? null : new $dclassname($winput, false)"
 
-%typemap(din) SWIGTYPE * "$dclassname.swigGetCObject($dinput)"
-%typemap(dout, excode=SWIGEXCODE) SWIGTYPE * {
+%typemap(ddirectorout,
+  nativepointer="cast(void*)$dpcall"
+) SWIGTYPE * "$dclassname.swigGetCObject($dpcall)"
+
+%typemap(din,
+  nativepointer="cast(void*)$dinput"
+) SWIGTYPE * "$dclassname.swigGetCObject($dinput)"
+
+%typemap(dout, excode=SWIGEXCODE,
+  nativepointer="{\n  auto ret = cast($dptype)$wcall;$excode\n  return ret;\n}"
+) SWIGTYPE * {
   void* cPtr = $wcall;
   $dclassname ret = (cPtr is null) ? null : new $dclassname(cPtr, $owner);$excode
   return ret;

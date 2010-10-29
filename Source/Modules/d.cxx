@@ -2540,7 +2540,7 @@ public:
    * D::unmatchedTypemapRequestHandler()
    * --------------------------------------------------------------------------- */
   virtual Hash *unmatchedTypemapRequestHandler(Node *node, SwigType *type, const String *tm_method) {
-    return lookupNativePointerTypemap(node, type, tm_method);
+    return NULL;
   }
 
 protected:
@@ -3696,104 +3696,28 @@ private:
   }
 
   /* ---------------------------------------------------------------------------
-   * D::lookupNativePointerTypemap()
-   *
-   * Returns a typemap hash for the given type if it is a pointer to a primitive
-   * type.
-   * --------------------------------------------------------------------------- */
-  Hash *lookupNativePointerTypemap(Node *node, SwigType *raw_type, const String *tm_method) {
-    // A reference can only be the »outermost element« of a type, so we handle
-    // it here.
-    SwigType *type = Copy(raw_type);
-    bool mutable_ref = false;
-    if (SwigType_isreference(type)) {
-      SwigType_del_reference(type);
-
-      if (SwigType_isconst(type)) {
-	SwigType_del_qualifier(type);
-      } else {
-	mutable_ref = true;
-      }
-    }
-
-    // Only bother invoking getPrimitiveDptype() if the type actually is a
-    // pointer (or a mutable reference, which is modelled as a pointer) to avoid
-    // infinite recursive loops because the method also has to do typemap
-    // lookups internally.
-    if (!SwigType_ispointer(type) && !mutable_ref) {
-      Delete(type);
-      return 0;
-    }
-
-    String *dptype = getPrimitiveDptype(node, type);
-    Delete(type);
-    if (!dptype) {
-      return 0;
-    }
-
-    if (mutable_ref) {
-      // Add a level of indirection for a mutable reference since it is wrapped
-      // as a pointer.
-      Append(dptype, "*");
-    }
-
-    // dptype contains the type as represeted in the D proxy modules, we can
-    // construct the requested typemap now.
-    String *typemap_code = 0;
-    ParmList *typemap_kwargs = 0;
-    if (Cmp(tm_method, "dptype") == 0) {
-      typemap_code = Copy(dptype);
-    } else if (Cmp(tm_method, "dwtype") == 0 ) {
-      typemap_code = NewString("void*");
-    } else if (Cmp(tm_method, "cwtype") == 0 ) {
-      typemap_code = NewString("void *");
-    } else if (Cmp(tm_method, "din") == 0 ) {
-      typemap_code = NewString("cast(void*)$dinput");
-    } else if (Cmp(tm_method, "dout") == 0 ) {
-      typemap_code = NewStringf(
-	"{\n"
-	"  auto ret = cast(%s)$wcall;$excode\n"
-	"  return ret;\n"
-	"}",
-	dptype
-      );
-      typemap_kwargs = NewHash();
-      Setattr(typemap_kwargs, "name", "excode");
-      Setattr(typemap_kwargs, "value",
-	"\n  if ($wrapdmodule.SwigPendingException.isPending) throw "
-	"$wrapdmodule.SwigPendingException.retrieve();");
-    } else if (Cmp(tm_method, "ddirectorin") == 0 ) {
-      typemap_code = NewStringf("cast(%s)$winput", dptype);
-    } else if (Cmp(tm_method, "ddirectorout") == 0 ) {
-      typemap_code = NewStringf("cast(void*)$dpcall", dptype);
-    }
-    // For the other methods (the C/C++ side), we just use the default typemaps,
-    // they perform the required conversion to void *.
-
-    Delete(dptype);
-
-    if (!typemap_code) {
-      // An unknown typemap method was requested.
-      return 0;
-    }
-
-    // Write the result to a hash as required internally by the typemap system.
-    Hash *result = NewHash();
-    Setattr(result, "code", typemap_code);
-    Setattr(result, "kwargs", typemap_kwargs);
-    return result;
-  }
-
-  /* ---------------------------------------------------------------------------
    * D::getPrimitiveDptype()
    *
    * Returns the D proxy type for the passed type if it is a primitive type in
    * both C and D.
    * --------------------------------------------------------------------------- */
   String *getPrimitiveDptype(Node *node, SwigType *type) {
+    SwigType *stripped_type = SwigType_typedef_resolve_all(type);
+
+    // A reference can only be the »outermost element« of a typ.
+    bool mutable_ref = false;
+    if (SwigType_isreference(stripped_type)) {
+      SwigType_del_reference(stripped_type);
+
+      if (SwigType_isconst(stripped_type)) {
+	SwigType_del_qualifier(stripped_type);
+      } else {
+	mutable_ref = true;
+      }
+    }
+
     // Strip all the pointers from the type.
     int indirection_count = 0;
-    SwigType *stripped_type = Copy(type);
     while (SwigType_ispointer(stripped_type)) {
       ++indirection_count;
       SwigType_del_pointer(stripped_type);
@@ -3878,6 +3802,13 @@ private:
     for (int i = 0; i < indirection_count; ++i) {
       Append(dptype, "*");
     }
+
+    // Add a level of indirection for a mutable reference since it is wrapped
+    // as a pointer.
+    if (mutable_ref) {
+      Append(dptype, "*");
+    }
+
     return dptype;
   }
 
@@ -3942,10 +3873,21 @@ private:
       return 0;
     }
 
-    SwigType *type = Getattr(n, "type");
     // Check if the passed node actually has type information attached. This
     // is not the case e.g. in constructorWrapper.
+    SwigType *type = Getattr(n, "type");
     if (type) {
+      String *np_key = NewStringf("tmap:%s:nativepointer", method);
+      String *np_value = Getattr(n, np_key);
+      Delete(np_key);
+      String *dptype;
+      if (np_value && (dptype = getPrimitiveDptype(n, type))) {
+        // If the typemap in question has a »nativepointer« attribute and we
+        // are dealing with a primitive type, use it instead.
+        result = Copy(np_value);
+        Replaceall(result, "$dptype", dptype);
+      }
+
       replaceClassname(result, type);
     }
 
