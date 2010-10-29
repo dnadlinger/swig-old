@@ -3866,6 +3866,14 @@ private:
       result = Getattr(n, attr_name);
       Delete(attr_name);
     } else {
+      // FIXME: As a workaround for a bug so far only surfacing in the
+      // smart_pointer_const_overload test case, remove the nativepointer
+      // typemap attribute since it seems to be already there from a dout
+      // typemap of a different type in that test.
+      String *np_key = NewStringf("tmap:%s:nativepointer", method);
+      Delattr(n, np_key);
+      Delete(np_key);
+
       result = Swig_typemap_lookup(method, n, "", 0);
     }
 
