@@ -54,9 +54,6 @@ extern "C" {
   void Language_replace_special_variables(String *method, String *tm, Parm *parm) {
     Language::instance()->replaceSpecialVariables(method, tm, parm);
   }
-  Hash *Language_unmatched_typemap_request_handler(Node *node, SwigType *type, const String *tm_method) {
-    return Language::instance()->unmatchedTypemapRequestHandler(node, type, tm_method);
-  }
 }
 
 /* Some status variables used during parsing */
@@ -3505,13 +3502,6 @@ void Language::replaceSpecialVariables(String *method, String *tm, Parm *parm) {
   (void)method;
   (void)tm;
   (void)parm;
-}
-
-Hash *Language::unmatchedTypemapRequestHandler(Node *node, SwigType *type, const String *tm_method) {
-  (void)node;
-  (void)type;
-  (void)tm_method;
-  return 0;
 }
 
 Language *Language::instance() {

@@ -2536,13 +2536,6 @@ public:
     replaceClassname(tm, type);
   }
 
-  /* ---------------------------------------------------------------------------
-   * D::unmatchedTypemapRequestHandler()
-   * --------------------------------------------------------------------------- */
-  virtual Hash *unmatchedTypemapRequestHandler(Node *node, SwigType *type, const String *tm_method) {
-    return NULL;
-  }
-
 protected:
   /* ---------------------------------------------------------------------------
    * D::extraDirectorProtectedCPPMethodsRequired()

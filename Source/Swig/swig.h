@@ -1,5 +1,5 @@
-/* -----------------------------------------------------------------------------
- * This file is part of SWIG, which is licensed as a whole under version 3
+/* ----------------------------------------------------------------------------- 
+ * This file is part of SWIG, which is licensed as a whole under version 3 
  * (or any later version) of the GNU General Public License. Some additional
  * terms also apply to certain portions of SWIG. The full details of the SWIG
  * license and copyrights can be found in the LICENSE and COPYRIGHT files
@@ -53,10 +53,10 @@ extern "C" {
   typedef DOH Typetab;
   typedef DOH SwigType;
 
-/* --- Legacy DataType interface.  These type codes are provided solely
+/* --- Legacy DataType interface.  These type codes are provided solely 
        for backwards compatibility with older modules --- */
 
-/* --- The ordering of type values is used to determine type-promotion
+/* --- The ordering of type values is used to determine type-promotion 
        in the parser.  Do not change */
 
 /* Numeric types */
@@ -410,7 +410,6 @@ extern int        ParmList_is_compactdefargs(ParmList *p);
   extern void Wrapper_director_protected_mode_set(int);
   extern void Wrapper_all_protected_mode_set(int);
   extern void Language_replace_special_variables(String *method, String *tm, Parm *parm);
-  extern Hash *Language_unmatched_typemap_request_handler(Node *node, SwigType *type, const String *tm_method);
   extern void Swig_print(DOH *object, int count);
   extern void Swig_print_with_location(DOH *object, int count);
 

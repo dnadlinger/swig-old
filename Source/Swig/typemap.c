@@ -774,17 +774,6 @@ static Hash *typemap_search(const_String_or_char_ptr tmap_method, SwigType *type
       }
     }
 
-    /* No match has been found so far. Try invoking the handler of the active
-     * language module. */
-    {
-      SwigType *resolved_type = SwigType_typedef_resolve_all(type);
-      result = Language_unmatched_typemap_request_handler(node, resolved_type, tmap_method);
-      Delete(resolved_type);
-      if (result && Getattr(result, "code")) {
-        goto ret_result;
-      }
-    }
-
     /* Hmmm. Well, no match seems to be found at all. See if there is some kind of default (SWIGTYPE) mapping */
 
     primitive = SwigType_default_create(type);
