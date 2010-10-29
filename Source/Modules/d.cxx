@@ -1062,7 +1062,7 @@ public:
 
     // Typemaps were attached earlier to the node, get the return type of the
     // call to the C++ constructor wrapper.
-    const String *wrapper_return_type = Getattr(n, "tmap:dwtype");
+    const String *wrapper_return_type = lookupDTypemap(n, "dwtype", true);
 
     String *dwtypeout = Getattr(n, "tmap:dwtype:out");
     if (dwtypeout) {
@@ -1105,8 +1105,7 @@ public:
       String *param_type = NewString("");
 
       // Get the D parameter type.
-      if ((tm = Getattr(p, "tmap:dptype"))) {
-	replaceClassname(tm, pt);
+      if ((tm = lookupDTypemap(p, "dptype", true))) {
 	const String *inattributes = Getattr(p, "tmap:dptype:inattributes");
 	Printf(param_type, "%s%s", inattributes ? inattributes : empty_string, tm);
       } else {
@@ -1122,8 +1121,7 @@ public:
 
       // Get the D code to convert the parameter value to the type used in the
       // wrapper D module.
-      if ((tm = Getattr(p, "tmap:din"))) {
-	replaceClassname(tm, pt);
+      if ((tm = lookupDTypemap(p, "din"))) {
 	Replaceall(tm, "$dinput", arg);
 	String *pre = Getattr(p, "tmap:din:pre");
 	if (pre) {
@@ -1376,14 +1374,14 @@ public:
     // Get D return type.
     String *return_type = NewString("");
     String *tm;
-    if ((tm = Swig_typemap_lookup("dptype", n, "", 0))) {
+    if ((tm = lookupDTypemap(n, "dptype"))) {
       String *dptypeout = Getattr(n, "tmap:dptype:out");
       if (dptypeout) {
 	// The type in the out attribute of the typemap overrides the type
 	// in the dptype typemap.
 	tm = dptypeout;
+	      replaceClassname(tm, t);
       }
-      replaceClassname(tm, t);
       Printf(return_type, "%s", tm);
     } else {
       Swig_warning(WARN_D_TYPEMAP_DPTYPE_UNDEF, input_file, line_number,
@@ -1481,7 +1479,7 @@ public:
     Swig_typemap_attach_parms("dwtype", l, f);
 
     /* Get return types */
-    if ((tm = Swig_typemap_lookup("cwtype", n, "", 0))) {
+    if ((tm = lookupDTypemap(n, "cwtype"))) {
       String *cwtypeout = Getattr(n, "tmap:cwtype:out");
       if (cwtypeout) {
 	// The type in the cwtype typemap's out attribute overrides the type in
@@ -1494,7 +1492,7 @@ public:
 	"No cwtype typemap defined for %s\n", SwigType_str(t, 0));
     }
 
-    if ((tm = Swig_typemap_lookup("dwtype", n, "", 0))) {
+    if ((tm = lookupDTypemap(n, "dwtype"))) {
       String *dwtypeout = Getattr(n, "tmap:dwtype:out");
       if (dwtypeout) {
 	// The type in the dwtype typemap's out attribute overrides the type in
@@ -1555,14 +1553,14 @@ public:
       Printf(arg, "j%s", ln);
 
       /* Get the cwtype types of the parameter */
-      if ((tm = Getattr(p, "tmap:cwtype"))) {
+      if ((tm = lookupDTypemap(p, "cwtype", true))) {
 	Printv(c_param_type, tm, NIL);
       } else {
 	Swig_warning(WARN_D_TYPEMAP_CWTYPE_UNDEF, input_file, line_number, "No cwtype typemap defined for %s\n", SwigType_str(pt, 0));
       }
 
       /* Get the intermediary class parameter types of the parameter */
-      if ((tm = Getattr(p, "tmap:dwtype"))) {
+      if ((tm = lookupDTypemap(p, "dwtype", true))) {
 	const String *inattributes = Getattr(p, "tmap:dwtype:inattributes");
 	Printf(im_param_type, "%s%s", inattributes ? inattributes : empty_string, tm);
       } else {
@@ -1960,7 +1958,7 @@ public:
       /* Create the intermediate class wrapper */
       Parm *tp = NewParm(returntype, empty_str, n);
 
-      tm = Swig_typemap_lookup("dwtype", tp, "", 0);
+      tm = lookupDTypemap(tp, "dwtype");
       if (tm) {
 	String *dwtypeout = Getattr(tp, "tmap:dwtype:out");
 	if (dwtypeout) {
@@ -2055,7 +2053,7 @@ public:
       Printf(dcallback_call_args, ", %s", arg);
 
       /* Get parameter's intermediary C type */
-      if ((c_param_type = Getattr(p, "tmap:cwtype"))) {
+      if ((c_param_type = lookupDTypemap(p, "cwtype", true))) {
 	String *cwtypeout = Getattr(p, "tmap:cwtype:out");
 	if (cwtypeout) {
 	  // The type in the cwtype typemap's out attribute overrides the type
@@ -2089,7 +2087,7 @@ public:
 
 	  /* Add parameter to the intermediate class code if generating the
 	   * intermediate's upcall code */
-	  if ((tm = Getattr(p, "tmap:dwtype"))) {
+	  if ((tm = lookupDTypemap(p, "dwtype", true))) {
 	    String *dwtypeout = Getattr(p, "tmap:dwtype:out");
 	    if (dwtypeout) {
 	      // The type in the dwtype typemap's out attribute overrides the
@@ -2098,10 +2096,10 @@ public:
 	    }
 	    const String *im_directorinattributes = Getattr(p, "tmap:dwtype:directorinattributes");
 
-	    String *din = Copy(Getattr(p, "tmap:ddirectorin"));
+      // TODO: Is this copy really needed?
+	    String *din = Copy(lookupDTypemap(p, "ddirectorin", true));
 
 	    if (din) {
-	      replaceClassname(din, pt);
 	      Replaceall(din, "$winput", ln);
 
 	      Printf(delegate_parms, ", ");
@@ -2117,11 +2115,12 @@ public:
 		Printv(imcall_args, ln, NIL);
 	      }
 
+        Delete(din);
+
 	      // Get the parameter type in the proxy D class (used later when
 	      // generating the overload checking code for the directorConnect
 	      // function).
-	      if ((tm = Getattr(p, "tmap:dptype"))) {
-		replaceClassname(tm, pt);
+	      if ((tm = lookupDTypemap(p, "dptype", true))) {
 		Printf(proxy_method_param_list, "%s", tm);
 	      } else {
 		Swig_warning(WARN_D_TYPEMAP_DPTYPE_UNDEF, input_file, line_number,
@@ -2225,8 +2224,7 @@ public:
       Parm *tp = NewParm(returntype, empty_str, n);
 
       // RESEARCH: What happens if there is no ddirectorout typemap?
-      if ((tm = Swig_typemap_lookup("ddirectorout", tp, "", 0))) {
-	replaceClassname(tm, returntype);
+      if ((tm = lookupDTypemap(tp, "ddirectorout"))) {
 	Replaceall(tm, "$dpcall", upcall);
 
 	Printf(callback_code, "  return %s;\n", tm);
@@ -2253,6 +2251,7 @@ public:
 	Parm *tp = NewParm(returntype, result_str, n);
 
 	/* Copy jresult into c_result... */
+	// FIXME: lookupDTypemap?
 	if ((tm = Swig_typemap_lookup("directorout", tp, result_str, w))) {
 	  Replaceall(tm, "$input", jresult_str);
 	  Replaceall(tm, "$result", result_str);
@@ -2316,15 +2315,15 @@ public:
       // the full return type any longer after Language::functionHandler has
       // returned.
       Parm *tp = NewParm(returntype, empty_str, n);
-      String *dp_return_type = Swig_typemap_lookup("dptype", tp, "", 0);
+      String *dp_return_type = lookupDTypemap(tp, "dptype");
       if (dp_return_type) {
 	String *dptypeout = Getattr(n, "tmap:dptype:out");
 	if (dptypeout) {
 	  // The type in the dptype typemap's out attribute overrides the type
 	  // in the typemap itself.
 	  dp_return_type = dptypeout;
+  	replaceClassname(dp_return_type, returntype);
 	}
-	replaceClassname(dp_return_type, returntype);
       } else {
 	Swig_warning(WARN_D_TYPEMAP_DPTYPE_UNDEF, input_file, line_number,
 	  "No dptype typemap defined for %s\n", SwigType_str(type, 0));
@@ -2624,14 +2623,14 @@ private:
     Swig_typemap_attach_parms("din", l, NULL);
 
     // Get return types.
-    if ((tm = Swig_typemap_lookup("dptype", n, "", 0))) {
+    if ((tm = lookupDTypemap(n, "dptype"))) {
       String *dptypeout = Getattr(n, "tmap:dptype:out");
       if (dptypeout) {
 	// The type in the dptype typemap's out attribute overrides the type in
 	// the typemap.
 	tm = dptypeout;
+        replaceClassname(tm, t);
       }
-      replaceClassname(tm, t);
       Printf(return_type, "%s", tm);
     } else {
       Swig_warning(WARN_D_TYPEMAP_DPTYPE_UNDEF, input_file, line_number,
@@ -2712,8 +2711,7 @@ private:
 	    Printf(imcall, ", ");
 	  }
 
-	  if ((tm = Getattr(p, "tmap:din"))) {
-	    replaceClassname(tm, pt);
+	  if ((tm = lookupDTypemap(p, "din", true))) {
 	    Replaceall(tm, "$dinput", param_name);
 	    String *pre = Getattr(p, "tmap:din:pre");
 	    if (pre) {
@@ -2750,8 +2748,7 @@ private:
 	{
 	  String *proxy_type = NewString("");
 
-	  if ((tm = Getattr(p, "tmap:dptype"))) {
-	    replaceClassname(tm, pt);
+	  if ((tm = lookupDTypemap(p, "dptype"))) {
 	    const String *inattributes = Getattr(p, "tmap:dptype:inattributes");
 	    Printf(proxy_type, "%s%s", inattributes ? inattributes : empty_string, tm);
 	  } else {
@@ -2785,7 +2782,7 @@ private:
 
     // Lookup the code used to convert the wrapper return value to the proxy
     // function return type.
-    if ((tm = Swig_typemap_lookup("dout", n, "", 0))) {
+    if ((tm = lookupDTypemap(n, "dout"))) {
       replaceExcode(n, tm, "dout", n);
       bool is_pre_code = Len(pre_code) > 0;
       bool is_post_code = Len(post_code) > 0;
@@ -2892,14 +2889,14 @@ private:
     Swig_typemap_attach_parms("din", l, NULL);
 
     /* Get return types */
-    if ((tm = Swig_typemap_lookup("dptype", n, "", 0))) {
+    if ((tm = lookupDTypemap(n, "dptype"))) {
       String *dptypeout = Getattr(n, "tmap:dptype:out");
       if (dptypeout) {
 	// The type in the dptype typemap's out attribute overrides the type in
 	// the typemap.
 	tm = dptypeout;
+	replaceClassname(tm, t);
       }
-      replaceClassname(tm, t);
       Printf(return_type, "%s", tm);
     } else {
       Swig_warning(WARN_D_TYPEMAP_DPTYPE_UNDEF, input_file, line_number,
@@ -2945,8 +2942,7 @@ private:
       String *param_type = NewString("");
 
       // Get the D parameter type.
-      if ((tm = Getattr(p, "tmap:dptype"))) {
-	replaceClassname(tm, pt);
+      if ((tm = lookupDTypemap(p, "dptype", true))) {
 	const String *inattributes = Getattr(p, "tmap:dptype:inattributes");
 	Printf(param_type, "%s%s", inattributes ? inattributes : empty_string, tm);
       } else {
@@ -2962,8 +2958,7 @@ private:
 
       // Get the D code to convert the parameter value to the type used in the
       // wrapper D module.
-      if ((tm = Getattr(p, "tmap:din"))) {
-	replaceClassname(tm, pt);
+      if ((tm = lookupDTypemap(p, "din", true))) {
 	Replaceall(tm, "$dinput", arg);
 	String *pre = Getattr(p, "tmap:din:pre");
 	if (pre) {
@@ -3015,7 +3010,7 @@ private:
 
     // Lookup the code used to convert the wrapper return value to the proxy
     // function return type.
-    if ((tm = Swig_typemap_lookup("dout", n, "", 0))) {
+    if ((tm = lookupDTypemap(n, "dout"))) {
       replaceExcode(n, tm, "dout", n);
       bool is_pre_code = Len(pre_code) > 0;
       bool is_post_code = Len(post_code) > 0;
@@ -3889,6 +3884,9 @@ private:
   /* ---------------------------------------------------------------------------
    * D::lookupCodeTypemap()
    *
+   * Looks up a D code fragment for generating the wrapper class for the given
+   * type.
+   *
    * n - for input only and must contain info for Getfile(n) and Getline(n) to work
    * tmap_method - typemap method name
    * type - typemap type to lookup
@@ -3917,6 +3915,41 @@ private:
     }
 
     return tm;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * D::lookupDTypemap()
+   *
+   * Looks up a D typemap for the given node, replacing D-specific special
+   * variables as needed.
+   *
+   * The method parameter specifies the typemap method to use. If attached is
+   * true, the value is just fetched from the tmap:<method> node attribute,
+   * Swig_typemap_lookup is used otherwise.
+   * --------------------------------------------------------------------------- */
+  String *lookupDTypemap(Node *n, const_String_or_char_ptr method, bool attached = false) {
+    String *result = 0;
+
+    if (attached) {
+      String *attr_name = NewStringf("tmap:%s", method);
+      result = Getattr(n, attr_name);
+      Delete(attr_name);
+    } else {
+      result = Swig_typemap_lookup(method, n, "", 0);
+    }
+
+    if (!result) {
+      return 0;
+    }
+
+    SwigType *type = Getattr(n, "type");
+    // Check if the passed node actually has type information attached. This
+    // is not the case e.g. in constructorWrapper.
+    if (type) {
+      replaceClassname(result, type);
+    }
+
+    return result;
   }
 
   /* ---------------------------------------------------------------------------
