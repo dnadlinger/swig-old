@@ -9,7 +9,7 @@ SWIG          = $(TOP)/../preinst-swig
 EXTRA_CFLAGS  = -I../ ../example.cxx example_wrap.cxx
 EXTRA_LDFLAGS = example.o example_wrap.o
 TARGET        = example_wrap
-SWIGOPT       = -outcurrentdir ../example.i
+SWIGOPT       =
 DSRCS         = *.d
 DFLAGS        = -ofrunme
 
@@ -18,7 +18,7 @@ all::	d
 
 d::
 	cd $(WORKING_DIR); \
-	$(MAKE) -f $(TOP)/Makefile EXTRA_CFLAGS='$(EXTRA_CFLAGS)' EXTRA_LDFLAGS='$(EXTRA_LDFLAGS)' SWIG='$(SWIG)' SWIGOPT='$(SWIGOPT)' TARGET='$(TARGET)' d_cpp; \
+	$(MAKE) -f $(TOP)/Makefile EXTRA_CFLAGS='$(EXTRA_CFLAGS)' EXTRA_LDFLAGS='$(EXTRA_LDFLAGS)' SWIG='$(SWIG)' SWIGOPT='$(SWIGOPT) -outcurrentdir ../example.i' TARGET='$(TARGET)' d_cpp; \
 	$(MAKE) -f $(TOP)/Makefile DSRCS='$(DSRCS)' DFLAGS='$(DFLAGS)' d_compile
 
 clean::
