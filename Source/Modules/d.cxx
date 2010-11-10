@@ -909,24 +909,21 @@ public:
       Swig_name_member(NSPACE_TODO,proxy_class_name, overloaded_name);
     Setattr(n, "imfuncname", intermediary_function_name);
 
-    String *proxy_func_name = Copy(Getattr(n, "sym:name"));
+    String *proxy_func_name = Getattr(n, "sym:name");
+    Setattr(n, "proxyfuncname", proxy_func_name);
     if (split_proxy_dmodule &&
       Len(Getattr(n, "parms")) == 0 &&
       Strncmp(proxy_func_name, package, Len(proxy_func_name)) == 0) {
       // If we are in split proxy mode and the function is named like the
-      // target package, we append an underscore to its name to avoid clashes
-      // (due to the D compiler being unable to resolve the ambiguity between
-      // the package reference and the argument-less function call).
+      // target package, the D compiler is unable to resolve the ambiguity
+      // between the package name and an argument-less function call.
       Swig_warning(WARN_D_NAME_COLLISION, input_file, line_number,
-	"Renaming %s::%s to %s_ because it would collide with the package name\n",
-	proxy_class_name, proxy_func_name, proxy_func_name);
-      Append(proxy_func_name, "_");
+	"%s::%s might collide with the package name, consider using %%rename to resolve the ambiguity.\n",
+	proxy_class_name, proxy_func_name);
     }
-    Setattr(n, "proxyfuncname", proxy_func_name);
 
     writeProxyClassFunction(n);
 
-    Delete(proxy_func_name);
     Delete(overloaded_name);
 
     // For each function, look if we have to alias in the parent class function
