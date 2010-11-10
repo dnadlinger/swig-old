@@ -1,8 +1,8 @@
 %module smart_pointer_templatemethods
 
 #ifdef SWIGD
-%rename(Objct) Object;
-#endif // »Object« is a reserved class name in D.
+%rename(Objct) Objct;
+#endif // »Objct« is a reserved class name in D.
 
 %inline %{
 namespace ns {
@@ -32,21 +32,21 @@ public:
   void DisposeObjekt (void) {}
 };
 
-class Object
+class Objct
 {
 public:
-  Object () {}
-  virtual ~Object () {}
+  Objct () {}
+  virtual ~Objct () {}
   template <typename T> Ptr<T> QueryInterface (InterfaceId iid) const { return Ptr<T>(); }
-  void DisposeObject (void) {}
+  void DisposeObjct (void) {}
 };
  
 #ifdef SWIG
-%template(PtrObject) Ptr<Object>;
+%template(PtrObjct) Ptr<Objct>;
 %template(PtrInt) Ptr<int>;
 %template(ObjektInt) Objekt<int>;
 %template(PtrObjektInt) Ptr<Objekt<int> >;
-%template(QueryInterfaceObject) Object::QueryInterface<Object>;
+%template(QueryInterfaceObjct) Objct::QueryInterface<Objct>;
 #endif
 
 }; // namespace
