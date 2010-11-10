@@ -418,12 +418,6 @@ public:
       String *package_directory = Copy(package);
       Replaceall(package_directory, ".", SWIG_FILE_DELIMITER);
       Printv(dmodule_directory, package_directory, NIL);
-
-      // TODO: Add some facilities to DOH for automatically creating directories.
-      String *create_directory_command = NewStringf("mkdir -p %s", package_directory);
-      system(Char(create_directory_command));
-      Delete(create_directory_command);
-
       Delete(package_directory);
     }
 
