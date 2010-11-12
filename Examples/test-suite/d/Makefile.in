@@ -4,8 +4,8 @@
 
 LANGUAGE     = d
 srcdir       = @srcdir@
-top_srcdir   = @top_srcdir@/..
-top_builddir = @top_builddir@/..
+top_srcdir   = ../@top_srcdir@
+top_builddir = ../@top_builddir@
 
 ifeq (2,$(D_VERSION))
   VERSIONSUFFIX = .2
@@ -22,7 +22,7 @@ CPP_TEST_CASES = \
 include $(srcdir)/../common.mk
 
 # Override some variables from common.mk:
-INTERFACEDIR = ../../
+
 TARGETSUFFIX = _wrap
 
 SWIGOPT+=-splitproxy -package $*
@@ -64,7 +64,7 @@ run_testcase = \
 	  cd $*$(VERSIONSUFFIX) && \
 	  $(MAKE) -f $(top_builddir)/$(EXAMPLES)/Makefile \
 	  DFLAGS='-of$*_runme' \
-	  DSRCS='../$(TESTPREFIX)$*$(TESTSUFFIX) $*/*.d' d_compile && \
+	  DSRCS='../$(srcdir)/$(TESTPREFIX)$*$(TESTSUFFIX) $*/*.d' d_compile && \
 	  env LD_LIBRARY_PATH=".:$$LD_LIBRARY_PATH" $(RUNTOOL) ./$*_runme; \
 	else \
 	  cd $*$(VERSIONSUFFIX) && \
