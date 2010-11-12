@@ -4062,14 +4062,14 @@ private:
   /* ---------------------------------------------------------------------------
    * D::replaceImportTypeMacros()
    *
-   * Replaces the $import_type(SomeDClass) macro with an import statement if it
+   * Replaces the $importtype(SomeDClass) macro with an import statement if it
    * is required to get SomeDClass in scope for the currently generated proxy
    * D module.
    * --------------------------------------------------------------------------- */
   void replaceImportTypeMacros(String *target) const {
     // Code from replace_embedded_typemap.
     char *start = 0;
-    while ((start = Strstr(target, "$import_type("))) {
+    while ((start = Strstr(target, "$importtype("))) {
       char *end = 0;
       char *param_start = 0;
       char *param_end = 0;
@@ -4106,7 +4106,7 @@ private:
       } else {
 	String *current_macro = NewStringWithSize(start, (c - start));
 	Swig_error(Getfile(target), Getline(target), "Syntax error in: %s\n", current_macro);
-	Replace(target, current_macro, "<error in $import_type macro>", DOH_REPLACE_ANY);
+	Replace(target, current_macro, "<error in $importtype macro>", DOH_REPLACE_ANY);
 	Delete(current_macro);
       }
     }

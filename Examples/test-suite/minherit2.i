@@ -34,8 +34,8 @@
 #define javabase             dbase
 
 %typemap(dimports) RemoteMpe %{
-$import_type(IRemoteSyncIO)
-$import_type(IRemoteAsyncIO)
+$importtype(IRemoteSyncIO)
+$importtype(IRemoteAsyncIO)
 %}
 #endif
 
