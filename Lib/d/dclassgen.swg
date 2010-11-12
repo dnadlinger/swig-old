@@ -53,8 +53,8 @@
         $wcall;
       }
       m_swigCObject = null;
+      super.dispose();
     }
-    super.dispose();
   }
 }
 

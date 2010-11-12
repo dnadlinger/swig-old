@@ -192,8 +192,8 @@ public static void* swigGetCObject($dclassname obj) {
         $wcall;
       }
       m_swigCObject = null;
+      super.dispose();
     }
-    super.dispose();
   }
 }
 
