@@ -1,7 +1,6 @@
 %module operbool
 
-%rename(operbool) operator bool();
-%warnfilter(SWIGWARN_D_NAME_COLLISION) operator bool();
+%rename(operator_bool) operator bool();
 
 %inline %{
   class Test {
