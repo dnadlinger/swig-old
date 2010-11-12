@@ -12,7 +12,7 @@
 %include <dprimitives.swg>
 
 // Typemaps for non-primitive types (C/C++ classes and structs).
-%include <dclasses.swg>
+%include <dswigtype.swg>
 
 // Typemaps for enumeration types.
 %include <denums.swg>
