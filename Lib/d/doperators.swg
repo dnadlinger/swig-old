@@ -1,10 +1,12 @@
 /* -----------------------------------------------------------------------------
  * doperators.swg
  *
- * Mapping of C++ operatoroverloading methods to D.
+ * Mapping of C++ operator overloading methods to D.
  * ----------------------------------------------------------------------------- */
 
 #ifdef __cplusplus
+
+#if (SWIG_D_VERSION == 1)
 
 %rename(opAdd) *::operator+;
 %rename(opPos) *::operator+();
@@ -64,5 +66,12 @@
 // The C++ assignment operator does not translate well to D where custom types
 // have reference semantics.
 %ignoreoperator(EQ) operator=;
+
+#else
+
+// Operator overloading works completely different in D2, proper support will
+// probably need fairly extensive code generation support.
+
+#endif
 
 #endif
