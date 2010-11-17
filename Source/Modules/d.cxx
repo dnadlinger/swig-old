@@ -853,25 +853,6 @@ public:
 
     String *proxy_name = Getattr(n, "sym:name");
 
-    // If the %dstripprefix feature is set, strip the prefix from the value name.
-    String *stripprefix = GetFlagAttr(parent, "feature:d:stripprefix");
-    if (stripprefix) {
-      String *prefix;
-      if (Strcmp(stripprefix, "1") == 0) {
-	// Default to »EnumName_« if no argument was given to %dstripprefix.
-	prefix = Copy(Getattr(parent, "sym:name"));
-	Append(prefix, "_");
-      } else {
-	prefix = Copy(stripprefix);
-      }
-
-      if (Strncmp(proxy_name, prefix, Len(prefix)) == 0) {
-	Delslice(proxy_name, 0, Len(prefix));
-      }
-
-      Delete(prefix);
-    }
-
     // Emit the enum item.
     {
       if (!GetFlag(n, "firstenumitem"))
