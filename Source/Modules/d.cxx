@@ -722,7 +722,7 @@ public:
 	  Delete(wrapper_loader_bind_command);
 	  wrapper_loader_bind_command = Copy(strvalue);
 	} else {
-	  Printf(stderr, "%s : Line %d. Unrecognized pragma.\n", input_file, line_number);
+	  Swig_error(input_file, line_number, "Unrecognized pragma.\n");
 	}
 	Delete(strvalue);
       }
@@ -1789,7 +1789,7 @@ public:
       Swig_restore(n);
       native_function_flag = false;
     } else {
-      Printf(stderr, "%s : Line %d. No return type for %%native method %s.\n", input_file, line_number, Getattr(n, "wrap:name"));
+      Swig_error(input_file, line_number, "No return type for %%native method %s.\n", Getattr(n, "wrap:name"));
     }
 
     return SWIG_OK;
@@ -3666,13 +3666,13 @@ private:
   void assertClassNameValidity(const String* class_name) const {
     if (split_proxy_dmodule) {
       if (Cmp(class_name, wrap_dmodule_name) == 0) {
-	Printf(stderr, "Class name cannot be equal to wrap D module name: %s\n",
+	Swig_error(input_file, line_number, "Class name cannot be equal to wrap D module name: %s\n",
 	  class_name);
 	SWIG_exit(EXIT_FAILURE);
       }
 
       if (Cmp(class_name, proxy_dmodule_name) == 0) {
-	Printf(stderr, "Class name cannot be equal to proxy D module name: %s\n",
+	Swig_error(input_file, line_number, "Class name cannot be equal to proxy D module name: %s\n",
 	  class_name);
 	SWIG_exit(EXIT_FAILURE);
       }
