@@ -35,24 +35,24 @@
 // does not exist.
 %typemap(ddispose, methodname="dispose", methodmodifiers="public") SWIGTYPE {
   synchronized(this) {
-    if (m_swigCObject !is null) {
-      if (m_swigOwnCObject) {
-        m_swigOwnCObject = false;
+    if (swigCPtr !is null) {
+      if (swigCMemOwn) {
+        swigCMemOwn = false;
         $wcall;
       }
-      m_swigCObject = null;
+      swigCPtr = null;
     }
   }
 }
 
 %typemap(ddispose_derived, methodname="dispose", methodmodifiers="public") SWIGTYPE {
   synchronized(this) {
-    if (m_swigCObject !is null) {
-      if (m_swigOwnCObject) {
-        m_swigOwnCObject = false;
+    if (swigCPtr !is null) {
+      if (swigCMemOwn) {
+        swigCMemOwn = false;
         $wcall;
       }
-      m_swigCObject = null;
+      swigCPtr = null;
       super.dispose();
     }
   }
@@ -64,43 +64,43 @@
 // at the SWIG command line), so we are stuck with public visibility for
 // swigGetCObject().
 %typemap(dbody) SWIGTYPE %{
-private void* m_swigCObject;
-protected bool m_swigOwnCObject;
+private void* swigCPtr;
+protected bool swigCMemOwn;
 
 public this(void* cObject, bool ownCObject) {
-  m_swigCObject = cObject;
-  m_swigOwnCObject = ownCObject;
+  swigCPtr = cObject;
+  swigCMemOwn = ownCObject;
 }
 
 public override OP_EQUALS_RETURN opEquals(Object rhs) {
   if (auto other = cast($dclassname)rhs) {
-    return (m_swigCObject == other.m_swigCObject);
+    return (swigCPtr == other.swigCPtr);
   }
   return super.opEquals(rhs);
 }
 
 public static void* swigGetCObject($dclassname obj) {
-  return (obj is null) ? null : obj.m_swigCObject;
+  return (obj is null) ? null : obj.swigCPtr;
 }
 %}
 
 %typemap(dbody_derived) SWIGTYPE %{
-private void* m_swigCObject;
+private void* swigCPtr;
 
 public this(void* cObject, bool ownCObject) {
   super($wrapdmodule.$dclassnameUpcast(cObject), ownCObject);
-  m_swigCObject = cObject;
+  swigCPtr = cObject;
 }
 
 public override OP_EQUALS_RETURN opEquals(Object rhs) {
   if (auto other = cast($dclassname)rhs) {
-    return (m_swigCObject == other.m_swigCObject);
+    return (swigCPtr == other.swigCPtr);
   }
   return super.opEquals(rhs);
 }
 
 public static void* swigGetCObject($dclassname obj) {
-  return (obj is null) ? null : obj.m_swigCObject;
+  return (obj is null) ? null : obj.swigCPtr;
 }
 %}
 
@@ -110,25 +110,25 @@ public static void* swigGetCObject($dclassname obj) {
  */
 
 %typemap(dbody) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] %{
-private void* m_swigCObject;
+private void* swigCPtr;
 
 public this(void* cObject, bool futureUse) {
-  m_swigCObject = cObject;
+  swigCPtr = cObject;
 }
 
 protected this() {
-  m_swigCObject = null;
+  swigCPtr = null;
 }
 
 public override OP_EQUALS_RETURN opEquals(Object rhs) {
   if (auto other = cast($dclassname)rhs) {
-    return (m_swigCObject == other.m_swigCObject);
+    return (swigCPtr == other.swigCPtr);
   }
   return super.opEquals(rhs);
 }
 
 public static void* swigGetCObject($dclassname obj) {
-  return (obj is null) ? null : obj.m_swigCObject;
+  return (obj is null) ? null : obj.swigCPtr;
 }
 %}
 

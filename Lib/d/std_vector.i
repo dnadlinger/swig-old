@@ -339,14 +339,14 @@ alias pop_back stableRemoveBack;
 
 size_t insertBefore(Stuff)(Range r, Stuff stuff)
 if (std.traits.isImplicitlyConvertible!(Stuff, ValueType)) {
-  std.exception.enforce(r._outer.m_swigCObject == m_swigCObject && r._a < length);
+  std.exception.enforce(r._outer.swigCPtr == swigCPtr && r._a < length);
   insertAt(r._a, stuff);
   return 1;
 }
 
 size_t insertBefore(Stuff)(Range r, Stuff stuff)
 if (std.range.isInputRange!Stuff && std.traits.isImplicitlyConvertible!(ElementType!Stuff, ValueType)) {
-  std.exception.enforce(r._outer.m_swigCObject == m_swigCObject && r._a <= length);
+  std.exception.enforce(r._outer.swigCPtr == swigCPtr && r._a <= length);
 
   size_t insertCount;
   foreach(i, item; stuff) {

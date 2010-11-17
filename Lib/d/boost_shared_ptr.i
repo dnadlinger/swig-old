@@ -144,54 +144,54 @@
 // For shared pointers, both the derived and the base class have to »own« their
 // pointer; otherwise the reference count is not decreased properly on destruction.
 %typemap(dbody) SWIGTYPE %{
-private void* m_swigCObject;
-private bool m_swigOwnCObject;
+private void* swigCPtr;
+private bool swigCMemOwn;
 
 public this(void* cObject, bool ownCObject) {
-  m_swigCObject = cObject;
-  m_swigOwnCObject = ownCObject;
+  swigCPtr = cObject;
+  swigCMemOwn = ownCObject;
 }
 
 public static void* swigGetCObject($dclassname obj) {
-  return (obj is null) ? null : obj.m_swigCObject;
+  return (obj is null) ? null : obj.swigCPtr;
 }
 %}
 
 %typemap(dbody_derived) SWIGTYPE %{
-private void* m_swigCObject;
-private bool m_swigOwnCObject;
+private void* swigCPtr;
+private bool swigCMemOwn;
 
 public this(void* cObject, bool ownCObject) {
   super($wrapdmodule.$dclassnameSmartPtrUpcast(cObject), ownCObject);
-  m_swigCObject = cObject;
-  m_swigOwnCObject = ownCObject;
+  swigCPtr = cObject;
+  swigCMemOwn = ownCObject;
 }
 
 public static void* swigGetCObject($dclassname obj) {
-  return (obj is null) ? null : obj.m_swigCObject;
+  return (obj is null) ? null : obj.swigCPtr;
 }
 %}
 
 %typemap(ddispose, methodname="dispose", methodmodifiers="public") TYPE {
   synchronized(this) {
-    if (m_swigCObject !is null) {
-      if (m_swigOwnCObject) {
-        m_swigOwnCObject = false;
+    if (swigCPtr !is null) {
+      if (swigCMemOwn) {
+        swigCMemOwn = false;
         $wcall;
       }
-      m_swigCObject = null;
+      swigCPtr = null;
     }
   }
 }
 
 %typemap(ddispose_derived, methodname="dispose", methodmodifiers="public") TYPE {
   synchronized(this) {
-    if (m_swigCObject !is null) {
-      if (m_swigOwnCObject) {
-        m_swigOwnCObject = false;
+    if (swigCPtr !is null) {
+      if (swigCMemOwn) {
+        swigCMemOwn = false;
         $wcall;
       }
-      m_swigCObject = null;
+      swigCPtr = null;
       super.dispose();
     }
   }

@@ -1223,7 +1223,7 @@ public:
   virtual int destructorHandler(Node *n) {
     Language::destructorHandler(n);
     String *symname = Getattr(n, "sym:name");
-    Printv(destructor_call, wrap_dmodule_fq_name, ".", Swig_name_destroy(NSPACE_TODO,symname), "(cast(void*)m_swigCObject)", NIL);
+    Printv(destructor_call, wrap_dmodule_fq_name, ".", Swig_name_destroy(NSPACE_TODO,symname), "(cast(void*)swigCPtr)", NIL);
     return SWIG_OK;
   }
 
@@ -2645,7 +2645,7 @@ private:
     // Write the wrapper function call up to the parameter list.
     Printv(imcall, wrap_dmodule_fq_name, ".$imfuncname(", NIL);
     if (!static_flag) {
-      Printf(imcall, "cast(void*)m_swigCObject");
+      Printf(imcall, "cast(void*)swigCPtr");
     }
 
     // Write the parameter list for the proxy function declaration and the
@@ -3419,7 +3419,7 @@ private:
       Printf(proxy_class_body_code, "    callback%s = &swigDirectorCallback_%s_%s;\n", methid, proxy_class_name, overloaded_name);
       Printf(proxy_class_body_code, "  }\n\n");
     }
-    Printf(proxy_class_body_code, "  %s.%s_director_connect(cast(void*)m_swigCObject, cast(void*)this", wrap_dmodule_fq_name, proxy_class_name);
+    Printf(proxy_class_body_code, "  %s.%s_director_connect(cast(void*)swigCPtr, cast(void*)this", wrap_dmodule_fq_name, proxy_class_name);
     for (i = first_class_dmethod; i < curr_class_dmethod; ++i) {
       UpcallData *udata = Getitem(dmethods_seq, i);
       String *methid = Getattr(udata, "class_methodidx");
